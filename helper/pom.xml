@@ -1,0 +1,13 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+    
+  <!-- project settings -->
+  <groupId>IGNORE</groupId>
+  <artifactId>IGNORE</artifactId>
+  <version>IGNORE</version>
+  <name>IGNORE</name>
+  <packaging>jar</packaging>
+  
+  <!-- the projects dependencies -->
+  <dependencies />
+</project>

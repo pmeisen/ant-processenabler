@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  
+  <!-- project settings -->
+  <groupId>net.meisen.tools</groupId>
+  <artifactId>ant-processenabler</artifactId>
+  <version>UNKNOWN</version>
+  <name>ant-processenabler</name>
+  <description>Defines processes like build, release, assemble to be used with ant</description>
+  <packaging>jar</packaging>
+
+  <!-- the projects dependencies -->
+  <dependencies>
+    
+    <!-- ant itself -->
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant</artifactId>
+      <version>1.8.4</version>
+    </dependency>
+    
+    <!-- ant-contrib -->
+    <dependency>
+      <groupId>ant-contrib</groupId>
+      <artifactId>ant-contrib</artifactId>
+      <version>1.0b3</version>
+      
+      <!-- somehow the dependencies are incorrect in maven central, so we
+           exclude those here and define the needed dependencies by ourself  
+           see: http://sourceforge.net/projects/ant-contrib/files/ant-contrib/1.0b3/ant-contrib-1.0b3-bin.zip
+        -->
+      <exclusions>
+        <exclusion>
+          <groupId>ant</groupId>
+          <artifactId>ant</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  
+    <!-- XmlMerge Module, enables ant to merge xml-files -->
+    <dependency>
+      <groupId>ch.elca.el4j.modules</groupId>
+      <artifactId>module-xml_merge-common</artifactId>
+      <version>3.1</version>
+    </dependency>
+  </dependencies>
+</project>

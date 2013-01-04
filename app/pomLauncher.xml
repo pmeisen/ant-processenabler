@@ -1,0 +1,20 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+    
+  <!-- project settings -->
+  <groupId>com.inform_ac.app</groupId>
+  <artifactId>${maven.pom.artifactId}</artifactId>
+  <version>${maven.pom.version}</version>
+  <name>${maven.pom.name}</name>
+  <packaging>zip</packaging>
+  
+  <dependencies>
+    <!-- the launcher is needed to start the application -->
+    <dependency>
+      <groupId>${build.launcher.groupId}</groupId>
+      <artifactId>${build.launcher.artifactId}</artifactId>
+      <version>${build.launcher.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+</project>

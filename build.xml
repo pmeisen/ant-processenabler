@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="ant-processenabler" default="default">
+
+  <!-- add all extensions -->
+  <property name="main.addExtensionsByDefault" value="true" />
+
+  <import file=".\ant\library_main.xml" />
+  
+  <!-- just a helper to execute cleanUp as well -->
+  <target name="default" depends="wrapUp,cleanUp">
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+  
+  <target name="help" depends="versions,folders,cleanUp">
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>
