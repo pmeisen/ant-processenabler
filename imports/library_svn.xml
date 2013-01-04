@@ -1,0 +1,325 @@
+<!--
+  Library which adds some macros and targets for file operations/modifications
+  
+  Created on: 01.03.2012
+  Created by: Philipp Meisen <philipp@meisen.net>
+  History:
+    01.03.2012
+      - Creation of library
+  -->
+<project name="library_svn">
+  <property name="svn.library.version" value="1.0.1" description="The current version of the library" />
+  <dirname property="library_svn.basedir" file="${ant.file.library_svn}"/>
+
+  <property name="svn.init" value="false" description="For internal usage only, please do not modify this property by any file" />
+  
+  <property name="svn.username" value="" description="Username used for SVN, currently not needed" />
+  <property name="svn.password" value="" description="Password used for SVN, currently not needed" />
+    
+  <property name="svn.folder.tags" value="tags" description="Name of the tags folder" />
+  <property name="svn.folder.trunk" value="trunk" description="Name of the trunk folder" />
+    
+  <property name="svn.repository.url" value="" description="The url of the SVN repository" />
+  <property name="svn.repository.forceoffline" value="false" description="if set to true, the repository will be forced to be assumed offline" />
+
+  <taskdef name="svn" classname="com.googlecode.svntask.SvnTask" />
+  
+  <!--
+    add the antcontrib library
+    -->
+  <taskdef resource="net/sf/antcontrib/antlib.xml" />
+  
+  <!--
+    initialize - do some things that have to be done
+    -->
+  <if>
+    <equals arg1="${svn.init}" arg2="false" />
+    <then>
+      
+      <!-- check if the repository is available -->
+      <if>
+        <or>
+          <equals arg1="${svn.repository.forceoffline}" arg2="y" />
+          <equals arg1="${svn.repository.forceoffline}" arg2="yes" />
+          <equals arg1="${svn.repository.forceoffline}" arg2="true" />
+        </or>
+        <then>
+          <var name="svn.repository.offline" value="true" />
+        </then>
+        <else>
+          <serverHttpNotReachable url="${svn.repository.url}" property="svn.repository.offline" />
+        </else>
+      </if>
+      
+      <!-- check the credentials passed for the repository -->
+      <svn>
+        <info path="." urlProperty="svn.info.rootUrl" committedRevisionProperty="svn.info.lastRev" authorProperty="svn.info.lastRevAuthor" committedDateProperty="svn.info.lastRevDate" />
+      </svn>
+
+      <!-- initialization finished -->
+      <var name="svn.init" value="true" />
+    </then>
+  </if>
+  
+  <macrodef name="svnUpdate">
+    <sequential>
+      <svn username="${svn.username}" password="${svn.password}">
+        <update path="." force="true" recursive="true" />
+        <info path="." committedRevisionProperty="svn.info.lastRev" authorProperty="svn.info.lastRevAuthor" committedDateProperty="svn.info.lastRevDate" />
+      </svn>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="svnCommit">
+    <attribute name="message" />
+  
+    <sequential>
+      <svn username="${svn.username}" password="${svn.password}">
+        <commit path="." force="true" commitmessage="@{message}" />
+        <info path="." committedRevisionProperty="svn.info.lastRev" authorProperty="svn.info.lastRevAuthor" committedDateProperty="svn.info.lastRevDate" />
+      </svn>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="svnCheckUnversioned">
+    
+    <sequential>
+      <svnCheckStatus file="." />
+      
+      <if>
+        <or>
+          <not><equals arg1="${svn.tmp.unversionedProperty}" arg2="0" /></not>
+          <not><equals arg1="${svn.tmp.failedProperty}" arg2="0" /></not>
+          <not><equals arg1="${svn.tmp.conflictedProperty}" arg2="0" /></not>
+        </or>
+        <then>
+          <fail>There are still ${svn.tmp.unversionedProperty} unversioned, ${svn.tmp.failedProperty} failed and ${svn.tmp.conflictedProperty} conflicted elements in the repository, please check prior to release!</fail>
+        </then>
+      </if>
+    
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="svnCheckFullCommit">
+    
+    <sequential>
+      <svnCheckStatus file="." />
+      
+      <if>
+        <or>
+          <not><equals arg1="${svn.tmp.changedProperty}" arg2="0" /></not>
+          <not><equals arg1="${svn.tmp.unversionedProperty}" arg2="0" /></not>
+          <not><equals arg1="${svn.tmp.failedProperty}" arg2="0" /></not>
+          <not><equals arg1="${svn.tmp.conflictedProperty}" arg2="0" /></not>
+        </or>
+        <then>
+          <fail>There are still ${svn.tmp.changedProperty} modified (i.e. to be added, to be deleted, to be updated), ${svn.tmp.unversionedProperty} unversioned, ${svn.tmp.failedProperty} failed and ${svn.tmp.conflictedProperty} conflicted elements in the repository, please check prior to release!</fail>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <scriptdef name="svnCheckSingleStatus" language="javascript">
+    <attribute name="file" />
+    <attribute name="property" />
+    
+    <![CDATA[
+      var property = attributes.get("property");
+      var filename = attributes.get("file");
+      
+      var setProperty = project.createTask("var");
+      setProperty.setName(property);
+      var clientManager = org.tmatesoft.svn.core.wc.SVNClientManager.newInstance();
+      var file = new java.io.File(filename);
+      
+      if (!file.exists()) {
+        setProperty.setValue("notexistingfile");
+        setProperty.execute();
+      } else {      
+        var callback = {
+          handleStatus: function(st) {
+            var status = st.getNodeStatus();
+            setProperty.setValue(status);
+            setProperty.execute();
+          } 
+        };
+        
+        try {
+          clientManager.getStatusClient().doStatus(file, org.tmatesoft.svn.core.wc.SVNRevision.HEAD, org.tmatesoft.svn.core.SVNDepth.UNKNOWN, 
+                                                   false, true, true, false, new org.tmatesoft.svn.core.wc.ISVNStatusHandler(callback), null);
+        } catch (e) {
+            setProperty.setValue("failed");
+            setProperty.execute();
+        }
+      }
+    ]]>
+  </scriptdef>
+  
+  <scriptdef name="svnCheckStatus" language="javascript">
+    <attribute name="file" />
+    <attribute name="ignoredProperty" />
+    <attribute name="versionedProperty" />
+    <attribute name="unversionedProperty" />
+    <attribute name="failedProperty" />
+    <attribute name="toBeAddedProperty" />
+    <attribute name="conflictedProperty" />
+    <attribute name="deletedProperty" />
+    <attribute name="changedProperty" />
+    
+    <![CDATA[
+      var tmpStatusProperty = "svn.tmp.internalStatus";
+      
+      // get the properties
+      var ignoredProperty = attributes.containsKey("ignoredproperty") ? attributes.get("ignoredproperty") : "svn.tmp.ignoredProperty";
+      var versionedProperty = attributes.containsKey("versionedproperty") ? attributes.get("versionedproperty") : "svn.tmp.versionedProperty";
+      var unversionedProperty = attributes.containsKey("unversionedproperty") ? attributes.get("unversionedproperty") : "svn.tmp.unversionedProperty";
+      var failedProperty = attributes.containsKey("failedproperty") ? attributes.get("failedproperty") : "svn.tmp.failedProperty";
+      var toBeAddedProperty = attributes.containsKey("tobeaddedproperty") ? attributes.get("tobeaddedproperty") : "svn.tmp.toBeAddedProperty";
+      var conflictedProperty = attributes.containsKey("conflictedproperty") ? attributes.get("conflictedproperty") : "svn.tmp.conflictedProperty";
+      var deletedProperty = attributes.containsKey("deletedproperty") ? attributes.get("deletedproperty") : "svn.tmp.deletedProperty";
+      var modifiedProperty = attributes.containsKey("modifiedproperty") ? attributes.get("modifiedproperty") : "svn.tmp.modifiedProperty";
+      var changedProperty = attributes.containsKey("changedproperty") ? attributes.get("changedproperty") : "svn.tmp.changedProperty";
+      
+      // get the file
+      var filename = attributes.get("file");
+      var file = new java.io.File(filename);
+      var rootPath = file.getCanonicalPath();
+      
+      // create a hashmap for a status
+      var counter = new java.util.HashMap();
+
+      // create some methods to make the code more readable
+      var incMethod = function(map, flag) { 
+        var current = map.get(flag);
+        if (current == null) {
+          map.put(flag, 1);
+        } else {
+          map.put(flag, ++current);
+        }
+      };
+      var setProperty = function(property) { 
+        var setProperty = project.createTask("var");
+        setProperty.setName(property);
+        
+        var value = 0;
+        for (var i = 1; i<arguments.length; i++) {
+          var arg = Number(arguments[i]);
+          value += (arg == null ? 0 : arg);
+        }
+        
+        setProperty.setValue(value == null ? 0 : value);
+        setProperty.execute();
+      };
+      
+      // get the client manager and authenticate
+      var user = project.getProperty("svn.username");
+      var pass = project.getProperty("svn.password");
+      var clientManager = org.tmatesoft.svn.core.wc.SVNClientManager.newInstance();
+      var authManager = org.tmatesoft.svn.core.wc.SVNWCUtil.createDefaultAuthenticationManager(user, pass);
+      clientManager.setAuthenticationManager(authManager);
+      
+      if (!file.exists()) {
+        setProperty.setValue("notexistingfile");
+        setProperty.execute();
+      } else {      
+        var callback = {
+          handleStatus: function(st) {
+            var status = st.getNodeStatus();
+            incMethod(counter, status.toString());
+          } 
+        };
+        
+        try {
+          clientManager.getStatusClient().doStatus(file, org.tmatesoft.svn.core.wc.SVNRevision.HEAD, org.tmatesoft.svn.core.SVNDepth.UNKNOWN, 
+                                                   true, true, true, false, new org.tmatesoft.svn.core.wc.ISVNStatusHandler(callback), null);
+        } catch (e) {
+            incMethod(counter, "failed");
+        }
+      }
+      
+      // set the properties
+      setProperty(ignoredProperty, counter.get("ignored"));
+      setProperty(versionedProperty, counter.get("normal"));
+      setProperty(unversionedProperty, counter.get("unversioned"));
+      setProperty(toBeAddedProperty, counter.get("added"));
+      setProperty(conflictedProperty, counter.get("conflicted"));
+      setProperty(deletedProperty, counter.get("deleted"));
+      setProperty(modifiedProperty, counter.get("modified"));
+      setProperty(changedProperty, counter.get("added"), counter.get("conflicted"), counter.get("modified"), counter.get("deleted"));
+      setProperty(failedProperty, counter.get("notexistingfile"), counter.get("failed"));
+    ]]>
+  </scriptdef>
+  
+  <scriptdef name="svnTag" language="javascript">
+    <attribute name="tagUrl" />
+    <attribute name="message" />
+    
+    <![CDATA[
+      var tagUrl = attributes.containsKey("tagurl") ? attributes.get("tagurl") : null;
+      var message = attributes.containsKey("message") ? attributes.get("message") : "";
+      var tagProperty = "svn.tmp.tag";
+      
+      // get the client manager and authenticate
+      var user = project.getProperty("svn.username");
+      var pass = project.getProperty("svn.password");
+      var clientManager = org.tmatesoft.svn.core.wc.SVNClientManager.newInstance();
+      var authManager = org.tmatesoft.svn.core.wc.SVNWCUtil.createDefaultAuthenticationManager(user, pass);
+      clientManager.setAuthenticationManager(authManager);
+            
+      // copy client to tag
+      var copyClient = clientManager.getCopyClient(); 
+
+      // lets get the URL
+      var srcUrl = project.getProperty("svn.info.rootUrl");
+      if (tagUrl == null) {
+      
+        // create the tag
+        var createTag = project.createTask("svnCreateTagUrl");
+        createTag.setDynamicAttribute("property", tagProperty);
+        createTag.execute();
+      
+        tagUrl = project.getProperty(tagProperty); 
+      }
+      
+      var srcURL = org.tmatesoft.svn.core.SVNURL.parseURIEncoded(srcUrl); 
+      var tagURL = org.tmatesoft.svn.core.SVNURL.parseURIEncoded(tagUrl); 
+      var copySource = new org.tmatesoft.svn.core.wc.SVNCopySource(org.tmatesoft.svn.core.wc.SVNRevision.HEAD, org.tmatesoft.svn.core.wc.SVNRevision.HEAD, srcURL); 
+
+      var copySources = [];
+      copySources.push(copySource);
+      
+      // create the tag
+      copyClient.doCopy(copySources, tagURL, false, false, true, message, null); 
+    ]]>
+  </scriptdef>
+  
+  <scriptdef name="svnCreateTagUrl" language="javascript">
+    <attribute name="property" />
+    
+    <![CDATA[
+      var property = attributes.get("property");
+      
+      // lets get the URL
+      var srcUrl = project.getProperty("svn.info.rootUrl");
+      
+      // make sure we have the version
+      var setPom = project.createTask("mavenSetPom");
+      setPom.execute();
+      
+      // get some values
+      var trunkFolder = project.getProperty("svn.folder.trunk");
+      var tagsFolder = project.getProperty("svn.folder.tags");
+      var defPom = project.getProperty("maven.pom.property");
+      var currentVersion = project.getProperty(defPom + ".version");
+      
+      // create the tag
+      var tagUrl = srcUrl.replaceFirst("/" + trunkFolder + "(?:|/.*)", "/" + tagsFolder + "/" + currentVersion);
+      
+      // set the property
+      var setProperty = project.createTask("var");
+      setProperty.setName(property);
+      setProperty.setValue(tagUrl);
+      setProperty.execute();
+    ]]>
+  </scriptdef>
+</project>

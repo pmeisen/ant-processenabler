@@ -1,0 +1,127 @@
+<!--
+  Library which adds some macros and targets for configuration operations
+  
+  Created on: 06.12.2012
+  Created by: Philipp Meisen <philipp@meisen.net>
+  History:
+    06.12.2012
+      - Creation of library
+  -->
+<project name="library_configuration">
+  <property name="configuration.library.version" value="1.0.0" description="The current version of the library" />
+  <dirname property="library_configuration.basedir" file="${ant.file.library_configuration}"/>
+
+  <property name="configuration.properties.location" value="" description="The location to load the settings from, should be defined in the scriptconfig.properties, must be relative to the library_main" />
+  <property name="configuration.versions.foldername" value="" description="The name of the folder in which the versions are found, must be a sub-directory wherever the build.xml is found" />
+  <property name="configuration.settings.defaultconfig" value="_default" description="The folder in which the default configuration can be found" />
+  <property name="configuration.settings.defaultcustomer" value="inform" description="The folder in which the default customer can be found" />
+  <property name="configuration.config.filename" value="config.properties" description="The name of the configurationf ile to be read" />
+  
+  <property name="configuration.resource.dependency" value="configuration.dependency" description="The resource type of a dependency" />
+  
+  <property name="configuration.init" value="false" description="For internal usage only, please do not modify this property by a file" />
+            
+  <!--
+    add the antcontrib library
+    -->
+  <taskdef resource="net/sf/antcontrib/antlib.xml" />
+
+  <!--
+    initialize - do some things that have to be done
+    -->
+  <if>
+    <equals arg1="${configuration.init}" arg2="false" />
+    <then>
+
+      <!-- get some variables -->
+      <if>
+        <not><isset property="customer" /></not>
+        <then>
+          <property name="customer" value="${configuration.settings.defaultcustomer}" />
+        </then>
+      </if>    
+      
+      <!-- set some properties -->
+      <property name="configuration.main.root" value="${basedir}" />
+      <property name="configuration.settings.root" location="${library_main.basedir}/${configuration.properties.location}" />
+      <property name="configuration.settings.pomfolder" location="${configuration.main.root}/${configuration.versions.foldername}" />
+      <property name="configuration.settings.default" location="${configuration.settings.root}/${configuration.settings.defaultconfig}" />
+
+      <!-- initialization finshed -->
+      <var name="configuration.init" value="true" />
+    </then>
+  </if>
+  
+  <!--
+    configurationSetup - setups a configuration
+    -->
+  <macrodef name="configurationSetup">
+    <attribute name="version" />
+    <attribute name="location" default="${user.name}" />
+    <attribute name="customer" default="${configuration.settings.defaultcustomer}" />
+  
+    <sequential>
+      <var name="configuration.customer" value="@{customer}" />
+      <var name="configuration.settings.customer" value="${configuration.settings.root}/@{customer}" />
+    
+      <!-- get the version -->
+      <if>
+        <not><matches pattern="\$\{.+\}" string="@{version}" /></not>
+        <then>
+          <var name="configuration.version" value="@{version}" />   
+        </then>
+        <else>
+
+          <!-- load the customer specific properties for the version -->
+          <var file="${configuration.settings.customer}/${configuration.config.filename}" />
+          <var name="configuration.version" value="" unset="true" />
+          <propertycopy name="configuration.version" from="${configuration.version.property}" />   
+        </else>
+      </if>
+    
+      <!-- reload the properties first the default, than the customer -->
+      <var file="${configuration.settings.default}/${configuration.config.filename}" />
+      <var file="${configuration.settings.customer}/${configuration.config.filename}" />
+    
+      <!-- set some variables we need -->
+      <var name="configuration.settings.pom" value="${configuration.settings.pomfolder}/pom-${configuration.version}.xml" />
+
+      <!-- check if the files exists -->
+      <if>
+        <or>
+          <not><available file="${configuration.settings.default}"/></not>
+          <not><available file="${configuration.settings.customer}"/></not>
+          <not><available file="${configuration.settings.pom}"/></not>
+        </or>
+        <then>
+          <fail>At least one needed folder/file cannot be found, please check the list of '${configuration.settings.default}', '${configuration.settings.customer}', and '${configuration.settings.pom}'</fail>
+        </then>
+      </if>
+            
+      <!-- load the dependency of the version -->
+      <mavenResolveDependencies fileset="configuration.tmp.libs" pomid="configuration.tmp.pom" pomfile="${configuration.settings.pom}" />
+
+      <!-- make sure we have one dependency -->
+      <if>
+        <not><resourcecount refid="configuration.tmp.libs" when="equal" count="1" /></not>
+        <then>
+          <fail>The '${configuration.settings.pom}' does not define a valid dependency please validate</fail>
+        </then>
+      </if>
+      
+      <!-- get the one dependency, there shouldn't be more we want a running application -->
+      <first id="configuration.tmp.app">
+        <fileset refid="configuration.tmp.libs" />
+      </first>
+      
+      <!-- get the new zip -->
+      <var name="configuration.tmp.filename" value="" unset="true" />
+      <basename property="configuration.tmp.filename" file="${toString:configuration.tmp.app}"/>
+      <fileReplaceAllPropertiesInZip file="${toString:configuration.tmp.app}" dest="@{location}/${configuration.tmp.filename}" />
+    </sequential>
+  </macrodef>
+  
+  <target name="create">
+    <configurationSetup version="${version}" customer="${customer}" />
+  </target>
+</project>

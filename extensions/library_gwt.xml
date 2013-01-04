@@ -1,0 +1,865 @@
+<!--
+  Library which adds some macros and targets for gwt operations
+  
+  Created on: 14.03.2012
+  Created by: Philipp Meisen <philipp@meisen.net>
+  History:
+    14.03.2012
+      - Creation of library
+  -->
+<project name="library_gwt" xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
+  <property name="gwt.library.version" value="1.6.2" description="The current version of the library" />
+  <dirname property="library_gwt.basedir" file="${ant.file.library_gwt}"/>
+
+  <property name="gwt.library.resfile.maven.pomEmpty" location="${main.root}/maven/pomEmpty.xml" />
+  <property name="gwt.library.resfile.maven.gwtMerge" location="${main.root}/maven/pomGwt_xmlMerge.properties" />
+  <property name="gwt.library.resfile.maven.gwtWebAppMerge" location="${main.root}/maven/pomGwtWebAppRes_xmlMerge.properties" />
+  <property name="gwt.library.resfile.maven.gwtPom" location="${main.root}/gwt/pomGWT.xml" />
+  <property name="gwt.library.resfile.maven.gwtPlugInPom" location="${main.root}/gwt/pomGWTPlugIn.xml" />
+  <property name="gwt.library.resfile.template.webXml" location="${library_gwt.basedir}/web.xml.template" />
+  <property name="gwt.library.resfile.template.plugin" location="${library_gwt.basedir}/com.google.gdt.eclipse.core.prefs.gwt.settings.template" />
+  <property name="gwt.library.resfile.template.index" location="${library_gwt.basedir}/index.html.template" />
+  <property name="gwt.library.resfile.template.index" location="${library_gwt.basedir}/index.html.template" />
+  <property name="gwt.library.resfile.template.index" location="${library_gwt.basedir}/index.html.template" />
+  <property name="gwt.library.resfile.template.project" location="${library_gwt.basedir}/library_eclipse_project.template" description="The name of the project template" />
+  <property name="gwt.library.resfile.template.classpath" location="${library_gwt.basedir}/library_eclipse_classpath.template" description="The name of the classpath template" />
+  
+  <!--
+    add the antcontrib library
+    -->
+  <taskdef resource="net/sf/antcontrib/antlib.xml" />
+  
+  <!--
+    Load the user-specific override.properties of the project 
+    -->
+  <property file="${basedir}/override.properties" />
+  <!--
+    Load the config.properties of the project the main will include it later again... 
+    but its needed to overwrite the gwt-properties now
+    -->
+  <property file="${basedir}/config.properties" />
+    
+  <property name="gwt.init" value="false" description="For internal usage only, please do not modify this property by a file" />
+  
+  <property name="gwt.binary.dir" value="gwt" description="Project gwt binary directory" />
+  <property name="gwt.add.binary.dir" value="gwtBin" description="The compiled java classed which are needed for additional packages" />
+  <property name="gwt.version" value="2.3.0" description="GWT Version to be used" />
+  <property name="gwt.module" value="" description="The module to be compiled, muse be set by an overloading property" />
+
+  <property name="gwt.maxmemory" value="512M" description="maxmemory argument for com.google.gwt.dev.GWTCompiler java task" />
+  <property name="gwt.localWorkers" value="4" description="number of threads to use for running parallel compilation" />
+  <property name="gwt.maxstack" value="1024k" description="vm stack size setting" />
+  <property name="gwt.loglevel" value="INFO" description="The log level for GWT Compile" />
+  <property name="gwt.jsstyle" value="DETAILED" description="Style in which javascript should be generated, options include OBF[uscated], PRETTY, and DETAILED"/>
+  
+  <property name="gwt.server.defaultExcludedFiles" value="**/*.gwt.xml" description="files which should always be excluded when creating binaries" />
+  <property name="gwt.server.excludedFiles" value="**/client/**,**/*.gwt.xml" description="files which should be excluded from server deploy" />
+  <property name="gwt.client.excludedFiles" value="**/server/**,**/mixed/**" description="files which should be excluded from client deploy" />
+  
+  <property name="gwt.resource.local" value="gwt.local" description="local resources of the project" />
+  <property name="gwt.resource.dependency" value="gwt.dependency" description="dependencies of the project defined through the pom" />
+  <property name="gwt.resource.bin" value="gwt.bin" description="the binary web-application resources created by GWT (i.e. the containing folder) of the compiled js" />
+  <property name="gwt.resource.dependendentWebAppRes" value="gwt.dependendentwebappres" description="the dependendent web-application resources" />
+  <property name="gwt.resource.webAppRes" value="gwt.webappres" description="all the packed and wrapped web-application resources" />
+  
+  <property name="gwt.eclipse.useGwtPlugIn" value="false" description="defines if the eclipse project should use the Gwt PlugIn" />
+  <property name="gwt.eclipse.pluginDir" value="gwt" description="the directory used within the eclipse directory for the Gwt PlugIn libraries" />
+  <property name="gwt.eclipse.warDir" value="war" description="the directory to store the war resources" />
+  
+  <!--
+    initialize - do some things that have to be done
+    -->
+  <if>
+    <equals arg1="${gwt.init}" arg2="false" />
+    <then>
+
+      <!-- reset the latest build -->
+      <var name="gwt.binDir" value="" />
+      <var name="gwt.addBinDir" value="" />
+      <var name="gwt.addFullCompiled" value="" />
+      <var name="gwt.addDistribute" value="" />
+      <var name="gwt.buildWebAppResources" value="" />
+            
+      <!-- use the right template directory -->
+      <if>
+        <or>
+          <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="y" />
+          <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="yes" />
+          <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="true" />
+        </or>
+        <then>
+          <echo level="info">Using GWT templates for Eclipse creation</echo>
+          <property name="eclipse.template.dir" location="${library_gwt.basedir}" description="The directory where to find the templates" />
+        </then>
+        <else>
+          <!-- use the default which will be specified by the eclipse library -->
+        </else>
+      </if>
+      
+      <!-- initialization finshed -->
+      <var name="gwt.init" value="true" />
+    </then>
+  </if>
+
+  <!--
+    gwtCleanUp - cleans up after the build process
+                 set attribute 'complete = true' to delete 'bin' as well
+    -->
+  <macrodef name="gwtCleanUp">
+
+    <sequential>
+      
+      <!-- reset the latest builds -->
+      <var name="gwt.binDir" value="" />
+      <var name="gwt.addBinDir" value="" />
+      <var name="gwt.addFullCompiled" value="" />
+      <var name="gwt.addDistribute" value="" />
+      <var name="gwt.buildWebAppResources" value="" />
+    </sequential>
+  </macrodef>
+  
+  <!--
+    gwtRemovePreBuilds - clean up all the pre-builds
+    -->
+  <macrodef name="gwtRemovePreBuilds">
+    <sequential>
+      <delete dir="${build.dir}/${gwt.add.binary.dir}" />
+    </sequential>
+  </macrodef>
+
+  <macrodef name="gwtBuildAdditionals">
+    <sequential>
+    
+      <!-- set the directory -->
+      <var name="gwt.addBinDir" value="${build.dir}/${gwt.add.binary.dir}" />
+      <mkdir dir="${gwt.addBinDir}" />
+      
+      <eclipseResolveDependencies fileset="gwt.tmp.eclipse.dependencies" />
+      <buildBuild dest="${gwt.addBinDir}" cpfileset="gwt.tmp.eclipse.dependencies" addExcludes="${gwt.server.defaultExcludedFiles}" />
+    </sequential>
+  </macrodef>
+
+  <macrodef name="gwtPackAdditionals">
+    <sequential>
+      <!-- make sure we have something to pack -->
+      <if>
+        <or>
+          <not><isset property="gwt.addBinDir"/></not>
+          <equals arg1="${gwt.addBinDir}" arg2="" />
+        </or>
+        <then>
+          <fail>No latest additional GWT build found, the additional GWT build cannot be packed</fail>
+        </then>
+      </if>
+      
+      <!-- get the pom settings -->
+      <mavenSetPom />
+      
+      <!-- set the variables for the addional stuff -->
+      <var name="gwt.addFullCompiled" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}-${maven.attachment.fullcompiled}.jar" />
+      <var name="gwt.addDistribute" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}-${maven.attachment.distribute}.jar" />
+      
+      <!-- get the eclipse additional packed -->
+      <buildPack src="${gwt.addBinDir}" dest="${gwt.addFullCompiled}" addExcludes="${gwt.server.defaultExcludedFiles}" />
+      <buildAppendManifest jar="${gwt.addFullCompiled}" name="Implementation-Title" value="${maven.pom.name} (${maven.attachment.fullcompiled})" />
+      
+      <!-- create the sources -->
+      <jar destfile="${gwt.addDistribute}" basedir="${build.srcdir}" excludes="${gwt.client.excludedFiles}">
+
+        <!-- write the manifest -->
+        <manifest>
+          <attribute name="Built-By" value="${user.name}" />
+          <attribute name="Built-Date" value="${NOW}" />
+          
+          <attribute name="Implementation-Vendor" value="${main.vendor}" />
+          <attribute name="Implementation-Title" value="${maven.pom.name} (${maven.attachment.distribute})" />
+          <attribute name="Implementation-Version" value="${maven.pom.version}" />
+          
+          <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
+        </manifest>
+      </jar>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    gwtBuild - builds the current project to bin
+    -->
+  <macrodef name="gwtBuild">
+    <attribute name="module" default="${gwt.module}" />
+    <attribute name="addPomFile" default="" />
+    
+    <sequential>
+      <!-- make sure we have a module -->
+      <if>
+        <not><equals arg1="@{module}" arg2="" /></not>
+        <then>
+        
+          <!-- get the additional classes -->
+          <if>
+            <equals arg1="@{addPomFile}" arg2="" />
+            <then>
+              <fileset id="gwt.tmp.addCompilerLibs" dir=".">
+                <!-- exclude everything -->
+                <exclude name="**/*" />
+              </fileset>
+            </then>
+            <else>
+              <!-- check if we have a pom to be merged and merge it -->
+              <fileMergeXml file1="${gwt.library.resfile.maven.pomEmpty}" 
+                            file2="@{addPomFile}" 
+                            dest="${build.tmpdir}/merged_pomGWT.xml" 
+                            conf="${gwt.library.resfile.maven.gwtMerge}" />
+              <fileReplaceAllProperties file="${build.tmpdir}/merged_pomGWT.xml" destFile="${build.tmpdir}/merged_pomGWT.xml" />
+            
+              <mavenResolveDependencies fileset="gwt.tmp.addCompilerLibs" 
+                                        pomid="build.tmp.pomAddCompiler" pomfile="${build.tmpdir}/merged_pomGWT.xml" />
+            </else>
+          </if>
+		  
+          <if>
+            <equals arg1="${build.type}" arg2="release" />
+            <then>
+              <var name="gwt.tmp.jsstyle" value="OBF" />
+            </then>
+            <else>
+              <var name="gwt.tmp.jsstyle" value="${gwt.jsstyle}" />
+            </else>
+          </if>
+          
+          <!-- get default dependencies of the GWT compiler -->
+          <mavenResolveDependencies fileset="gwt.tmp.compilerLibs" 
+                                    pomid="gwt.tmp.pomCompiler" pomfile="${gwt.library.resfile.maven.gwtPom}" />
+
+          <!-- set the directory -->
+          <var name="gwt.binDir" value="${build.dir}/${gwt.binary.dir}" />
+          
+          <!-- there is no incremental build... so reset -->
+          <fileCleanUp dir="${gwt.binDir}" />
+
+          <!-- compile the gwt part -->
+          <java classname="com.google.gwt.dev.Compiler" fork="true" failonerror="true" maxmemory="${gwt.maxmemory}">
+            <classpath>
+              <fileset refid="gwt.tmp.compilerLibs" />
+              <fileset refid="gwt.tmp.addCompilerLibs" />
+              
+              <pathelement path="${build.srcdir}" />
+            </classpath>
+            
+            <jvmarg value="-Xss${gwt.maxstack}"/>    	
+            <arg value="-war" />
+            <arg value="${gwt.binDir}" />
+            <arg value="@{module}" />
+            <arg value="-localWorkers" />
+            <arg value="${gwt.localWorkers}" />
+            <arg value="-logLevel" />
+            <arg value="${gwt.loglevel}" />
+            <arg value="-style" />
+            <arg value="${gwt.tmp.jsstyle}" />
+          </java>
+
+          <!-- clean a little -->
+          <delete includeemptydirs="true">
+            <fileset dir="${gwt.binDir}" excludes="${gwt.module}/**/*" />
+          </delete>
+          
+          <!-- move the whole result -->
+          <move todir="${gwt.binDir}">
+            <fileset dir="${gwt.binDir}/${gwt.module}"/>
+          </move>
+          
+          <!-- the name of the script is the name of the created artifact -->
+          <move file="${gwt.binDir}\${gwt.module}.nocache.js" 
+                tofile="${gwt.binDir}\app.nocache.js" />
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    gwtFullTestDependency - sets a fileset with all dependencies needed by this project (on test level)
+    -->
+  <macrodef name="gwtFullTestDependency">
+    <attribute name="addPomFile" default="" />
+    <attribute name="filesetid" default="gwt.dependencies.fullTest" />
+    <attribute name="addBuilds" default="true" />
+    
+    <sequential>
+    
+      <if>
+        <and>
+          <or>
+            <equals arg1="@{addBuilds}" arg2="y" />
+            <equals arg1="@{addBuilds}" arg2="yes" />
+            <equals arg1="@{addBuilds}" arg2="true" />
+          </or>
+          <or>
+            <not><isset property="build.buildFile"/></not>
+            <equals arg1="${build.buildFile}" arg2="" />
+          </or>
+          <or>
+            <not><isset property="gwt.addDistribute"/></not>
+            <equals arg1="${gwt.addDistribute}" arg2="" />
+          </or>
+        </and>
+        <then>
+          <fail>The dependencies for the latest build cannot be resolved, please ensure that the buildServer and buildAdditionals target is executed prior to this.</fail>
+        </then>
+      </if>
+    
+      <!-- get the additional classes -->
+      <if>
+        <equals arg1="@{addPomFile}" arg2="" />
+        <then>
+          <fileset id="gwt.tmp.addLibs" dir=".">
+            <!-- exclude everything -->
+            <exclude name="**/*" />
+          </fileset>
+        </then>
+        <else>
+          <!-- check if we have a pom to be merged and merge it -->
+          <fileMergeXml file1="${gwt.library.resfile.maven.pomEmpty}" 
+                        file2="@{addPomFile}" 
+                        dest="${build.tmpdir}/merged_pomAddGWTLibs.xml" 
+                        conf="${gwt.library.resfile.maven.gwtMerge}" />
+          <fileReplaceAllProperties file="${build.tmpdir}/merged_pomAddGWTLibs.xml" destFile="${build.tmpdir}/merged_pomAddGWTLibs.xml" />
+        
+          <mavenResolveDependencies fileset="gwt.tmp.addLibs" 
+                                    pomid="build.tmp.pomAddLibs" pomfile="${build.tmpdir}/merged_pomAddGWTLibs.xml" scope="test" />
+        </else>
+      </if>
+      
+      <!-- get default dependencies of the GWT compiler -->
+      <mavenResolveDependencies fileset="gwt.tmp.gwtLibs" 
+                                pomid="gwt.tmp.pomGWTLibs" pomfile="${gwt.library.resfile.maven.gwtPom}" scope="test" />
+      <mavenResolveDependencies fileset="gwt.tmp.projectLibs" pomid="gwt.tmp.pomGWTProjectLibs" scope="test" />
+
+      <if>
+        <and>
+          <or>
+            <equals arg1="@{addBuilds}" arg2="y" />
+            <equals arg1="@{addBuilds}" arg2="yes" />
+            <equals arg1="@{addBuilds}" arg2="true" />
+          </or>
+        </and>
+        <then>
+          <path id="gwt.tmp.pathTestDependencies">
+            <fileset refid="gwt.tmp.addLibs" />
+            <fileset refid="gwt.tmp.gwtLibs" />
+            <fileset refid="gwt.tmp.projectLibs" />
+             
+            <!-- add the packs -->
+            <pathelement location="${gwt.addDistribute}" />
+            <pathelement location="${build.buildFile}" />
+          </path>
+        </then>
+        <else>
+          <path id="gwt.tmp.pathTestDependencies">
+            <fileset refid="gwt.tmp.addLibs" />
+            <fileset refid="gwt.tmp.gwtLibs" />
+            <fileset refid="gwt.tmp.projectLibs" />
+          </path>
+        </else>
+      </if>
+      
+      <!-- create a temporary directory which contains all the needed files -->
+      <generateUUID property="gwt.tmp.dependencyFolderName" />
+      <var name="gwt.tmp.dependencyFolder" value="${main.tmpdir}/${gwt.tmp.dependencyFolderName}" />
+      <fileCleanUp dir="${gwt.tmp.dependencyFolder}" recreate="true" />
+      
+      <!-- copy the dependencies -->
+      <copy todir="${gwt.tmp.dependencyFolder}" flatten="true">
+        <path refid="gwt.tmp.pathTestDependencies" />
+      </copy>
+      
+      <!-- convert the fileset -->
+      <fileset dir="${gwt.tmp.dependencyFolder}" id="@{filesetid}" />
+    </sequential>
+  </macrodef>
+  
+  <!--
+    gwtPack - wraps the compiled GWT directory in a jar
+    -->
+  <macrodef name="gwtPack">
+  
+    <sequential>
+         
+      <!-- clear the tmp -->
+      <fileCleanUp dir="${build.tmpdir}" recreate="true" />
+ 
+      <!-- copy the resources files -->
+      <buildMoveResource rootFolder="${build.tmpdir}" resourceFolder="${build.resourcedir}" resource="${build.resourcedir}" resourceType="${gwt.resource.local}" />
+
+      <!-- make sure we have something to pack -->
+      <if>
+        <and>
+          <isset property="gwt.binDir"/>
+          <not><equals arg1="${gwt.binDir}" arg2="" /></not>
+        </and>
+        <then>
+        
+          <!-- copy the gwt compiled files -->
+          <buildMoveResource rootFolder="${build.tmpdir}" resourceFolder="${gwt.binDir}" resource="${gwt.binDir}" resourceType="${gwt.resource.bin}" />
+        </then>
+        <else>
+          <echo level="warn">No GWT build found - therefore only resources will be packed</echo>
+        </else>
+      </if>
+           
+      <!-- resolve the web application dependencies and take all the resources into place for the specified application server -->
+      <gwtWebAppRes rootFolder="${build.tmpdir}" />
+            
+      <!-- get the pom settings -->
+      <mavenSetPom />
+          
+      <!-- set the jar files -->
+      <var name="gwt.buildWebAppResources" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}-${maven.attachment.webappresources}.jar" />
+      
+      <!-- wrap the directory -->
+      <jar destfile="${gwt.buildWebAppResources}" basedir="${build.tmpdir}">
+        
+        <!-- write the manifest -->
+        <manifest>
+          <attribute name="Built-By" value="${user.name}" />
+          <attribute name="Built-Date" value="${NOW}" />
+          
+          <attribute name="Implementation-Vendor" value="${main.vendor}" />
+          <attribute name="Implementation-Title" value="${maven.pom.name} (${maven.attachment.webappresources})" />
+          <attribute name="Implementation-Version" value="${maven.pom.version}" />
+          
+          <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
+        </manifest>
+      </jar>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    gwtWebAppRes - distributes the defined resources
+    -->
+  <macrodef name="gwtWebAppRes">
+    <attribute name="rootFolder" />
+  
+    <sequential>
+      <!-- resolve the web application dependencies and take all the resources into place for the specified application server -->
+      <if>
+        <available file="${basedir}/pomWebApp.xml"/>
+        <then>
+          <fileMergeXml file1="${basedir}/pom.xml" 
+                        file2="${basedir}/pomWebApp.xml" 
+                        dest="${build.tmpdir}/merged_pomGWTWebAppRes.xml" 
+                        conf="${gwt.library.resfile.maven.gwtWebAppMerge}" />
+          <fileReplaceAllProperties file="${build.tmpdir}/merged_pomGWTWebAppRes.xml" destFile="${build.tmpdir}/merged_pomGWTWebAppRes.xml" />
+
+          <!-- resolve the dependencies -->
+          <mavenResolveDependencies fileset="gwt.tmp.webAppRes" pomid="gwt.tmp.pomWebAppRes" pomfile="${build.tmpdir}/merged_pomGWTWebAppRes.xml" />
+
+          <!-- extract the dependencies and place those -->
+          <fileCallMacroForEach macro="buildMoveResource" regExpFilter="^.*\-${maven.attachment.webappresources}.jar$" parameters="resourceType=[[${gwt.resource.dependendentWebAppRes}]];rootFolder=[[@{rootFolder}]]">
+            <fileset refid="gwt.tmp.webAppRes" />
+          </fileCallMacroForEach>
+
+          <!-- remove the pom xml -->
+          <delete file="${build.tmpdir}/merged_pomGWTWebAppRes.xml" />
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    gwtDeployLatestBuild - deployes the latest build to the reponsible repository
+    -->
+  <macrodef name="gwtDeployLatestBuild">
+    <sequential>
+      <if>
+        <or>
+          <not><isset property="gwt.buildWebAppResources"/></not>
+          <equals arg1="${gwt.buildWebAppResources}" arg2="" />
+          <not><isset property="gwt.addFullCompiled"/></not>
+          <equals arg1="${gwt.addFullCompiled}" arg2="" />
+          <not><isset property="gwt.addDistribute"/></not>
+          <equals arg1="${gwt.addDistribute}" arg2="" />
+        </or>
+        <then>
+          <fail>No latest GWT build found, nothing is deployed</fail>
+        </then>
+        <else>
+          <mavenDeployAttachment file="${gwt.buildWebAppResources}" classifier="${maven.attachment.webappresources}" />
+          <mavenDeployAttachment file="${gwt.addFullCompiled}" classifier="${maven.attachment.fullcompiled}" />
+          <mavenDeployAttachment file="${gwt.addDistribute}" classifier="${maven.attachment.distribute}" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    gwtInstallLatestBuild - installes the latest build to the reponsible repository
+    -->
+  <macrodef name="gwtInstallLatestBuild">
+    <sequential>
+      <if>
+        <or>
+          <not><isset property="gwt.buildWebAppResources"/></not>
+          <equals arg1="${gwt.buildWebAppResources}" arg2="" />
+          <not><isset property="gwt.addFullCompiled"/></not>
+          <equals arg1="${gwt.addFullCompiled}" arg2="" />
+          <not><isset property="gwt.addDistribute"/></not>
+          <equals arg1="${gwt.addDistribute}" arg2="" />
+        </or>
+        <then>
+          <fail>No latest GWT build found, nothing is deployed</fail>
+        </then>
+        <else>
+          <mavenInstallAttachment file="${gwt.buildWebAppResources}" classifier="${maven.attachment.webappresources}" />
+          <mavenInstallAttachment file="${gwt.addFullCompiled}" classifier="${maven.attachment.fullcompiled}" />
+          <mavenInstallAttachment file="${gwt.addDistribute}" classifier="${maven.attachment.distribute}" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="gwtAssembly">
+    <attribute name="serverLibraryDir" default="${build.library.dir}" />
+  
+    <sequential>
+    
+      <!-- make sure we have a build -->
+      <if>
+        <or>
+          <not><isset property="gwt.buildWebAppResources"/></not>
+          <equals arg1="${gwt.buildWebAppResources}" arg2="" />
+          <not><isset property="build.buildFile"/></not>
+          <equals arg1="${build.buildFile}" arg2="" />
+        </or>
+        <then>
+          <fail>No latest build found, the application cannot be assembled</fail>
+        </then>
+      </if>
+            
+      <!-- the directory the app should be assembled to -->
+      <var name="build.tmp.appFolder" value="${build.dir}/${build.app.dir}" />
+      <fileCleanUp dir="${build.tmp.appFolder}" recreate="true" />
+      
+      <!-- get the web application folder -->
+      <mavenSetPom />
+      <var name="gwt.tmp.webappFolder" value="${build.tmp.appFolder}/${maven.pom.artifactId}" />
+      <mkdir dir="${gwt.tmp.webappFolder}" />
+
+      <!-- check if we have a special configuration for the application server -->
+      <if>
+        <or>
+          <not><isset property="server.type"/></not>
+          <equals arg1="${server.type}" arg2="" />
+          <not><available file="${basedir}/pom_${server.type}.xml" /></not>
+        </or>
+        <then>
+          <copy file="${basedir}/pom.xml" tofile="${build.tmpdir}/merged_pomAppServer.xml" />
+        </then>
+        <else>
+          <!-- check if we have a pom to be merged and merge it -->
+          <fileMergeXml file1="${basedir}/pom.xml" 
+                        file2="${basedir}/pom_${server.type}.xml" 
+                        dest="${build.tmpdir}/merged_pomAppServer.xml" 
+                        conf="${gwt.library.resfile.maven.gwtMerge}" />
+        </else>
+      </if>
+      
+      <!-- get the dependencies of the application on server-side, based on the specific pom for the application server -->
+      <mavenResolveDependencies fileset="gwt.tmp.serverLibs" scope="runtime" pomid="gwt.tmp.pomAssembly" pomfile="${build.tmpdir}/merged_pomAppServer.xml" />
+
+      <!-- copy the dependent files -->
+      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${gwt.tmp.webappFolder}]];defaultLocation=[[@{serverLibraryDir}]]">
+        <fileset refid="gwt.tmp.serverLibs" />
+      </fileCallMacroForEach>
+      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${gwt.tmp.webappFolder}]];defaultLocation=[[@{serverLibraryDir}]]">
+        <fileset file="${build.buildFile}" />
+      </fileCallMacroForEach>
+
+      <!-- check what to do with the web-application resources -->
+      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${gwt.resource.webAppRes}]];rootFolder=[[${gwt.tmp.webappFolder}]]">
+        <fileset file="${gwt.buildWebAppResources}" />
+      </fileCallMacroForEach>
+      
+      <!-- copy specific resources for the application server
+           data is copied to the root, not the resource directory -->      
+      <if>
+        <and>
+          <isset property="server.type"/>
+          <not><equals arg1="${server.type}" arg2="" /></not>
+          <available file="${server.dir}/${server.type}" />
+        </and>
+        <then>
+          <fileCleanUp dir="${build.tmpdir}/applicationServer" recreate="true" />
+        
+          <!-- copy all files to temporary folder and replace properties -->
+          <copy todir="${build.tmpdir}/applicationServer" failonerror="false">
+            <fileset dir="${server.dir}/${server.type}">
+              <exclude name="config.properties" />
+              <exclude name="override.properties" />
+            </fileset>
+          </copy>
+
+          <!-- replace all properties -->
+          <fileCallMacroForEach macro="gwtReplaceMavenProperties" parameters="resourceType=[[${gwt.resource.dependency}]]">
+            <fileset dir="${build.tmpdir}/applicationServer">
+              <include name="**/*.xml" />
+              <include name="**/*.properties" />
+              <include name="**/*.txt" />
+            </fileset>
+          </fileCallMacroForEach>
+
+          <!-- copy the files -->
+          <copy todir="${gwt.tmp.webappFolder}" failonerror="false">
+            <fileset dir="${build.tmpdir}/applicationServer" />
+          </copy>
+        </then>
+      </if>
+      
+      <!-- set that we have an assembled app -->
+      <var name="build.appDir" value="${build.tmp.appFolder}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="gwtDeployLatestAssembly">    
+    <sequential>
+      <!-- check if we have a special configuration for the application server -->
+      <if>
+        <or>
+          <not><isset property="server.type"/></not>
+          <equals arg1="${server.type}" arg2="" />
+        </or>
+        <then>
+          <buildDeployLatestAssembly />
+        </then>
+        <else>
+          <buildDeployLatestAssembly classifier="${server.type}" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="gwtReplaceMavenProperties">
+    <attribute name="resourceFolder" />
+    <attribute name="resourceFileName" default="" />
+    <attribute name="resource" />
+    <attribute name="resourceType" />
+    
+    <sequential>
+      <!-- get maven settings -->
+      <mavenSetPom />
+    
+      <!-- get the new location -->
+      <fileReplaceAllProperties file="@{resource}" destFile="@{resource}" />
+    </sequential>
+  </macrodef>
+  
+  <!--
+    targets defined by this library
+    -->
+  <!-- build server and client -->
+  <target name="build" depends="buildAdditionals, buildServer, buildClient" />
+  
+  <target name="buildAdditionals">
+    <gwtBuildAdditionals />
+    <gwtPackAdditionals />
+  </target>
+  
+  <!-- build the server jar -->
+  <target name="buildServer">
+    <buildBuild addExcludes="${gwt.server.defaultExcludedFiles},${gwt.server.excludedFiles}" />
+    <buildPack addExcludes="${gwt.server.defaultExcludedFiles},${gwt.server.excludedFiles}" />
+  </target>
+  
+  <!-- build the client jar -->
+  <target name="buildClient">
+    <gwtBuild module="${gwt.module}" addPomFile="${basedir}/pomGWT.xml" />
+    <gwtPack />
+  </target>
+      
+  <target name="install" depends="build, javadoc, sources">
+    <buildInstallLatestBuild />
+    <gwtInstallLatestBuild />
+  </target>
+  
+  <target name="deploy" depends="build, javadoc, sources">
+    <buildDeployLatestBuild />
+    <gwtDeployLatestBuild />
+  </target>
+  
+  <target name="javadoc">
+    <!-- add the eclipse specific classes -->
+    <eclipseResolveDependencies fileset="gwt.tmp.addClassPath" />
+    <buildJavaDoc addClassPathFileSet="gwt.tmp.addClassPath" />
+    <buildPackJavaDoc />
+  </target>
+  
+  <target name="assemble" depends="buildServer,buildClient">
+    <gwtAssembly />
+    <buildZip />
+  </target>
+  
+  <target name="distribute" depends="assemble">
+    <mavenSetPom />
+    <fileCleanUp dir="${gwt.server.dir}/${maven.pom.artifactId}" recreate="false" />
+    <unzip src="${build.appFile}" dest="${gwt.server.dir}" />
+  </target>
+
+  <!-- target to distribute to a TomCat server and start it -->
+  <target name="setUpTomCat" depends="serverUseTomCat, distribute, serverStart" />
+  
+  <!-- target to distribute to a GS BIS Server and start it -->
+  <target name="setUpBisServer" depends="serverUseBisServer, distribute, serverStart" />
+  
+  <target name="cleanUp">
+    <mavenCleanUp />
+    <buildCleanUp />
+    <gwtCleanUp />
+  </target>
+  
+  <target name="removePreBuilds">
+    <gwtRemovePreBuilds />
+    <buildRemovePreBuilds />
+  </target>
+
+  <target name="test" depends="buildServer, buildAdditionals">
+    <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" />
+    
+    <!-- we cannot exclude the excludeSourcePattern="${gwt.client.excludedFiles}", because 
+         otherwise the AllTest could not be compiled -->
+    <testTest classPathFileSetId="gwt.tmp.fullTestDependencies" includeSources="true" 
+              excludeCompilePattern="${gwt.server.excludedFiles}" />
+  </target>
+  
+  <target name="createDevEnv" depends="setupEclipseEnv,copyGwtPlugInLibs,copyGwtPlugInSettings,setupGwtWarPlugInDirectory" />
+  
+  <target name="deployAssembly" depends="deploy, assemble">
+    <gwtDeployLatestAssembly />
+  </target>
+  
+  <target name="setupEclipseEnv">
+    <eclipseCreateDirectories />
+    <eclipseCreateProject template="${gwt.library.resfile.template.project}" />
+    
+    <!-- get the full test dependencies -->
+    <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" addBuilds="false" />
+    <eclipseCreateClassPath addDependencies="gwt.tmp.fullTestDependencies" template="${gwt.library.resfile.template.classpath}" />
+  </target>
+  
+  <target name="copyGwtPlugInLibs" depends="setupEclipseEnv">
+  
+    <if>
+      <or>
+        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="y" />
+        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="yes" />
+        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="true" />
+      </or>
+      <then>
+        <mavenResolveDependencies fileset="gwt.tmp.pluginLibs" 
+                                  pomid="gwt.tmp.pomPlugin" pomfile="${gwt.library.resfile.maven.gwtPlugInPom}" />
+
+        <trycatch property="gwt.tmp.error" reference="gwt.tmp.errReference">
+          <try>
+            <fileCleanUp dir="${eclipse.dir}/${gwt.eclipse.pluginDir}" />
+            <copy todir="${eclipse.dir}/${gwt.eclipse.pluginDir}" flatten="true">
+              <fileset refid="gwt.tmp.pluginLibs" />
+              <chainedmapper>
+                <flattenmapper/>
+                <firstmatchmapper>
+                  <regexpmapper from="^gwt\-user.*\.jar$" to="gwt-user.jar"/>
+                  <regexpmapper from="^gwt\-dev.*\.jar$" to="gwt-dev.jar"/>
+                  <regexpmapper from="^gwt\-servlet.*\.jar$" to="gwt-servlet.jar"/>
+                  <regexpmapper from="^(.*)$" to="\1"/>
+                </firstmatchmapper>
+              </chainedmapper>
+            </copy>
+          </try>
+          <catch><echo level="warn">The GWT libraries of the project could not be placed at ${eclipse.dir}/${gwt.eclipse.pluginDir}. Please make sure that the GWT PlugIn used in this project uses the correct GWT version ${gwt.version}</echo></catch>
+          <finally />
+        </trycatch>
+      </then>
+    </if>
+  </target>
+  
+  <target name="copyGwtPlugInSettings" depends="setupEclipseEnv">
+  
+    <if>
+      <or>
+        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="y" />
+        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="yes" />
+        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="true" />
+      </or>
+      <then>
+        
+        <var name="gwt.tmp.settingsDir" value="${basedir}/${eclipse.settings.dir}" />
+      
+        <if>
+          <not><available file="${gwt.tmp.settingsDir}/com.google.gdt.eclipse.core.prefs"/></not>
+          <then>
+            <fileReplaceAllProperties file="${gwt.library.resfile.template.plugin}" destFile="${gwt.tmp.settingsDir}/com.google.gdt.eclipse.core.prefs" />
+          </then>
+        </if>
+        
+      </then>
+    </if>
+  </target>
+  
+  <target name="setupGwtWarPlugInDirectory" depends="setupEclipseEnv,copyGwtPlugInLibs">
+  
+    <if>
+      <or>
+        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="y" />
+        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="yes" />
+        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="true" />
+      </or>
+      <then>
+        
+        <mavenSetPom />
+        
+        <var name="gwt.tmp.warDir" value="${eclipse.dir}/${gwt.eclipse.warDir}" />
+        <var name="gwt.tmp.webInfDir" value="${gwt.tmp.warDir}/WEB-INF" />
+        <var name="gwt.tmp.webInfLibDir" value="${gwt.tmp.webInfDir}/lib" />
+        
+        <mkdir dir="${gwt.tmp.warDir}" />
+        <mkdir dir="${gwt.tmp.webInfDir}" />
+        <mkdir dir="${gwt.tmp.webInfLibDir}" />
+        
+        <!-- check if the file exists, if so we won't replace -->
+        <if>
+          <not><available file="${gwt.tmp.webInfDir}/web.xml"/></not>
+          <then>
+            <fileReplaceAllProperties file="${gwt.library.resfile.template.webXml}" destFile="${gwt.tmp.webInfDir}/web.xml" />
+          </then>
+        </if>
+        
+        <!-- check if the file exists, if so we won't replace -->
+        <if>
+          <not><available file="${gwt.tmp.warDir}/index.html"/></not>
+          <then>
+            <fileReplaceAllProperties file="${gwt.library.resfile.template.index}" destFile="${gwt.tmp.warDir}/index.html" />
+          </then>
+        </if>
+        
+        <!-- copy the servlet.jar to the library of the war -->
+        <fileCleanUp dir="${gwt.tmp.webInfLibDir}" />
+        <copy file="${eclipse.dir}/${gwt.eclipse.pluginDir}/gwt-servlet.jar" todir="${gwt.tmp.webInfLibDir}" />
+        
+        <!-- copy compile dependencies -->        
+        <mavenResolveDependencies fileset="gwt.tmp.pluginCompileDep" scope="compile" />
+        <copy todir="${gwt.tmp.webInfLibDir}">
+          <fileset refid="gwt.tmp.pluginCompileDep" />
+          <chainedmapper>
+            <flattenmapper/>
+            <firstmatchmapper>
+              <regexpmapper from="^gwt\-servlet.*\.jar$" to="gwt-servlet.jar"/>
+              <regexpmapper from="^(.*)$" to="\1"/>
+            </firstmatchmapper>
+          </chainedmapper>
+        </copy>
+        
+        <!-- copy the resources files -->
+        <buildMoveResource rootFolder="${gwt.tmp.warDir}" resourceFolder="${build.resourcedir}" resource="${build.resourcedir}" resourceType="${gwt.resource.local}" />
+        
+        <!-- get the data of the web-application -->
+        <gwtWebAppRes rootFolder="${gwt.tmp.warDir}" />        
+      </then>
+    </if>
+  </target>
+</project>
