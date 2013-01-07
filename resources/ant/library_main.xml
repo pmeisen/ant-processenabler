@@ -19,8 +19,9 @@
   <!-- files used by the script -->
   <property name="main.config.project.user" location="${basedir}/override.properties" />
   <property name="main.config.project" location="${basedir}/config.properties" />
-  <property name="main.config.default" location="${main.config.location}/config.properties" />
-  <property name="main.library.script" location="${main.config.location}/scriptconfig.properties" />
+  <property name="main.config.default" location="${main.root}/ant/general.properties" />
+  <property name="main.config.user.default" location="${main.config.location}/config.properties" />
+  <property name="main.config.general.default" location="${main.config.location}/scriptconfig.properties" />
   <property name="main.library.resfile.build.example" location="${main.root}/build.xml" />
   <property name="main.library.resfile.config.example" location="${main.root}/ant/config.properties.example" />
   <property name="main.library.resfile.config.script.example" location="${main.root}/ant/scriptconfig.properties.example" />
@@ -39,13 +40,17 @@
     -->
   <property file="${main.config.project}" />
   <!--
-    Load the user properties for the main library which might be specified
+    Load the properties for the main library which might be specified
     -->
   <property file="${main.config.default}" />
   <!--
     Load the user properties for the main library which might be specified
     -->
-  <property file="${main.library.script}" />
+  <property file="${main.config.user.default}" />
+  <!--
+    Load the general properties for the main library which might be specified
+    -->
+  <property file="${main.config.general.default}" />
     
   <!--
     set some properties which are globally of interest and can be used by all libraries
