@@ -6,7 +6,7 @@
   <property name="main.addExtensionsByDefault" value="true" />
 
   <!-- get the process enabler -->
-  <import file="ant\library_main.xml" />
+  <import file="${ant.home}\resources\ant\library_main.xml" />
   
   <target name="test">
     <echo>${ant.home}</echo>

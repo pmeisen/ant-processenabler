@@ -2,19 +2,42 @@
 
 <project name="ant-processenabler" default="default">
 
-  <!-- add all extensions -->
-  <property name="main.addExtensionsByDefault" value="true" />
+  <!-- skip svn, but add all extensions -->
+  <property name="main.import.library.svn" value="false" />
+  <property name="main.addExtensionsByDefault" value="false" />
 
-  <import file=".\ant\library_main.xml" />
+  <!-- get the process enabler -->
+  <import file="resources\ant\library_main.xml" />
   
-  <!-- just a helper to execute cleanUp as well -->
-  <target name="default" depends="wrapUp,cleanUp">
-    <fileCleanUp dir="${build.dir}" recreate="false" />
-    <fileCleanUp dir="${test.dir}" recreate="false" />
-  </target>
-  
-  <target name="help" depends="versions,folders,cleanUp">
-    <fileCleanUp dir="${build.dir}" recreate="false" />
-    <fileCleanUp dir="${test.dir}" recreate="false" />
-  </target>
+  <macrodef name="resourceMapper">
+    <attribute name="resourceFolder" />
+    <attribute name="resourceFileName" />
+    <attribute name="resource" />
+    <attribute name="resourceType" />
+    
+    <sequential>
+      <if>
+        <!-- Make sure the ant lib is named like that, i.e. without version.
+             This is important because the ant.bat is looking for the file.  -->
+        <and>
+          <equals arg1="@{resourceType}" arg2="${build.resource.dependency}" />
+          <matches pattern=".*org[\\/]apache[\\/]ant[\\/].*[\\/]ant-(\d+\.)*\d+" string="@{resource}"/>
+        </and>
+        <then>
+          <var name="resMapper.rename" value="ant.jar" />
+        </then>
+        <!-- Make sure the ant-launcher lib is named like that, i.e. without version.
+             This is important because the ant.bat is looking for the file.  -->
+        <elseif>
+          <and>
+            <equals arg1="@{resourceType}" arg2="${build.resource.dependency}" />
+            <matches pattern=".*org[\\/]apache[\\/]ant[\\/].*[\\/]ant-launcher-(\d+\.)*\d+" string="@{resource}"/>
+          </and>
+          <then>
+            <var name="resMapper.rename" value="ant-launcher.jar" />
+          </then>
+        </elseif>
+      </if>
+    </sequential>
+  </macrodef>
 </project>

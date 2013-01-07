@@ -6,27 +6,138 @@
   <!-- project settings -->
   <groupId>net.meisen.tools</groupId>
   <artifactId>ant-processenabler</artifactId>
-  <version>UNKNOWN</version>
+  <version>1.0.0</version>
   <name>ant-processenabler</name>
   <description>Defines processes like build, release, assemble to be used with ant</description>
   <packaging>jar</packaging>
 
+  <properties>
+    <project.ant.version>1.8.4</project.ant.version>
+  </properties>
+  
   <!-- the projects dependencies -->
   <dependencies>
     
-    <!-- ant itself -->
+    <!-- ant itself and all the dependencies which are packed with ant when delivered as binary -->
     <dependency>
       <groupId>org.apache.ant</groupId>
       <artifactId>ant</artifactId>
-      <version>1.8.4</version>
+      <version>${project.ant.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-junit4</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-apache-bsf</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>rhino</groupId>
+      <artifactId>js</artifactId>
+      <version>1.7R2</version>
+    </dependency>
+    <!--
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-antlr</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-apache-bcel</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-apache-log4j</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-apache-oro</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-apache-regexp</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-apache-resolver</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-apache-xalan2</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-commons-logging</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-commons-net</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-jai</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-javamail</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-jdepend</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-jmf</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-jsch</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-junit</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-netrexx</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-swing</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-testutil</artifactId>
+      <version>${project.ant.version}</version>
+    </dependency>
+    -->
     
     <!-- ant-contrib -->
     <dependency>
       <groupId>ant-contrib</groupId>
       <artifactId>ant-contrib</artifactId>
       <version>1.0b3</version>
-      
+
       <!-- somehow the dependencies are incorrect in maven central, so we
            exclude those here and define the needed dependencies by ourself  
            see: http://sourceforge.net/projects/ant-contrib/files/ant-contrib/1.0b3/ant-contrib-1.0b3-bin.zip
@@ -39,11 +150,47 @@
       </exclusions>
     </dependency>
   
-    <!-- XmlMerge Module, enables ant to merge xml-files -->
+    <!-- XmlMerge Module, enables ant to merge xml-files 
+         you can find it in the following repository
+         http://public-el4.elca-services.ch/el4j/maven2repository
+      -->
     <dependency>
       <groupId>ch.elca.el4j.modules</groupId>
       <artifactId>module-xml_merge-common</artifactId>
       <version>3.1</version>
+      
+      <exclusions>
+        <!-- the core module is not needed for the part of the xmlMerge which is used -->
+        <exclusion>
+          <groupId>ch.elca.el4j.modules</groupId>
+          <artifactId>module-core</artifactId>
+        </exclusion>
+        <!-- xerces leads to problems with ant "java.lang.NoSuchFieldError: fFeatures" error -->
+        <exclusion>
+          <groupId>xerces</groupId>
+          <artifactId>xercesImpl</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!-- this dependency is needed by the xmlMerge module but is excluded by the module-core -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.7.2</version>
+    </dependency>
+    
+    <!-- add the SVNKit -->
+    <dependency>
+      <groupId>org.tmatesoft.svnkit</groupId>
+      <artifactId>svnkit</artifactId>
+      <version>1.7.6</version>
+    </dependency>
+    
+    <!-- add the Maven Task -->
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-ant-tasks</artifactId>
+      <version>2.1.3</version>
     </dependency>
   </dependencies>
 </project>

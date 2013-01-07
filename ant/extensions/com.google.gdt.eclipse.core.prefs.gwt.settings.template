@@ -1,5 +1,0 @@
-eclipse.preferences.version=1
-jarsExcludedFromWebInfLib=
-lastWarOutDir=
-warSrcDir=${eclipse.eclipse.dir}/${gwt.eclipse.warDir}
-warSrcDirIsOutput=true
