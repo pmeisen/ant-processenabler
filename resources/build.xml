@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="ant-processenabler" default="default">
+
+  <!-- skip svn, but add all extensions -->
+  <property name="main.addExtensionsByDefault" value="true" />
+
+  <!-- get the process enabler -->
+  <import file="ant\library_main.xml" />
+  
+  <target name="test">
+    <echo>${ant.home}</echo>
+    <echo>${ant.file.library_main}</echo>
+    
+    <echoproperties/>
+  </target>
+  
+  <!-- just a helper to execute cleanUp as well -->
+  <target name="default" depends="wrapUp,cleanUp">
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+  
+  <target name="help" depends="versions,folders,cleanUp">
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

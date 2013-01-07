@@ -1,0 +1,1314 @@
+<!--
+  Library which adds some macros and targets for build operations
+  
+  Created on: 01.03.2012
+  Created by: Philipp Meisen <philipp@meisen.net>
+  History:
+    01.03.2012
+      - Creation of library
+  -->
+<project name="library_build">
+  <property name="build.library.version" value="2.1.0" description="The current version of the library" />
+  <dirname property="library_build.basedir" file="${ant.file.library_build}"/>
+  
+  <property name="build.library.resfile.template.launcher" location="${main.root}/app/templateLauncher.properties" />
+  <property name="build.library.resfile.template.startBatch" location="${main.root}/app/templateStart.bat" />
+  <property name="build.library.resfile.maven.pomLauncher" location="${main.root}/app/pomLauncher.xml" />
+    
+  <property name="build.javac.source" value="1.6" description="Provide source compatibility with specified release" />
+  <property name="build.javac.target" value="1.6" description="Generate class files for specific VM version" />
+  <property name="build.debug" value="true" description="Indicates whether source should be compiled with debug information, will be ignored if a none-snapshot will be build" />
+  
+  <property name="build.resources.dir" value="resources" description="Project resources directory" />
+  <property name="build.library.dir" value="lib" description="Project library directory" />
+  <property name="build.binary.dir" value="bin" description="Project binary directory" />
+  <property name="build.javadoc.dir" value="javadoc" description="Project javadoc directory" />
+  <property name="build.app.dir" value="app" description="Build directory for appliactions" />
+  <property name="build.source.dir" value="src" description="Project source code directory" />
+  <property name="build.build.dir" value="_build" description="Project build directory directory" />
+  <property name="build.dir" location="${build.build.dir}" description="Project build directory (full path)" />
+  <property name="build.tmpdir" location="${build.dir}/tmp" description="Project temporary code directory (full path)" />
+  <property name="build.srcdir" location="${basedir}/${build.source.dir}" description="Project source code directory (full path)" />
+  <property name="build.resourcedir" location="${basedir}/${build.resources.dir}" description="Project source code directory (full path)" />
+  
+  <property name="build.package.excludes" value="" description="Defines the packages which are excluded when building, excluded packages will still be added to the sources" />
+  <property name="build.applications.groupId" value="" description="The groupId used by applications (assemblies)" />
+    
+  <property name="build.launcher.create" value="true" description="Defines if a launcher should be created" />
+  <property name="build.launcher.mainClass" value="" description="The main class started by the launcher" />
+  <property name="build.launcher.groupId" value="" description="The launcher groupId to be used" />
+  <property name="build.launcher.artifactId" value="launcher" description="The launcher artifactId to be used" />
+  <property name="build.launcher.version" value="1.1" description="The launcher version to be used" />
+  <property name="build.launcher.cmdLineArgs" value="" description="additional command line arguments for the launcher" />
+  <property name="build.launcher.jvmArgs" value="" description="additional JVM arguments for the launcher" />
+  <property name="build.launcher.maxPermSize" value="256m" description="the maxPermSize value to be used by the launcher" />
+  <property name="build.launcher.xmx" value="512M" description="The Xmx value to be used by the launcher" />
+  <property name="build.launcher.resourcesDir" value="" description="the list of resource directories used by the launcher, the default resource dir (i.e. ${build.resources.dir}) will be appended" />
+  <property name="build.launcher.libraryDir" value="" description="the list of libhrary directories used by the launcher, the default library dir (i.e. ${build.library.dir}) will be appended" />
+  
+  <property name="build.startbatch.filename" value="start.bat" description="Name of the file used to start the application" />
+  <property name="build.startbatch.create" value="true" description="Defines if a start batch file should be created, this property is always true if a launcher is created (i.e. if build.launcher.create is true, this setting is ignored)" />
+  
+  <property name="build.assembly.create" value="false" description="set this attribute to true to create an assembly of the project" />
+  
+  <property name="build.init" value="false" description="For internal usage only, please do not modify this property by a file" />
+  
+  <property name="build.resource.dependency" value="build.dependency" description="The resource type of a dependency" />
+  <property name="build.resource.resource" value="build.resource" description="The resource type of a resource" />
+            
+  <!--
+    add the antcontrib library
+    -->
+  <taskdef resource="net/sf/antcontrib/antlib.xml" />
+
+  <!--
+    initialize - do some things that have to be done
+    -->
+  <if>
+    <equals arg1="${build.init}" arg2="false" />
+    <then>
+
+      <!-- create the repository directory -->
+      <mkdir dir="${build.dir}" />
+      <mkdir dir="${build.tmpdir}" />
+
+      <!-- reset the latest build -->
+      <var name="build.appFile" value="" />
+      <var name="build.appDir" value="" />
+      <var name="build.binDir" value="" />
+      <var name="build.javadocDir" value="" />
+      <var name="build.buildFile" value="" />
+      <var name="build.buildSrcFile" value="" />
+      <var name="build.buildJavaDocFile" value="" />
+      
+      <!-- define if we build a snapshot or a release:
+           - only the explicit call of an release target can enable release 
+        -->
+      <checkTarget property="build.tmp.releaseTarget" target="release" />
+      <if>
+        <equals arg1="${build.tmp.releaseTarget}" arg2="true" />
+        <then>
+          <echo level="info">The build is performed as RELEASE build</echo>
+          <var name="build.type" value="release" />
+        </then>
+        <else>
+          <echo level="info">The build is performed as SNAPSHOT build</echo>
+          <var name="build.type" value="snapshot" />
+        </else>
+      </if>
+      
+      <!-- initialization finshed -->
+      <var name="build.init" value="true" />
+    </then>
+  </if>
+  
+  <!--
+    buildRemovePreBuilds - clean up all the pre-builds
+    -->
+  <macrodef name="buildRemovePreBuilds">
+    <sequential>
+      <delete dir="${build.dir}/${build.binary.dir}" />
+    </sequential>
+  </macrodef>
+  
+  <!--
+    buildCleanUp - cleans up after the build process
+                   set attribute 'complete = true' to delete 'bin' as well
+    -->
+  <macrodef name="buildCleanUp">
+    <attribute name="complete" default="false" />
+
+    <sequential>
+      <if>
+        <or>
+          <equals arg1="@{complete}" arg2="y" />
+          <equals arg1="@{complete}" arg2="yes" />
+          <equals arg1="@{complete}" arg2="true" />
+        </or>
+        <then>
+          <buildRemovePreBuilds />
+        </then>
+      </if>
+      
+      <delete dir="${build.tmpdir}" />
+      
+      <!-- reset the latest builds -->
+      <var name="build.buildFile" value="" />
+      <var name="build.appFile" value="" />
+      <var name="build.appDir" value="" />
+      <var name="build.binDir" value="" />
+      <var name="build.javadocDir" value="" />
+      <var name="build.buildSrcFile" value="" />
+      <var name="build.buildJavaDocFile" value="" />  
+    </sequential>
+  </macrodef>
+    
+  <!--
+    buildBuild - builds the current project to dest, if not set to bin
+                 Note: 
+                 if dest is not set, the build will be the default build which can be packed and installed
+    -->
+  <macrodef name="buildBuild">
+    <attribute name="addExcludes" default="" />
+    <attribute name="dest" default="" />
+    <attribute name="cpfileset" default="" />
+    
+    <sequential>
+      <!-- 
+        check if a destination or classpath is defined, 
+        if so the build won't be the latest build 
+        -->
+      <if>
+        <and>
+          <equals arg1="@{dest}" arg2="" />
+          <equals arg1="@{cpfileset}" arg2="" />
+        </and>
+        <then>
+          <var name="build.tmp.binDir" value="${build.dir}/${build.binary.dir}" />
+          <var name="build.binDir" value="${build.tmp.binDir}" />
+ 
+          <!-- get the dependencies for this build -->
+          <mavenResolveDependencies fileset="build.tmp.classpath" scope="compile" />
+          <var name="build.tmp.refid" value="build.tmp.classpath" />
+        </then>
+        <else>
+          <var name="build.tmp.binDir" value="@{dest}" />
+          <var name="build.tmp.refid" value="@{cpfileset}" />
+        </else>
+      </if>
+      
+      <!-- check if we build a debug version -->
+      <if>
+        <equals arg1="${build.type}" arg2="release" />
+        <then>
+          <var name="build.tmp.debug" value="false" />
+        </then>
+        <else>
+          <var name="build.tmp.debug" value="${build.debug}" />
+        </else>
+      </if>
+
+      <!-- set the directory -->
+      <mkdir dir="${build.tmp.binDir}" />
+      
+      <!-- compile the project -->
+      <transformPackagesToPath property="build.tmp.srcExcludes" 
+                               packages="${build.package.excludes}" suffix="/**" packageSeparatore="/" separatore="," />
+      <javac sourcepath="" srcdir="${build.srcdir}" destdir="${build.tmp.binDir}" debug="${build.tmp.debug}" deprecation="true"
+             includes="**/*.java" excludes="${build.tmp.srcExcludes},@{addExcludes}"
+             includeantruntime="false" source="${build.javac.source}" target="${build.javac.target}">
+        <classpath>
+          <fileset refid="${build.tmp.refid}" />
+        </classpath>
+        <compilerarg value="-Xlint:unchecked"/>
+      </javac>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="buildJavaDoc">
+    <attribute name="addClassPathFileSet" default="" />
+    <attribute name="addExcludes" default="" />
+  
+    <sequential>
+      <if>
+        <equals arg1="@{addClassPathFileSet}" arg2="" />
+        <then>
+          <fileset id="build.tmp.addClasspath" dir=".">
+            <include name="this.file.should.never.exist"/> 
+          </fileset>
+          <var name="build.tmp.addClasspath" value="build.tmp.addClasspath" />
+        </then>
+        <else>
+          <var name="build.tmp.addClasspath" value="@{addClassPathFileSet}" />
+        </else>
+      </if>
+       
+      <!-- set the directory -->
+      <var name="build.javadocDir" value="${build.dir}/${build.javadoc.dir}" />
+      <fileCleanUp dir="${build.javadocDir}" />
+            
+      <!-- check if there are sources -->
+      <fileset dir="${build.srcdir}" id="build.tmp.sourceFileSet">
+        <include name="**/*.java"/> 
+      </fileset>
+      <pathconvert refid="build.tmp.sourceFileSet" property="build.tmp.sourcesSize" setonempty="false"/>
+      
+      <if>
+        <isset property="build.tmp.sourcesSize" />
+        <then>
+          <!-- get the dependencies for this build -->
+          <mavenResolveDependencies fileset="build.tmp.classpath" scope="compile" />
+        
+          <!-- create the javadoc -->
+          <transformPackagesToPath property="build.tmp.srcExcludes" 
+                                   packages="${build.package.excludes}" suffix=".*" packageSeparatore="." separatore="," />
+          <proxySetJavaArgsProperty property="build.tmp.argsProxy" argsPrefix="-J" />
+          
+          <javadoc packagenames="*"
+                   sourcepath="${build.srcdir}"
+                   defaultexcludes="yes"
+                   excludepackagenames="${build.tmp.srcExcludes}"
+                   destdir="${build.javadocDir}"
+                   author="true"
+                   version="true"
+                   use="true"
+                   verbose="false"
+                   windowtitle="${maven.pom.name} ${maven.pom.version}"
+                   additionalparam="${build.tmp.argsProxy}" >
+            <doctitle><![CDATA[<h1>${maven.pom.name} ${maven.pom.version}</h1>]]></doctitle>
+            <bottom><![CDATA[<i>Copyright &#169; ${NOW} ${main.vendor} - All Rights Reserved.</i>]]></bottom>
+            <classpath>
+              <fileset refid="build.tmp.classpath" />
+              <fileset refid="${build.tmp.addClasspath}" />
+            </classpath>
+            
+            <link href="http://download.oracle.com/javase/6/docs/api/" />
+            <link href="http://google-web-toolkit.googlecode.com/svn/javadoc/2.0/" />
+            <link href="http://javadoc.pentaho.com/reporting/pentaho-reporting-engine-classic-core/" />
+          </javadoc>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    buildPack - wraps the bin directory in build in a jar
+    -->
+  <macrodef name="buildPack">
+    <attribute name="addExcludes" default="" />
+    <attribute name="src" default="" />
+    <attribute name="dest" default="" />
+    
+    <sequential>
+
+      <!-- make sure we have something to pack -->
+      <if>
+        <and>
+          <equals arg1="@{src}" arg2="" />
+          <equals arg1="${build.binDir}" arg2="" />
+          <not><isset property="build.binDir" /></not>
+        </and>
+        <then>
+          <fail>No latest binaries found, the classes cannot be packed</fail>
+        </then>
+        <elseif>
+          <equals arg1="@{src}" arg2="" />
+          <then>
+            <var name="build.tmp.src" value="${build.binDir}" />
+          </then>
+        </elseif>
+        <else>
+          <var name="build.tmp.src" value="@{src}" />
+        </else>
+      </if>
+    
+      <!-- get the name -->
+      <if>
+        <and>
+          <equals arg1="${build.tmp.src}" arg2="${build.binDir}" />
+          <equals arg1="@{dest}" arg2="" />
+        </and>
+        <then>
+
+          <!-- get the pom settings -->
+          <mavenSetPom />
+          
+          <var name="build.tmp.buildFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}.jar" />
+          <var name="build.buildFile" value="${build.tmp.buildFile}" />
+        </then>
+        <else>
+          <var name="build.tmp.buildFile" value="@{dest}" />
+        </else>
+      </if>
+
+      <!-- check the files which are forced to be included -->
+      <transformPackagesToPath property="build.tmp.includeSources" 
+                               packages="${build.package.includeSources}" suffix="/**" packageSeparatore="/" separatore="," />
+      
+      <!-- wrap the bin directory -->
+      <transformPackagesToPath property="build.tmp.srcExcludes" 
+                               packages="${build.package.excludes}" suffix="/**" packageSeparatore="/" separatore="," />
+      <jar destfile="${build.tmp.buildFile}" basedir="${build.tmp.src}">
+      
+        <!-- add the resources -->
+        <fileset dir="${build.srcdir}" excludes="**/*.java,${build.tmp.srcExcludes},@{addExcludes}" />
+        <fileset dir="${build.srcdir}" includes="${build.tmp.includeSources}" />
+        
+        <!-- write the manifest -->
+        <manifest>
+          <attribute name="Built-By" value="${user.name}" />
+          <attribute name="Built-Date" value="${NOW}" />
+          
+          <attribute name="Implementation-Vendor" value="${main.vendor}" />
+          <attribute name="Implementation-Title" value="${maven.pom.name}" />
+          <attribute name="Implementation-Version" value="${maven.pom.version}" />
+          
+          <attribute name="SVN-Revision" value="${svn.info.lastRev}" />          
+        </manifest>
+      </jar>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    buildPackSource - wraps the src directory in a jar
+    -->
+  <macrodef name="buildPackSource">
+    <attribute name="excludesPattern" default="" />
+    
+    <sequential>
+    
+      <!-- get the pom settings -->
+      <mavenSetPom />
+    
+      <!-- set the jar files -->
+      <var name="build.buildSrcFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}-${maven.attachment.sources}.jar" />
+      
+      <!-- wrap the src directory -->
+      <jar destfile="${build.buildSrcFile}" basedir="${build.srcdir}">
+
+        <!-- write the manifest -->
+        <manifest>
+          <attribute name="Built-By" value="${user.name}" />
+          <attribute name="Built-Date" value="${NOW}" />
+          
+          <attribute name="Implementation-Vendor" value="${main.vendor}" />
+          <attribute name="Implementation-Title" value="${maven.pom.name} (${maven.attachment.sources})" />
+          <attribute name="Implementation-Version" value="${maven.pom.version}" />
+          
+          <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
+        </manifest>
+      </jar>
+
+    </sequential>
+  </macrodef>
+  
+  <!--
+    buildPackJavaDoc - wraps the JavaDoc directory in a jar
+    -->
+  <macrodef name="buildPackJavaDoc">   
+    <sequential>
+      <!-- make sure we have something to pack -->
+      <if>
+        <or>
+          <not><isset property="build.javadocDir"/></not>
+          <equals arg1="${build.javadocDir}" arg2="" />
+        </or>
+        <then>
+          <fail>No latest JavaDoc found, the JavaDoc cannot be packed</fail>
+        </then>
+      </if>
+    
+      <!-- get the pom settings -->
+      <mavenSetPom />
+    
+      <!-- set the jar files -->
+      <var name="build.buildJavaDocFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}-${maven.attachment.javadoc}.jar" />
+      
+      <!-- wrap the javadoc directory -->
+      <jar destfile="${build.buildJavaDocFile}" basedir="${build.javadocDir}">
+        
+        <!-- write the manifest -->
+        <manifest>
+          <attribute name="Built-By" value="${user.name}" />
+          <attribute name="Built-Date" value="${NOW}" />
+          
+          <attribute name="Implementation-Vendor" value="${main.vendor}" />
+          <attribute name="Implementation-Title" value="${maven.pom.name} (${maven.attachment.javadoc})" />
+          <attribute name="Implementation-Version" value="${maven.pom.version}" />
+          
+          <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
+        </manifest>
+      </jar>
+
+    </sequential>
+  </macrodef>
+    
+  <macrodef name="buildAppendManifest">
+    <attribute name="jar" default="" />
+    <attribute name="name" />
+    <attribute name="value" />
+    
+    <sequential>
+      <if>
+        <equals arg1="@{jar}" arg2="" />
+        <then>
+        
+          <!-- check the buildFile, before its used -->
+          <if>
+            <or>
+              <not><isset property="build.buildFile"/></not>
+              <equals arg1="${build.buildFile}" arg2="" />
+            </or>
+            <then>
+              <fail>No latest build found, nothing is installed</fail>
+            </then>
+          </if>
+        
+          <var name="build.tmp.manifest" value="${build.buildFile}" />
+        </then>
+        <else>
+          <var name="build.tmp.manifest" value="@{jar}" />
+        </else>
+      </if>
+      
+      <!-- create a folder to be used for output -->
+      <fileCleanUp dir="${build.tmpdir}" />
+      
+      <!-- get the file -->
+      <unjar src="${build.tmp.manifest}" dest="${build.tmpdir}" />
+
+      <!-- modify the file -->
+      <manifest file="${build.tmpdir}/META-INF/MANIFEST.MF" mode="update">
+        <attribute name="@{name}" value="@{value}"/>
+      </manifest>
+      
+      <!-- add the file again -->
+      <jar destfile="${build.tmp.manifest}" basedir="${build.tmpdir}" manifest="${build.tmpdir}/META-INF/MANIFEST.MF" />
+    </sequential>
+  </macrodef>
+  
+  <!--
+    buildInstallLatestBuild - installes the latest build to the local repository
+    -->
+  <macrodef name="buildInstallLatestBuild">
+    <sequential>
+      <if>
+        <or>
+          <not><isset property="build.buildFile"/></not>
+          <equals arg1="${build.buildFile}" arg2="" />
+          <not><isset property="build.buildSrcFile"/></not>
+          <equals arg1="${build.buildSrcFile}" arg2="" />
+          <not><isset property="build.buildJavaDocFile"/></not>
+          <equals arg1="${build.buildJavaDocFile}" arg2="" />
+        </or>
+        <then>
+          <fail>No latest build found, nothing is installed</fail>
+        </then>
+        <else>
+          <mavenInstall file="${build.buildFile}" />
+          <mavenInstallAttachment file="${build.buildSrcFile}" classifier="${maven.attachment.sources}" />
+          <mavenInstallAttachment file="${build.buildJavaDocFile}" classifier="${maven.attachment.javadoc}" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    buildDeployLatestBuild - deployes the latest build to the reponsible repository
+    -->
+  <macrodef name="buildDeployLatestBuild">
+    <sequential>
+      <if>
+        <or>
+          <not><isset property="build.buildFile"/></not>
+          <equals arg1="${build.buildFile}" arg2="" />
+          <not><isset property="build.buildSrcFile"/></not>
+          <equals arg1="${build.buildSrcFile}" arg2="" />
+          <not><isset property="build.buildJavaDocFile"/></not>
+          <equals arg1="${build.buildJavaDocFile}" arg2="" />
+        </or>
+        <then>
+          <fail>No latest build found, nothing is deployed</fail>
+        </then>
+        <else>
+          <mavenDeploy file="${build.buildFile}" />
+          <mavenDeployAttachment file="${build.buildSrcFile}" classifier="${maven.attachment.sources}" />
+          <mavenDeployAttachment file="${build.buildJavaDocFile}" classifier="${maven.attachment.javadoc}" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    buildAssembly - assembles the application by adding dependencies and a launcher
+    -->
+  <macrodef name="buildAssembly">
+    <attribute name="mainClass" default="${build.launcher.mainClass}" />
+    <attribute name="templateLauncher" default="${build.library.resfile.template.launcher}" />
+    <attribute name="templateStartBatch" default="${build.library.resfile.template.startBatch}" />
+    <attribute name="launcherPropertiesName" default="launcher.properties" />
+    <attribute name="startBatchName" default="${build.startbatch.filename}" />
+  
+    <sequential>
+    
+      <!-- make sure we have a build -->
+      <if>
+        <not><equals arg1="${build.assembly.create}" arg2="true" /></not>
+        <then>
+          <fail>You must set the build.assembly.create attribute to true so that the project can be assembled</fail>
+        </then>
+        <elseif>
+          <and>
+            <equals arg1="@{mainClass}" arg2="" />
+            <or>
+              <equals arg1="${build.launcher.create}" arg2="y" />
+              <equals arg1="${build.launcher.create}" arg2="yes" />
+              <equals arg1="${build.launcher.create}" arg2="true" />
+            </or>
+          </and>
+          <then>
+            <fail>No main-class (build.launcher.create property) specified for application assembly</fail>
+          </then>
+        </elseif>
+        <elseif>
+          <or>
+            <not><isset property="build.buildFile"/></not>
+            <equals arg1="${build.buildFile}" arg2="" />
+          </or>
+          <then>
+            <fail>No latest build found, the application cannot be assembled</fail>
+          </then>
+        </elseif>
+      </if>
+    
+      <!-- the directory the app should be assembled to -->
+      <var name="build.tmp.appFolder" value="${build.dir}/${build.app.dir}" />
+      <fileCleanUp dir="${build.tmp.appFolder}" recreate="true" />
+          
+      <!-- get the dependencies of the application -->
+      <mavenResolveDependencies fileset="build.tmp.appLibs" scope="runtime" pomid="build.tmp.pomAssembly" />
+      
+      <!-- copy the dependent files -->
+      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${build.tmp.appFolder}]];defaultLocation=[[${build.library.dir}]]">
+        <fileset refid="build.tmp.appLibs" />
+      </fileCallMacroForEach>
+      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${build.tmp.appFolder}]];defaultLocation=[[${build.library.dir}]]">
+        <fileset file="${build.buildFile}" />
+      </fileCallMacroForEach>
+
+      <!-- copy the resources files -->
+      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.resource}]];rootFolder=[[${build.tmp.appFolder}]];defaultLocation=[[${build.resources.dir}]]">
+        <fileset dir="${build.resourcedir}" />
+      </fileCallMacroForEach>
+
+
+      <!-- set up a launcher if we have a main file and if it should be done -->
+      <if>
+        <or>
+          <equals arg1="${build.launcher.create}" arg2="y" />
+          <equals arg1="${build.launcher.create}" arg2="yes" />
+          <equals arg1="${build.launcher.create}" arg2="true" />
+        </or>
+        <then>
+      
+          <!-- get the dependencies of the launcher -->
+          <mavenResolveDependencies fileset="build.tmp.launcherLibs" scope="runtime" 
+                                    pomid="build.tmp.pomLauncher" pomfile="${build.library.resfile.maven.pomLauncher}" />
+        
+          <!-- copy the dependent files -->
+          <copy todir="${build.tmp.appFolder}/launcher">
+            <fileset refid="build.tmp.launcherLibs" />
+            <mapper type="flatten" />
+          </copy>
+          
+          <!-- get the needed values for replacing -->
+          <var name="build.tmp.launcherJarPath" value="launcher/${build.launcher.artifactId}-${build.launcher.version}.jar" />
+          <var name="build.tmp.mainClass" value="@{mainClass}" />
+          <var name="build.tmp.launcherProperties" value="launcher/@{launcherPropertiesName}" />
+          <var name="build.tmp.cmdLineArgs" value="${build.launcher.cmdLineArgs}" />
+          
+          <!-- get the JVM args -->
+          <if>
+            <and>
+              <contains string="${build.launcher.jvmArgs}" substring="-XX:MaxPermSize=" casesensitive="false" />
+              <contains string="${build.launcher.jvmArgs}" substring="-Xmx" casesensitive="false" />
+            </and>
+            <then>
+              <echo level="warn">Instead of passing the -XX:MaxPermSize and -Xmx via the jvmArgs use the build.launcher.maxPermSize and build.launcher.xmx properties</echo>
+              <var name="build.tmp.jvmArgs" value="${build.launcher.jvmArgs}" />
+            </then>
+            <elseif>
+              <contains string="${build.launcher.jvmArgs}" substring="-XX:MaxPermSize=" casesensitive="false" />
+              <then>
+                <echo level="warn">Instead of passing the -XX:MaxPermSize via the jvmArgs use the build.launcher.maxPermSize property</echo>
+                <var name="build.tmp.jvmArgs" value="${build.launcher.jvmArgs} -Xmx${build.launcher.xmx}" />
+              </then>
+            </elseif>
+            <elseif>
+              <contains string="${build.launcher.jvmArgs}" substring="-Xmx" casesensitive="false" />
+              <then>
+                <echo level="warn">Instead of passing the -Xmx via the jvmArgs use the build.launcher.xmx property</echo>
+                <var name="build.tmp.jvmArgs" value="${build.launcher.jvmArgs} -XX:MaxPermSize=${build.launcher.maxPermSize}" />
+              </then>
+            </elseif>
+            <else><var name="build.tmp.jvmArgs" value="${build.launcher.jvmArgs} -XX:MaxPermSize=${build.launcher.maxPermSize} -Xmx${build.launcher.xmx}" /></else>
+          </if>
+               
+          <!-- set up the directories -->
+          <createList property="build.tmp.launcher.resourcesDir" list="${build.launcher.resourcesDir}" value="${build.resources.dir}" separatore=";" />
+          <createList property="build.tmp.launcher.libraryDir" list="${build.launcher.libraryDir}" value="${build.library.dir}" separatore=";" />
+          <var name="build.tmp.classPaths" value="${build.tmp.launcher.resourcesDir}" />
+          <var name="build.tmp.libPaths" value="${build.tmp.launcher.libraryDir}" />
+
+          <!-- copy the files -->
+          <fileReplaceAllProperties file="@{templateLauncher}" destFile="${build.tmp.appFolder}/launcher/@{launcherPropertiesName}" />
+          <fileReplaceAllProperties file="@{templateStartBatch}" destFile="${build.tmp.appFolder}/@{startBatchName}" />
+        </then>
+        
+        <!-- its possible to create only a batch file of a template, so lets check if that should be done -->
+        <elseif>
+          <or>
+            <equals arg1="${build.startbatch.create}" arg2="y" />
+            <equals arg1="${build.startbatch.create}" arg2="yes" />
+            <equals arg1="${build.startbatch.create}" arg2="true" />
+          </or>
+          <then>
+          
+            <!-- set up the directories -->
+            <createList property="build.tmp.launcher.resourcesDir" list="${build.launcher.resourcesDir}" value="${build.resources.dir}" separatore=";" />
+            <createList property="build.tmp.launcher.libraryDir" list="${build.launcher.libraryDir}" value="${build.library.dir}" separatore=";" />
+            <var name="build.tmp.classPaths" value="${build.tmp.launcher.resourcesDir}" />
+            <var name="build.tmp.libPaths" value="${build.tmp.launcher.libraryDir}" />
+
+            <!-- copy the files -->
+            <fileReplaceAllProperties file="@{templateStartBatch}" destFile="${build.tmp.appFolder}/@{startBatchName}" />
+          </then>
+        </elseif>
+      </if>
+      
+      <!-- set that we have a app -->
+      <var name="build.appDir" value="${build.tmp.appFolder}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="buildMoveResource">
+    <attribute name="resourceFolder" />
+    <attribute name="resourceFileName" default="" />
+    <attribute name="resource" />
+    <attribute name="resourceType" />
+    <attribute name="defaultLocation" default="" />
+    <attribute name="defaultClean" default="false" />
+    <attribute name="rootFolder" />
+    <attribute name="basedir" default="" />
+    
+    <sequential>
+    
+      <!-- reset the properties of the mapper -->
+      <var name="resMapper.location" value="" unset="true"/>
+      <var name="resMapper.rename" value="" unset="true"/>
+      <var name="resMapper.unzip" value="" unset="true"/>
+      <var name="resMapper.clean" value="" unset="true"/>
+      <var name="resMapper.removePrior" value="" unset="true"/>
+      <var name="resMapper.removeAfter" value="" unset="true"/>
+      <var name="resMapper.excludeFiles" value="" unset="true"/>
+      <var name="resMapper.flatten" value="" unset="true"/>
+      <var name="resMapper.overwrite" value="" unset="true"/>
+      <var name="resMapper.replaceProperties" value="" unset="true"/>
+      <var name="resMapper.placeInJar" value="" unset="true"/>
+      <var name="resMapper.removeFromFolderStructure" value="" unset="true"/>
+      <var name="resMapper.doAutoInJar" value="" unset="true"/>
+      <var name="resMapper.skip" value="" unset="true"/>
+      
+      <!-- set some properties which can be used by the resourceMapper instance to set values -->
+      <var name="resMapper.rootFolder" value="@{rootFolder}" />
+    
+      <!-- get the new location -->
+      <resourceMapper resourceFolder="@{resourceFolder}" resource="@{resource}" resourceFileName="@{resourceFileName}" resourceType="@{resourceType}" />
+
+      <!-- check if the file is a directory -->
+      <fileInfo file="@{resource}" />
+
+      <!-- check if a skip is specified -->
+      <if>
+        <not><isset property="resMapper.skip" /></not>
+        <then>
+          <var name="resMapper.skip" value="false" />
+        </then>
+      </if>
+      
+      <!-- check if a location is specified -->
+      <if>
+        <not><isset property="resMapper.location" /></not>
+        <then>
+          <var name="resMapper.location" value="@{defaultLocation}" />
+        </then>
+      </if>
+      
+      <!-- check if a file should be renamed -->
+      <if>
+        <not><isset property="resMapper.rename" /></not>
+        <then>
+          <var name="resMapper.rename" value="${fileInfo.name}" />
+        </then>
+      </if>
+      
+      <!-- check if a file should be unzipped -->
+      <if>
+        <or>
+          <not><isset property="resMapper.unzip" /></not>
+          <and>
+            <not><equals arg1="${fileInfo.extension}" arg2="zip" /></not>
+            <not><equals arg1="${fileInfo.extension}" arg2="jar" /></not>
+            <not><equals arg1="${fileInfo.extension}" arg2="rar" /></not>
+          </and>
+        </or>
+        <then>        
+          <var name="resMapper.unzip" value="false" />
+        </then>
+      </if>
+      
+      <!-- check if clean is specified, i.e. a folder should be emptied before items are copied there -->
+      <if>
+        <not><isset property="resMapper.clean" /></not>
+        <then>
+          <var name="resMapper.clean" value="@{defaultClean}" />
+        </then>
+      </if>
+      
+      <!-- check if removePrior is specified, i.e. a pattern which deletes specific files prior to the execution -->
+      <if>
+        <not><isset property="resMapper.removePrior" /></not>
+        <then>
+          <var name="resMapper.removePrior" value="" />
+        </then>
+      </if>
+      
+      <!-- check if removeAfter is specified, i.e. a pattern which deletes specific files after the execution -->
+      <if>
+        <not><isset property="resMapper.removeAfter" /></not>
+        <then>
+          <var name="resMapper.removeAfter" value="" />
+        </then>
+      </if>
+      
+      <!-- check if excludeFiles is specified, i.e. a pattern which is applied when files are copied or unzipped -->
+      <if>
+        <not><isset property="resMapper.excludeFiles" /></not>
+        <then>
+          <var name="resMapper.excludeFiles" value="" />
+        </then>
+      </if>
+      
+      <!-- check if flatten is specified, i.e. a any folder structure is removed when copying a file (files only!) -->
+      <if>
+        <not><isset property="resMapper.flatten" /></not>
+        <then>
+        
+          <!-- depends on the type -->
+          <if>
+            <equals arg1="@{resourceType}" arg2="${build.resource.resource}" />
+            <then>
+              <var name="resMapper.flatten" value="false" />
+            </then>
+            <else>
+              <var name="resMapper.flatten" value="true" />
+            </else>
+          </if>
+        </then>
+      </if>
+      
+      <!-- check if replaceProperties is specified, i.e. a any folder structure is removed when copying a file (files only!) -->
+      <if>
+        <not><isset property="resMapper.replaceProperties" /></not>
+        <then>
+          <var name="resMapper.replaceProperties" value="false" />
+        </then>
+      </if>
+      
+      <!-- check if we should remove any folderstructure default is empty i.e. nothing is removed -->
+      <if>
+        <not><isset property="resMapper.removeFromFolderStructure" /></not>
+        <then>
+          <var name="resMapper.removeFromFolderStructure" value="" />
+        </then>
+      </if>
+      
+      <!-- check if overwrite is specified, per default everything is overwritten, but if not we have to add some special excludes -->
+      <if>
+        <and>
+          <isset property="resMapper.overwrite" />
+          <equals arg1="${resMapper.overwrite}" arg2="false" />
+        </and>
+        <then>
+          <fileCreateFileList dir="@{rootFolder}/${resMapper.location}" property="build.tmp.overwriteexludes" />
+          <var name="resMapper.excludeFiles" value="${resMapper.excludeFiles},${build.tmp.overwriteexludes}" />
+        </then>
+      </if>
+      
+      <!-- set the default for doAutoInJar -->
+      <if>
+        <not><isset property="resMapper.doAutoInJar" /></not>
+        <then>
+          <var name="resMapper.doAutoInJar" value="true" />
+        </then>
+      </if>
+
+      <!-- check if we have a replacement in a jar which is done automatically if .jar folder is used on the classpath -->
+      <if>
+        <and>
+          <equals arg1="${resMapper.doAutoInJar}" arg2="true" />
+          <equals arg1="@{resourceType}" arg2="${build.resource.resource}" />
+          <equals arg1="${fileInfo.exist}" arg2="true" />
+          <equals arg1="${fileInfo.dir}" arg2="false" />
+          <matches pattern=".*[\\/]\.jar(?:|(?:[\\/].*))" string="@{resourceFolder}" />
+        </and>
+        <then>
+
+          <!-- determine the jar -->
+          <var name="rd.tmp.jarFile" value="" unset="true"/>
+          <propertyregex property="rd.tmp.jarFile" input="@{resourceFolder}" regexp=".*[\\/]\.jar[\\/]([^\\/]+\.jar)(?:|(?:[\\/].*))" select="\1" casesensitive="false" />
+
+          <if>
+            <isset property="rd.tmp.jarFile" />
+            <then>
+              <echo level="debug">The file '@{resourceFileName}' will be moved into the jar ${rd.tmp.jarFile}</echo>
+              
+              <var name="resMapper.location" value="" />
+              <var name="resMapper.flatten" value="false" />
+              <var name="resMapper.placeInJar" value="${rd.tmp.jarFile}" />
+              <var name="resMapper.removeFromFolderStructure" value=".jar/${rd.tmp.jarFile}" />
+            </then>
+            <else>
+              <echo level="warn">The file '@{resourceFileName}' cannot be moved in any jar, because no jar is specified</echo>
+              <var name="resMapper.skip" value="true" />
+            </else>
+          </if>
+        </then>
+      </if>
+
+      <!-- execute prior -->
+      <if>
+        <and>
+          <not><equals arg1="${resMapper.removePrior}" arg2="" /></not>
+          <equals arg1="${fileInfo.exist}" arg2="true" />
+        </and>
+        <then>
+          <echo level="info">Mapper cleans '@{rootFolder}/${resMapper.location}' prior to mapping using pattern '${resMapper.removeAfter}'</echo>
+          <delete includeEmptyDirs="true">
+            <fileset dir="@{rootFolder}/${resMapper.location}" includes="${resMapper.removePrior}"/>
+          </delete>
+        </then>
+      </if>
+            
+      <!-- execute mapping -->
+      <if>
+        <!-- skip if wished -->
+        <equals arg1="${resMapper.skip}" arg2="true" />
+        <then><!-- do nothing --></then>
+        <elseif>
+          <and>
+            <equals arg1="${fileInfo.exist}" arg2="true" />
+            <equals arg1="${fileInfo.dir}" arg2="true" />
+          </and>
+          
+          <!-- we have a directory -->
+          <then>
+          
+            <!-- check if the destination should be cleaned -->
+            <if>
+              <equals arg1="${resMapper.clean}" arg2="true" />
+              <then>
+                <echo level="info">Mapper cleans location: @{rootFolder}/${resMapper.location}</echo>
+                <fileCleanUp dir="@{rootFolder}/${resMapper.location}" recreate="true" />
+              </then>
+            </if>
+            
+            <!-- copy the directory and replace properties if needed -->
+            <if>
+              <equals arg1="${resMapper.replaceProperties}" arg2="true" />
+              <!-- replace the properties -->
+              <then>
+                <!-- first copy the once with possibility to replace -->
+                <copy todir="@{rootFolder}/${resMapper.location}" failonerror="false" overwrite="true">
+                  <fileset dir="@{resource}" includes="**/*.xml,**/*.properties,**/*.html,**/*.txt,**/*.bat,**/*.mf" excludes="${resMapper.excludeFiles}" />
+                  <filterchain>
+                    <expandproperties/>
+                  </filterchain>
+                </copy>
+                <!-- now copy the rest -->
+                <copy todir="@{rootFolder}/${resMapper.location}" failonerror="false" overwrite="true">
+                  <fileset dir="@{resource}" excludes="${resMapper.excludeFiles},**/*.xml,**/*.properties,**/*.html,**/*.txt,**/*.bat,**/*.mf" />
+                </copy>
+              </then>
+              <!-- we don't replace any properties -->
+              <else>
+                <copy todir="@{rootFolder}/${resMapper.location}" failonerror="false" overwrite="true">
+                  <fileset dir="@{resource}" excludes="${resMapper.excludeFiles}" />
+                </copy>
+              </else>
+            </if>
+            
+            <!-- copy the folder to the destination -->
+            <copy todir="@{rootFolder}/${resMapper.location}" failonerror="false" overwrite="true">
+              <fileset dir="@{resource}" excludes="${resMapper.excludeFiles}" />
+            </copy>
+          </then>
+        </elseif>
+        <elseif>
+          <and>
+            <equals arg1="${fileInfo.exist}" arg2="true" />
+            <equals arg1="${fileInfo.dir}" arg2="false" />
+          </and>
+          
+          <!-- we have a file -->
+          <then>
+            <if>
+              <equals arg1="${resMapper.unzip}" arg2="true" />
+              <!-- try to unzip -->
+              <then>
+              
+                <!-- unzip does not support the filterchain -->
+                <if>
+                  <and>
+                    <equals arg1="${resMapper.replaceProperties}" arg2="true" />
+                  </and>
+                  <!-- replace the properties -->
+                  <then>
+                    <fileReplaceAllPropertiesInZip file="@{resource}" dest="@{rootFolder}/${resMapper.location}" rezip="false" excludes="${resMapper.excludeFiles}" />
+                  </then>
+                  <!-- we don't replace any properties -->
+                  <else>
+                    <unzip src="@{resource}" dest="@{rootFolder}/${resMapper.location}" overwrite="true">
+                      <patternset excludes="${resMapper.excludeFiles}" />
+                    </unzip>
+                  </else>
+                </if>
+              </then>
+              <else>
+                <!-- check if we flatten and get the location into ${build.tmp.destResource} -->
+                <if>
+                  <or>
+                    <not><isset property="resMapper.flatten" /></not>
+                    <equals arg1="${resMapper.flatten}" arg2="true" />
+                    <equals arg1="@{basedir}" arg2="" />
+                  </or>
+                  <then>
+                    <var name="build.tmp.destResource" value="${resMapper.location}/${resMapper.rename}" />
+                  </then>
+                  <!-- we don't want to flatten so copy with keeping the relative path -->
+                  <else>
+                    <fileGetSubPath basedir="@{basedir}" file="@{resource}" property="build.tmp.subdir" removePrefix="${resMapper.removeFromFolderStructure}" />
+                    <var name="build.tmp.destResource" value="${resMapper.location}/${build.tmp.subdir}/${resMapper.rename}" />
+                  </else>
+                </if>
+                
+                <!-- define the base directory for the process -->
+                <if>
+                  <isset property="resMapper.placeInJar" />
+                  <then>
+                    <fileCleanUp dir="${build.tmpdir}" />
+                    <var name="build.tmp.destBaseFolder" value="${build.tmpdir}" />
+                  </then>
+                  <else>
+                    <var name="build.tmp.destBaseFolder" value="@{rootFolder}" />
+                  </else>
+                </if>
+
+                <!-- copy the file and replace properties if needed -->
+                <if>
+                  <and>
+                    <equals arg1="${resMapper.replaceProperties}" arg2="true" />
+                    <length file="@{resource}" when="greater" length="0" />
+                    <!-- list of files which really can be modified, otherwise the file can get corrupt (e.g. class or png) -->
+                    <matches string="${fileInfo.extension}" pattern="xml|properties|html|txt|bat|mf" casesensitive="false" />
+                  </and>
+                  <!-- replace the properties -->
+                  <then>
+                    <fileReplaceAllProperties file="@{resource}" destFile="${build.tmp.destBaseFolder}/${build.tmp.destResource}" />
+                  </then>
+                  <!-- we don't replace any properties -->
+                  <else>
+                    <copy file="@{resource}" preservelastmodified="true" tofile="${build.tmp.destBaseFolder}/${build.tmp.destResource}" failonerror="false" overwrite="true" />
+                  </else>
+                </if>
+                
+                <!-- check if we should really move the file into a jar -->
+                <if>
+                  <isset property="resMapper.placeInJar" />
+                  <then>
+                    <!-- create the modified jar name -->
+                    <fileAppendSuffix property="build.tmp.modFileName" file="${resMapper.placeInJar}" suffix="-${maven.attachment.modified}" />
+                  
+                    <fileset id="build.tmp.possibleModifiedJars" dir="@{rootFolder}" includes="**/${build.tmp.modFileName}" />
+                    <fileset id="build.tmp.possibleJars" dir="@{rootFolder}" includes="**/${resMapper.placeInJar}" />
+                    
+                    <if>
+                      <or>
+                        <resourcecount refid="build.tmp.possibleModifiedJars" when="greater" count="1" />
+                        <resourcecount refid="build.tmp.possibleJars" when="greater" count="1" />
+                      </or>
+                      <then>
+                        <echo level="warn">Skipping the modification of jar ${resMapper.placeInJar}, because there were at least two possible jars</echo>
+                      </then>
+                      <!-- the jar was modified already -->
+                      <elseif>
+                        <resourcecount refid="build.tmp.possibleModifiedJars" when="equal" count="1" />
+                        <then>
+                          <var name="build.tmp.modifiedJarSet" value="build.tmp.possibleModifiedJars" />
+                        </then>
+                      </elseif>
+                      <!-- we found the jar that was not modified yet -->
+                      <elseif>
+                        <resourcecount refid="build.tmp.possibleJars" when="equal" count="1" />
+                        <then>
+                          <var name="build.tmp.modifiedJarSet" value="build.tmp.possibleJars" />
+                        </then>
+                      </elseif>
+                      <!-- we didn't find any -->
+                      <else>
+                        <echo level="warn">The jar ${resMapper.placeInJar} could not be modified, because it could not be found</echo>
+                      </else>
+                    </if>
+
+                    <!-- find the jar -->
+                    <first id="build.tmp.modifiedJar">
+                      <fileset refid="${build.tmp.modifiedJarSet}" />
+                    </first>
+                    
+                    <!-- set the new name within the same structure -->
+                    <fileReplaceName file="${toString:build.tmp.modifiedJar}" renameTo="${build.tmp.modFileName}" property="build.tmp.modFilePath" />
+
+                    <!-- update the jar -->
+                    <if>
+                      <matches string="${build.tmp.destResource}" pattern="META\-INF[\\/]MANIFEST.MF" />
+                      <then>
+                        <jar destfile="${build.tmp.modFilePath}.tmp" manifest="${build.tmp.destBaseFolder}/${build.tmp.destResource}">
+                          <zipfileset includes="**/*" src="${toString:build.tmp.modifiedJar}" />
+                        </jar>
+                      </then>
+                      <else>
+                        <jar destfile="${build.tmp.modFilePath}.tmp" update="true" duplicate="preserve" filesetmanifest="merge">
+                          <fileset dir="${build.tmp.destBaseFolder}" />
+                          <zipfileset includes="**/*" src="${toString:build.tmp.modifiedJar}" />
+                        </jar>
+                      </else>
+                    </if>
+                    <move file="${build.tmp.modFilePath}.tmp" tofile="${build.tmp.modFilePath}" />
+                    
+                    <!-- delete the original jar -->
+                    <if>
+                      <not><equals arg1="${build.tmp.modFilePath}" arg2="${toString:build.tmp.modifiedJar}" /></not>
+                      <then>
+                        <echo level="debug">Removing the unmodified version ${toString:build.tmp.modifiedJar} of the modified jar</echo>
+                        <delete file="${toString:build.tmp.modifiedJar}" />
+                      </then>
+                    </if>
+                  </then>
+                </if>
+
+              </else>
+            </if>
+          </then>
+        </elseif>
+      </if>
+
+      <!-- execute after -->
+      <if>
+        <and>
+          <not><equals arg1="${resMapper.removeAfter}" arg2="" /></not>
+          <equals arg1="${fileInfo.exist}" arg2="true" />
+        </and>
+        <then>
+          <echo level="info">Mapper cleans '@{rootFolder}/${resMapper.location}' afterwards using pattern '${resMapper.removeAfter}'</echo>
+          <delete includeEmptyDirs="true">
+            <fileset dir="@{rootFolder}/${resMapper.location}" includes="${resMapper.removeAfter}"/>
+          </delete>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+    
+  <macrodef name="resourceMapper">
+    <attribute name="resourceFolder" />
+    <attribute name="resourceFileName" />
+    <attribute name="resource" />
+    <attribute name="resourceType" />
+    
+    <sequential>
+      <!-- do nothing per default -->
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="buildZip">  
+    <sequential>
+    
+      <!-- make sure we have an assembly -->
+      <if>
+        <or>
+          <not><isset property="build.appDir"/></not>
+            <equals arg1="${build.appDir}" arg2="" />
+        </or>
+        <then>
+          <fail>No latest assembly found, the application cannot be packed</fail>
+        </then>
+      </if>
+      
+      <mavenSetPom />
+      
+      <!-- pack it -->
+      <var name="build.appFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}-${maven.attachment.app}.zip" />
+      <zip basedir="${build.appDir}" destfile="${build.appFile}" />
+    </sequential>
+  </macrodef>
+  
+  <!--
+    buildDeployLatestAssembly - deployes the latest assembly to the reponsible repository
+    -->
+  <macrodef name="buildDeployLatestAssembly">
+    <attribute name="classifier" default="" />
+    
+    <sequential>
+      <if>
+        <or>
+          <not><isset property="build.appFile"/></not>
+          <equals arg1="${build.appFile}" arg2="" />
+        </or>
+        <then>
+          <fail>No latest assembly found, nothing is deployed</fail>
+        </then>
+        <else>
+          <mavenSetPom pomid="build.tmp.pomAssembly" />
+          
+          <!-- create the pom-file -->
+          <mavenCreateIndependentPom pomid="build.tmp.pomApp" groupid="${build.applications.groupId}" name="${build.tmp.pomAssembly.name}" packaging="zip"
+                                     artifactid="${build.tmp.pomAssembly.artifactId}" version="${build.tmp.pomAssembly.version}" />
+                                     
+          <!-- deploy as attachment or just deploy -->
+          <if>
+            <equals arg1="@{classifier}" arg2="" />
+            <then>
+              <mavenDeploy file="${build.appFile}" pomid="build.tmp.pomApp" />              
+            </then>
+            <else>
+              <mavenDeployAttachment file="${build.appFile}" classifier="@{classifier}" pomid="build.tmp.pomApp" type="zip" />
+            </else>
+          </if>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    buildDeployLatestAssembly - deployes the latest assembly to the reponsible repository
+    -->
+  <macrodef name="buildCheckReleaseConditions">
+   
+    <sequential>    
+      <if>
+        <!-- SVN must be available -->
+        <or>
+          <not><isset property="svn.repository.offline"/></not>
+          <equals arg1="${svn.repository.offline}" arg2="true" />
+        </or>
+        <then>
+          <fail>Cannot release anything, because the SVN Repository is not available</fail>
+        </then>
+        
+        <!-- MAVEN must be available -->
+        <elseif>
+          <or>
+            <not><isset property="maven.repository.source.offline"/></not>
+            <equals arg1="${maven.repository.source.offline}" arg2="true" />
+          </or>
+          <then>
+            <fail>Cannot release anything, because the source Maven Repository is not available</fail>
+          </then>
+        </elseif>
+        <elseif>
+          <or>
+            <not><isset property="maven.repository.target.offline"/></not>
+            <equals arg1="${maven.repository.target.offline}" arg2="true" />
+          </or>
+          <then>
+            <fail>Cannot release anything, because the target Maven Repository is not available</fail>
+          </then>
+        </elseif>
+        
+        <else>
+          <!-- check for updates -->
+          <svnUpdate />
+
+          <!-- make sure there are no files unversioned or not yet updated -->
+          <svnCheckUnversioned />
+
+          <!-- check that all dependency are releases -->
+          <mavenCheckSnapshotDependencies />
+
+          <!-- now commit -->
+          <svnCommit message="Commit prior to release of version '${maven.pom.version}'" />
+
+          <!-- check if everything is done now -->
+          <svnCheckFullCommit />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!-- the targets to build, install, deploy, assemble -->
+  <target name="build">
+    <buildBuild />
+    <buildPack />
+  </target>
+  
+  <target name="javadoc">
+    <buildJavaDoc />
+    <buildPackJavaDoc />
+  </target>
+  
+  <target name="sources">
+    <buildPackSource />
+  </target>
+
+  <target name="assemble" depends="build">
+    <buildAssembly />
+    <buildZip />
+  </target>
+  
+  <target name="deployAssembly" depends="deploy, assemble">
+    <buildDeployLatestAssembly />
+  </target>
+
+  <target name="install" depends="build, javadoc, sources">
+    <buildInstallLatestBuild />
+  </target>
+  
+  <target name="deploy" depends="build, javadoc, sources">
+    <buildDeployLatestBuild />
+  </target>
+    
+  <target name="removePreBuilds">
+    <buildRemovePreBuilds />
+  </target>
+  
+  <target name="release" depends="removePreBuilds">
+  
+    <!-- check the availability of SVN and Maven -->
+    <buildCheckReleaseConditions />
+    
+    <!-- create the build -->
+    <buildBuild />
+    <buildPack />
+    <buildJavaDoc />
+    <buildPackJavaDoc />
+    <buildPackSource />
+
+    <!-- test the version -->
+    <testTest />
+    
+    <!-- lets tag everything -->
+    <svnTag message="Release of ${maven.pom.version}" />
+    
+    <!-- lets distribute the binaries -->
+    <buildDeployLatestBuild />
+    
+    <!-- create the assembly -->
+    <if>
+      <and>
+        <equals arg1="${build.assembly.create}" arg2="true" />
+      </and>
+      <then>
+        <buildAssembly />
+        <buildZip />
+        <buildDeployLatestAssembly />
+      </then>
+    </if>
+
+    <echo level="warn">Please modify the needed files now! Especially modify the version number in the pom.xml, so that a new generation of this artifact can be developed</echo>
+  </target>
+  
+  <target name="releaseAssembly" depends="deployAssembly">
+    <echo level="error">The release assemble target is currently not available</echo>
+  </target>
+  
+  <target name="fullBuild" depends="removePreBuilds, build" />
+</project>

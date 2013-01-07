@@ -1,0 +1,215 @@
+<!--
+  Library which adds some macros and targets for server starting and stoping
+  
+  Created on: 01.03.2012
+  Created by: Philipp Meisen <philipp@meisen.net>
+  History:
+    01.03.2012
+      - Creation of library
+  -->
+<project name="library_server">
+  <property name="server.library.version" value="1.0.1" description="The current version of the library" />
+  <dirname property="library_server.basedir" file="${ant.file.library_server}"/>
+
+  <property name="server.type" value="" description="The server type to be used, currently valid gsbisserver36 or tomcat6" />
+  <property name="server.dir" value="applicationServer" description="The name of the main-directory which contains application server specific resources" />
+  
+  <!--
+    add the antcontrib library
+    -->
+  <taskdef resource="net/sf/antcontrib/antlib.xml" />
+  
+  <macrodef name="serverHttpReachable">
+    <attribute name="url" />
+    <attribute name="property" default="server.reachable" />
+
+    <sequential>
+      <if>
+        <http url="@{url}" errorsBeginAt="500" />
+        <then>
+          <var name="@{property}" value="true" />
+        </then>
+        <else>
+          <var name="@{property}" value="false" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="serverHttpNotReachable">
+    <attribute name="url" />
+    <attribute name="property" default="server.notreachable" />
+
+    <sequential>
+    
+      <if>
+        <http url="@{url}" errorsBeginAt="500" />
+        <then>
+          <var name="@{property}" value="false" />
+        </then>
+        <else>
+          <var name="@{property}" value="true" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!-- 
+    startBisServer - starts a Pentaho server
+  -->
+  <macrodef name="startBisServer">
+    <attribute name="webapp" default="${server.webapp.dir}"/>
+
+    <sequential>
+      <java jar="@{webapp}/../../bin/bootstrap.jar" fork="true">
+        <jvmarg value="-Dcatalina.home=@{webapp}/../../"/>
+        <jvmarg value="-Dcatalina.base=@{webapp}/../../"/>
+        <!-- this one is only needed for Pentaho Server -->
+        <jvmarg value="-Dpentaho.installed.licenses.file=@{webapp}/../../../Config/.installedLicenses.xml"/>
+        <jvmarg value="-Xms512m" />
+        <jvmarg value="-XX:MaxPermSize=512m" />
+        <jvmarg value="-Dsun.rmi.dgc.server.gcInterval=3600000" />
+      </java>
+    </sequential>
+  </macrodef>
+   
+  <!-- 
+    stopBisServer - stops a Pentaho server
+  -->
+  <macrodef name="stopBisServer">
+    <attribute name="webapp" default="${server.webapp.dir}"/>
+
+    <sequential>   
+      <java jar="@{webapp}/../../bin/bootstrap.jar" fork="true">
+        <jvmarg value="-Dcatalina.home=@{webapp}/../../"/>
+        <jvmarg value="-Dcatalina.base=@{webapp}/../../"/>
+        <arg line="stop"/>
+      </java>
+    </sequential>
+  </macrodef>
+  
+  <!-- 
+    startTomCat - starts a TomCat server
+  -->
+  <macrodef name="startTomCat">
+    <attribute name="webapp" default="${server.webapp.dir}" />
+    
+    <sequential> 
+      <java jar="@{webapp}/../bin/bootstrap.jar" fork="true">
+        <jvmarg value="-Dcatalina.home=${server.webapp.dir}/../" />
+        <jvmarg value="-Dcatalina.base=${server.webapp.dir}/../" />
+        <!-- this one is only needed for Pentaho Server -->
+        <jvmarg value="-Xms512m" />
+        <jvmarg value="-XX:MaxPermSize=512m" />
+      </java>
+    </sequential> 
+  </macrodef>
+  
+  <!-- 
+    stopTomCat - stops a TomCat server
+  -->
+  <macrodef name="stopTomCat">
+    <attribute name="webapp" default="${server.webapp.dir}" />
+
+    <sequential>    
+      <java jar="@{webapp}/../bin/bootstrap.jar" fork="true">
+      <jvmarg value="-Dcatalina.home=@{webapp}/../" />
+      <jvmarg value="-Dcatalina.base=@{webapp}/../" />
+      <arg line="stop"/>
+      </java>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="serverLoadProperties">
+    <attribute name="appDir" default="${server.dir}" />
+    
+    <sequential>
+    
+      <!-- load the properties of the application server if those exists -->
+      <if>
+        <or>
+          <not><isset property="server.type"/></not>
+          <equals arg1="${server.type}" arg2="" />
+        </or>
+        <then>
+          <fail>Please specify a server type, prior to loading it's properties</fail>
+        </then>
+        <elseif>
+          <or>
+            <available file="@{appDir}/${server.type}/config.properties" />
+            <available file="@{appDir}/${server.type}/override.properties" />
+          </or>
+          <then>
+            <echo level="info">Loading server type specific properties</echo>
+            
+            <var file="@{appDir}/${server.type}/config.properties" />
+            <var file="@{appDir}/${server.type}/override.properties" />
+          </then>
+        </elseif>
+        <else>
+          <echo level="info">No additional properties found for server type: ${server.type}</echo>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+
+  <!--
+    serverStart - target to directly start a TomCat server
+    -->
+  <target name="serverStart">
+    <if>
+      <or>
+        <equals arg1="${server.type}" arg2="tomcat6" />
+      </or>
+      <then>
+        <startTomCat />
+      </then>
+      <elseif>
+        <or>
+          <equals arg1="${server.type}" arg2="gsbisserver36" />
+        </or>
+        <then>
+          <startBisServer />
+        </then>
+      </elseif>
+      <else>
+        <fail>No server specified, please specify the server to be used</fail>
+      </else>
+    </if>
+  </target>
+  
+  <!--
+    serverStop - target to directly stop the current server
+    -->
+  <target name="serverStop">
+    <if>
+      <or>
+        <equals arg1="${server.type}" arg2="tomcat6" />
+      </or>
+      <then>
+        <stopTomCat />
+      </then>
+      <elseif>
+        <or>
+          <equals arg1="${server.type}" arg2="gsbisserver36" />
+        </or>
+        <then>
+          <stopBisServer />
+        </then>
+      </elseif>
+      <else>
+        <fail>No server specified, please specify the server to be used</fail>
+      </else>
+    </if>
+  </target>
+  
+  <target name="serverUseTomCat">
+    <var name="server.type" value="tomcat6" />
+    <serverLoadProperties />
+  </target>
+  
+  <target name="serverUseBisServer">
+    <var name="server.type" value="gsbisserver36" />
+    <serverLoadProperties />
+  </target>
+</project>

@@ -1,0 +1,30 @@
+# if you deploy the framework to a TomCat server you need this setting
+#tomcat.webapp.root=<webappDir>
+
+# if you deploy the framework to a Pentaho server you need those settings
+#pentaho.webapp.dir=<webappGSBISDir>
+#pentaho.solutions.dir=<solutionDir>
+
+# build.source.dir                                # default: src
+
+# maven settings
+#maven.artifactory.source.url=<url>              # default: ${maven.artifactory.source.url}
+#maven.artifactory.target.url=<url>              # default: ${maven.artifactory.target.url}
+#maven.repository.source.url=<url>               # default: ${maven.artifactory.source.url}/OVERALL
+#maven.repository.target.releaseUrl=<url>        # default: ${maven.artifactory.target.url}/RELEASES
+#maven.repository.target.snapshotUrl=<url>       # default: ${maven.artifactory.target.url}/SNAPSHOTS
+#maven.repository.local=<fullPath>               # default: ${user.home}/.m2/repository
+maven.repository.source.username=<user>
+maven.repository.source.password=<encPassword>
+maven.repository.target.username=<user>
+maven.repository.target.password=<encPassword>
+
+# proxy settings (host:port is proxy:80, user and pass empty)
+proxy.host=proxy
+proxy.port=80
+proxy.user=
+proxy.pass=
+
+# svn settings
+#svn.username=<username>
+#svn.password=<password>

@@ -1,0 +1,20 @@
+# Vendor must be defined
+main.vendor=
+
+# Build settings
+build.launcher.groupId=
+build.applications.groupId=
+
+# Maven settings
+maven.artifactory.source.url=
+maven.artifactory.target.url=
+
+# Proxy settings - must be set even if not used
+proxy.nonehosts=
+
+# SVN settings
+svn.repository.url=
+
+# Configuration settings
+configuration.properties.location=
+configuration.versions.foldername=
