@@ -13,11 +13,14 @@
   <dirname property="library_main.basedir" file="${ant.file.library_main}"/>
   <property name="main.root" location="${library_main.basedir}\..\" />
   
+  <!-- the default location of the configuration -->
+  <property name="main.config.location" location="${main.root}/ant/" />
+  
   <!-- files used by the script -->
   <property name="main.config.project.user" location="${basedir}/override.properties" />
   <property name="main.config.project" location="${basedir}/config.properties" />
-  <property name="main.config.default" location="${main.root}/ant/config.properties" />
-  <property name="main.library.script" location="${main.root}/ant/scriptconfig.properties" />
+  <property name="main.config.default" location="${main.config.location}/config.properties" />
+  <property name="main.library.script" location="${main.config.location}/scriptconfig.properties" />
   <property name="main.library.resfile.build.example" location="${main.root}/build.xml" />
   <property name="main.library.resfile.config.example" location="${main.root}/ant/config.properties.example" />
   <property name="main.library.resfile.config.script.example" location="${main.root}/ant/scriptconfig.properties.example" />

@@ -8,7 +8,7 @@
       - Creation of library
   -->
 <project name="library_svn">
-  <property name="svn.library.version" value="1.0.1" description="The current version of the library" />
+  <property name="svn.library.version" value="1.5.0" description="The current version of the library" />
   <dirname property="library_svn.basedir" file="${ant.file.library_svn}"/>
 
   <property name="svn.init" value="false" description="For internal usage only, please do not modify this property by any file" />
@@ -21,8 +21,6 @@
     
   <property name="svn.repository.url" value="" description="The url of the SVN repository" />
   <property name="svn.repository.forceoffline" value="false" description="if set to true, the repository will be forced to be assumed offline" />
-
-  <taskdef name="svn" classname="com.googlecode.svntask.SvnTask" />
   
   <!--
     add the antcontrib library
@@ -53,35 +51,113 @@
         </else>
       </if>
       
-      <!-- check the credentials passed for the repository -->
-      <svn>
-        <info path="." urlProperty="svn.info.rootUrl" committedRevisionProperty="svn.info.lastRev" authorProperty="svn.info.lastRevAuthor" committedDateProperty="svn.info.lastRevDate" />
-      </svn>
+      <!-- initialize the SVN Kit -->
+      <script language="javascript">
+      <![CDATA[
+        // For using over http:// and https://
+        org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory.setup();
+        // For using over svn:// and svn+xxx://
+        org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl.setup();
+        // For using over file:///
+        org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory.setup();
+      ]]>
+      </script>
+      
+      <!-- get the information of the current path -->
+      <script language="javascript">
+      <![CDATA[
+        // get the client manager and authenticate
+        var user = project.getProperty("svn.username");
+        var pass = project.getProperty("svn.password");
+        var clientManager = org.tmatesoft.svn.core.wc.SVNClientManager.newInstance();
+        var authManager = org.tmatesoft.svn.core.wc.SVNWCUtil.createDefaultAuthenticationManager(user, pass);
+        clientManager.setAuthenticationManager(authManager);
+      
+        var infoClient = clientManager.getWCClient();
+        
+        try {
+          var info = infoClient.doInfo(new java.io.File("."), org.tmatesoft.svn.core.wc.SVNRevision.WORKING);
+
+          // set the new information
+          setProperty("svn.info.rootUrl", info.getURL().toDecodedString());
+          setProperty("svn.info.lastRev", new java.lang.Long(info.getCommittedRevision().getNumber()).toString());
+          setProperty("svn.info.lastRevAuthor", info.getAuthor());
+          setProperty("svn.info.lastRevDate", java.text.DateFormat.getInstance().format(date));
+        } catch (error) {
+        }
+      ]]>
+      </script>
 
       <!-- initialization finished -->
       <var name="svn.init" value="true" />
     </then>
   </if>
   
-  <macrodef name="svnUpdate">
-    <sequential>
-      <svn username="${svn.username}" password="${svn.password}">
-        <update path="." force="true" recursive="true" />
-        <info path="." committedRevisionProperty="svn.info.lastRev" authorProperty="svn.info.lastRevAuthor" committedDateProperty="svn.info.lastRevDate" />
-      </svn>
-    </sequential>
-  </macrodef>
-  
-  <macrodef name="svnCommit">
+  <scriptdef name="svnUpdate" language="javascript">
     <attribute name="message" />
+    
+    <![CDATA[
+
+      // get the properties
+      var message = attributes.get("message");
+            
+      // get the client manager and authenticate
+      var user = project.getProperty("svn.username");
+      var pass = project.getProperty("svn.password");
+      var clientManager = org.tmatesoft.svn.core.wc.SVNClientManager.newInstance();
+      var authManager = org.tmatesoft.svn.core.wc.SVNWCUtil.createDefaultAuthenticationManager(user, pass);
+      clientManager.setAuthenticationManager(authManager);
+      
+      // do the commit
+      var file = new java.io.File(".");
+      var files = [];
+      files.push(file);
+      var updateClient = clientManager.getUpdateClient();
+      updateClient.doUpdate(files, org.tmatesoft.svn.core.wc.SVNRevision.HEAD, org.tmatesoft.svn.core.SVNDepth.INFINITY, true, true);
+      
+      // set the new information
+      var infoClient = clientManager.getWCClient();
+      var info = infoClient.doInfo(file, org.tmatesoft.svn.core.wc.SVNRevision.WORKING);
+
+      // set the new information
+      setProperty("svn.info.lastRev", new java.lang.Long(info.getCommittedRevision().getNumber()).toString());
+      setProperty("svn.info.lastRevAuthor", info.getAuthor());
+      setProperty("svn.info.lastRevDate", java.text.DateFormat.getInstance().format(date));
+    ]]>
+  </scriptdef>
   
-    <sequential>
-      <svn username="${svn.username}" password="${svn.password}">
-        <commit path="." force="true" commitmessage="@{message}" />
-        <info path="." committedRevisionProperty="svn.info.lastRev" authorProperty="svn.info.lastRevAuthor" committedDateProperty="svn.info.lastRevDate" />
-      </svn>
-    </sequential>
-  </macrodef>
+  <scriptdef name="svnCommit" language="javascript">
+    <attribute name="message" />
+    
+    <![CDATA[
+
+      // get the properties
+      var message = attributes.get("message");
+            
+      // get the client manager and authenticate
+      var user = project.getProperty("svn.username");
+      var pass = project.getProperty("svn.password");
+      var clientManager = org.tmatesoft.svn.core.wc.SVNClientManager.newInstance();
+      var authManager = org.tmatesoft.svn.core.wc.SVNWCUtil.createDefaultAuthenticationManager(user, pass);
+      clientManager.setAuthenticationManager(authManager);
+      
+      // do the commit
+      var file = new java.io.File(".");
+      var files = [];
+      files.push(file);
+      var commitClient = clientManager.getCommitClient();
+      commitClient.doCommit(files, false, message, null, null, true, true, org.tmatesoft.svn.core.SVNDepth.INFINITY);
+      
+      // get the new information
+      var infoClient = clientManager.getWCClient();
+      var info = infoClient.doInfo(file, org.tmatesoft.svn.core.wc.SVNRevision.WORKING);
+
+      // set the new information
+      setProperty("svn.info.lastRev", new java.lang.Long(info.getCommittedRevision().getNumber()).toString());
+      setProperty("svn.info.lastRevAuthor", info.getAuthor());
+      setProperty("svn.info.lastRevDate", java.text.DateFormat.getInstance().format(date));
+    ]]>
+  </scriptdef>
 
   <macrodef name="svnCheckUnversioned">
     

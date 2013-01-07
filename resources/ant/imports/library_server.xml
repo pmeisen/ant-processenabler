@@ -41,16 +41,24 @@
     <attribute name="property" default="server.notreachable" />
 
     <sequential>
-    
-      <if>
-        <http url="@{url}" errorsBeginAt="500" />
-        <then>
+      <trycatch property="server.tmp.error" reference="server.tmp.errReference">
+        <try>
+          <if>
+            <http url="@{url}" errorsBeginAt="500" />
+            <then>
+              <var name="@{property}" value="false" />
+            </then>
+            <else>
+              <var name="@{property}" value="true" />
+            </else>
+          </if>
+        </try>
+        <catch>
+          <!-- in the case of any error -->
           <var name="@{property}" value="false" />
-        </then>
-        <else>
-          <var name="@{property}" value="true" />
-        </else>
-      </if>
+        </catch>
+        <finally />
+      </trycatch>
     </sequential>
   </macrodef>
   
