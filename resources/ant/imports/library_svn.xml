@@ -79,10 +79,11 @@
           var info = infoClient.doInfo(new java.io.File("."), org.tmatesoft.svn.core.wc.SVNRevision.WORKING);
 
           // set the new information
-          setProperty("svn.info.rootUrl", info.getURL().toDecodedString());
-          setProperty("svn.info.lastRev", new java.lang.Long(info.getCommittedRevision().getNumber()).toString());
-          setProperty("svn.info.lastRevAuthor", info.getAuthor());
-          setProperty("svn.info.lastRevDate", java.text.DateFormat.getInstance().format(date));
+          var setProperty = project.createTask("var");
+          setProperty.setName("svn.info.rootUrl"); setProperty.setValue(info.getURL().toDecodedString()); setProperty.execute();
+          setProperty.setName("svn.info.lastRev"); setProperty.setValue(new java.lang.Long(info.getCommittedRevision().getNumber()).toString()); setProperty.execute();
+          setProperty.setName("svn.info.lastRevAuthor"); setProperty.setValue(info.getAuthor()); setProperty.execute();
+          setProperty.setName("svn.info.lastRevDate"); setProperty.setValue(java.text.DateFormat.getInstance().format(info.getCommittedDate())); setProperty.execute();
         } catch (error) {
         }
       ]]>
@@ -94,12 +95,8 @@
   </if>
   
   <scriptdef name="svnUpdate" language="javascript">
-    <attribute name="message" />
-    
-    <![CDATA[
 
-      // get the properties
-      var message = attributes.get("message");
+    <![CDATA[
             
       // get the client manager and authenticate
       var user = project.getProperty("svn.username");
@@ -120,9 +117,10 @@
       var info = infoClient.doInfo(file, org.tmatesoft.svn.core.wc.SVNRevision.WORKING);
 
       // set the new information
-      setProperty("svn.info.lastRev", new java.lang.Long(info.getCommittedRevision().getNumber()).toString());
-      setProperty("svn.info.lastRevAuthor", info.getAuthor());
-      setProperty("svn.info.lastRevDate", java.text.DateFormat.getInstance().format(date));
+      var setProperty = project.createTask("var");
+      setProperty.setName("svn.info.lastRev"); setProperty.setValue(new java.lang.Long(info.getCommittedRevision().getNumber()).toString()); setProperty.execute();
+      setProperty.setName("svn.info.lastRevAuthor"); setProperty.setValue(info.getAuthor()); setProperty.execute();
+      setProperty.setName("svn.info.lastRevDate"); setProperty.setValue(java.text.DateFormat.getInstance().format(info.getCommittedDate())); setProperty.execute();
     ]]>
   </scriptdef>
   
@@ -153,9 +151,10 @@
       var info = infoClient.doInfo(file, org.tmatesoft.svn.core.wc.SVNRevision.WORKING);
 
       // set the new information
-      setProperty("svn.info.lastRev", new java.lang.Long(info.getCommittedRevision().getNumber()).toString());
-      setProperty("svn.info.lastRevAuthor", info.getAuthor());
-      setProperty("svn.info.lastRevDate", java.text.DateFormat.getInstance().format(date));
+      var setProperty = project.createTask("var");
+      setProperty.setName("svn.info.lastRev"); setProperty.setValue(new java.lang.Long(info.getCommittedRevision().getNumber()).toString()); setProperty.execute();
+      setProperty.setName("svn.info.lastRevAuthor"); setProperty.setValue(info.getAuthor()); setProperty.execute();
+      setProperty.setName("svn.info.lastRevDate"); setProperty.setValue(java.text.DateFormat.getInstance().format(info.getCommittedDate())); setProperty.execute();
     ]]>
   </scriptdef>
 
@@ -400,4 +399,12 @@
       setProperty.execute();
     ]]>
   </scriptdef>
+  
+  <target name="commit">
+    <svnCommit message="Fast Commit via Ant" />
+  </target>
+  
+  <target name="update">
+    <svnUpdate />
+  </target>
 </project>
