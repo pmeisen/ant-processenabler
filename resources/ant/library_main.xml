@@ -7,6 +7,8 @@
   History:
     01.03.2012
       - Creation of library
+    03.01.2013
+      - modified loading order of properties
   -->
 <project name="library_main" basedir=".">
   <property name="main.library.version" value="1.0.5" description="The current version of the library" />
