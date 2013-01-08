@@ -43,7 +43,7 @@
       
       <!-- set some properties -->
       <property name="configuration.main.root" value="${basedir}" />
-      <property name="configuration.settings.root" location="${library_main.basedir}/${configuration.properties.location}" />
+      <property name="configuration.settings.root" location="${configuration.properties.location}" />
       <property name="configuration.settings.pomfolder" location="${configuration.main.root}/${configuration.versions.foldername}" />
       <property name="configuration.settings.default" location="${configuration.settings.root}/${configuration.settings.defaultconfig}" />
 

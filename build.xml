@@ -2,7 +2,7 @@
 
 <project name="ant-processenabler" default="default">
 
-  <!-- skip svn, but add all extensions -->
+  <!-- skip svn and don't add any extensions -->
   <property name="main.import.library.svn" value="false" />
   <property name="main.addExtensionsByDefault" value="false" />
 

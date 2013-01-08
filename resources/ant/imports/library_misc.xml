@@ -11,6 +11,15 @@
   <property name="misc.library.version" value="1.2.0" description="The current version of the library" />
   <dirname property="library_misc.basedir" file="${ant.file.library_misc}"/>
   
+  <property name="misc.batch.name" value="antRunAsync" description="The general name of the script/batch to be executed" />
+  <property name="misc.batch.location" value="${main.root}/helper/antRunAsync" description="The location of the script/batch to be executed" />
+  <property name="misc.batch.genericPath" value="${misc.batch.location}/${misc.batch.name}" description="The execution to be used generally to work under Unix and Windows" />
+  
+  <property name="misc.library.resfile.batch.unix" location="${misc.batch.location}/${misc.batch.name}" description="Script to be executed (Unix)" />
+  <property name="misc.library.resfile.batch.windows" location="${misc.batch.location}/${misc.batch.name}.bat" description="Batch file to be executed (Windows)" />
+  <property name="misc.library.resfile.js.window" location="${misc.batch.location}/${misc.batch.name}.js" description="Additional JavaScript needed (Windows)" />
+  <property name="misc.library.resfile.js.sleep" location="${misc.batch.location}/sleep.js" description="Additional JavaScript for sleep - often needed while waiting for ant finish (Windows)" />
+  
   <!--
     generateUUID - generates a UUID and sets the passed property to the specified value
     -->
@@ -255,7 +264,7 @@
           <propertycopy name="misc.tmp.import" from="main.import.library.@{misc.tmp.library}" silent="true" />
             
           <if>
-            <not><equals arg1="${misc.tmp.library}" arg2="" /></not>
+            <not><equals arg1="@{misc.tmp.library}" arg2="" /></not>
             <then>
               <libraryFiles library="@{misc.tmp.library}" filesetid="misc.tmp.libraryFiles" />
 
@@ -267,7 +276,7 @@
             </then>
           </if>
         </sequential>
-      </for>            
+      </for>
     </sequential>
   </macrodef>
   
@@ -287,9 +296,47 @@
       <pathconvert refid="misc.tmp.library.files" pathsep="," property="misc.tmp.library.files">
         <regexpmapper from="^\Q${main.root}\E[\\/](.+)$" to="\1"/>
       </pathconvert>
-
+      
       <!-- get the fileset -->
-      <fileset id="@{filesetid}" dir="${main.root}" includes="${misc.tmp.library.files}" />
+      <if>
+        <and>
+          <isset property="misc.tmp.library.files" />
+          <not><equals arg1="${misc.tmp.library.files}" arg2="" /></not>
+        </and>
+        <then>
+          <fileset id="@{filesetid}" dir="${main.root}" includes="${misc.tmp.library.files}" />
+        </then>
+        <else>
+          <echo level="warn">Warning: The @{library}-library was not included and therefore won't be included in the wrap-up</echo>
+          <fileset id="@{filesetid}" dir="${main.root}">
+            <exclude name="**/*" />
+          </fileset>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="asyncExec">
+    <attribute name="exec" />
+    <attribute name="title" default="ant async exec" />
+    <attribute name="workingDir" default ="." />
+    <attribute name="arg1" default ="" />
+    <attribute name="arg2" default ="" />
+    <attribute name="arg3" default ="" />
+    <attribute name="arg4" default ="" />
+    <attribute name="arg5" default ="" />
+    
+    <sequential>
+      <exec executable="${misc.batch.genericPath}" dir="@{workingDir}" vmlauncher="false" failonerror="true">
+        <env key="ANTRUN_TITLE" value="@{title}" />
+        <!-- actual executable and arguments to run -->
+        <arg line="@{exec}" />
+        <arg line="@{arg1}" />
+        <arg line="@{arg2}" />
+        <arg line="@{arg3}" />
+        <arg line="@{arg4}" />
+        <arg line="@{arg5}" />
+      </exec>
     </sequential>
   </macrodef>
 </project>

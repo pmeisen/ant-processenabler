@@ -2,19 +2,12 @@
 
 <project name="ant-processenabler" default="default">
 
-  <!-- skip svn, but add all extensions -->
+  <!-- add all extensions, we need all libraries here -->
   <property name="main.addExtensionsByDefault" value="true" />
 
   <!-- get the process enabler -->
   <import file="${ant.home}\resources\ant\library_main.xml" />
-  
-  <target name="test">
-    <echo>${ant.home}</echo>
-    <echo>${ant.file.library_main}</echo>
-    
-    <echoproperties/>
-  </target>
-  
+
   <!-- just a helper to execute cleanUp as well -->
   <target name="default" depends="wrapUp,cleanUp">
     <fileCleanUp dir="${build.dir}" recreate="false" />

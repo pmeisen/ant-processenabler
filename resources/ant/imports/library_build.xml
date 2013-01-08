@@ -25,7 +25,7 @@
   <property name="build.javadoc.dir" value="javadoc" description="Project javadoc directory" />
   <property name="build.app.dir" value="app" description="Build directory for appliactions" />
   <property name="build.source.dir" value="src" description="Project source code directory" />
-  <property name="build.build.dir" value="_build" description="Project build directory directory" />
+  <property name="build.build.dir" value="_build" description="Project build directory" />
   <property name="build.dir" location="${build.build.dir}" description="Project build directory (full path)" />
   <property name="build.tmpdir" location="${build.dir}/tmp" description="Project temporary code directory (full path)" />
   <property name="build.srcdir" location="${basedir}/${build.source.dir}" description="Project source code directory (full path)" />
@@ -1288,7 +1288,7 @@
     <!-- lets tag everything -->
     <svnTag message="Release of ${maven.pom.version}" />
     
-    <!-- lets distribute the binaries -->
+    <!-- lets deploy the binaries -->
     <buildDeployLatestBuild />
     
     <!-- create the assembly -->

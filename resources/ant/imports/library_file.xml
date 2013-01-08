@@ -6,6 +6,8 @@
   History:
     01.03.2012
       - Creation of library
+    03.01.2013
+      - added new macros for file manipulation
   -->
 <project name="library_file">
   <property name="file.library.version" value="2.0.0" description="The current version of the library" />
@@ -57,6 +59,56 @@
   </macrodef>
   
   <!--
+    fileUnzipZipFileTo - unzips a zip-file to the specified comma-separated locations
+    -->
+  <macrodef name="fileUnzipZipFileTo">
+    <attribute name="zipFile" />
+    <attribute name="locations" />
+
+    <sequential>
+    
+      <if>
+        <not><equals arg1="@{locations}" arg2="" /></not>
+        <then>
+          <for list="@{locations}" param="file.tmp.unzipTo" trim="true">
+            <sequential>
+              <mkdir dir="@{file.tmp.unzipTo}" />
+              <unzip src="@{zipFile}" dest="@{file.tmp.unzipTo}" overwrite="true" />
+            </sequential>
+          </for>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="fileZipLocations">
+    <attribute name="zipLocations" />
+    <attribute name="destLocation" />
+    <attribute name="destFilePrefix" default="file" />
+    
+    <sequential>
+    
+      <if>
+        <not><equals arg1="@{zipLocations}" arg2="" /></not>
+        <then>
+          <var name="file.tmp.zipCounter" value="" unset="true" />
+          <for list="@{zipLocations}" param="file.tmp.zip" trim="true">
+            <sequential>
+              <if>
+                <available file="@{file.tmp.zip}"/>
+                <then>
+                  <incProperty property="file.tmp.zipCounter" />
+                  <zip destfile="@{destLocation}/@{destFilePrefix}_${file.tmp.zipCounter}.zip" basedir="@{file.tmp.zip}" />
+                </then>
+              </if>
+            </sequential>
+          </for>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!--
     fileReplaceAllProperties - creates a copy of the specified file, whereby all known ant-properties are replaced
     -->
   <macrodef name="fileReplaceAllProperties">
@@ -87,6 +139,16 @@
           <copy file="@{file}" tofile="@{destFile}" overwrite="true" />
         </else>
       </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="fileGetFileName">
+    <attribute name="file" />
+    <attribute name="property" />
+
+    <sequential>
+      <var name="@{property}" value="" unset="true" />
+      <basename property="@{property}" file="@{file}"/>
     </sequential>
   </macrodef>
   
@@ -635,6 +697,30 @@
       var setProperty = project.createTask("var");
       setProperty.setName(property);
       setProperty.setValue(newFile);
+      setProperty.execute();
+    ]]>
+  </scriptdef>
+  
+  <scriptdef name="fileGetCanonicalFile" language="javascript">
+    <attribute name="file" />
+    <attribute name="property" />
+    
+    <![CDATA[
+      var property = attributes.get("property");
+      var filePath = attributes.get("file");
+      
+      var file = new java.io.File(filePath);
+      var cname = "";
+      try {
+        cname = file.getCanonicalPath();
+      } catch (error) {
+        cname = file.getAbsolutePath();
+      }
+      
+      // set the property
+      var setProperty = project.createTask("var");
+      setProperty.setName(property);
+      setProperty.setValue(cname);
       setProperty.execute();
     ]]>
   </scriptdef>

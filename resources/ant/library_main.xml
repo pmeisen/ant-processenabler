@@ -136,11 +136,12 @@
   <target name="cleanUp">
     <if><typefound name="mavenCleanUp"/><then><mavenCleanUp /></then></if>
     <if><typefound name="buildCleanUp"/><then><buildCleanUp /></then></if>
+    <if><typefound name="updateCleanUp"/><then><updateCleanUp /></then></if>
   </target>
   
   <target name="wrapUp">
     <allLibrariesFiles filesetid="main.tmp.appData" />
-    <zip destfile="${main.root}/wrapUp.zip">
+    <zip destfile="wrapUp.zip">
       <fileset refid="main.tmp.appData" />
     </zip>
   </target>

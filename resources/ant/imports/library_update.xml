@@ -1,0 +1,227 @@
+<!--
+  Library which adds some macros and targets for update operations
+  
+  Created on: 01.01.2013
+  Created by: Philipp Meisen <philipp@meisen.net>
+  History:
+    01.01.2013
+      - Creation of library
+  -->
+<project name="library_update">
+  <property name="update.library.version" value="1.0.0" description="The current version of the library" />
+  <dirname property="library_update.basedir" file="${ant.file.library_update}"/>
+  
+  <property name="update.library.resfile.batch.cleanup" location="${library_update.basedir}/updateCleanUp.bat" />
+  
+  <property name="update.update.dir" value="_update" description="Project update directory" />
+  <property name="update.dir" location="${update.update.dir}" description="Project update directory (full path)" />
+  <property name="update.tmpdir" location="${update.dir}/tmp" description="Project temporary code directory (full path)" />
+
+  <property name="update.isUpdatable" value="false" description="true if the project is updatable" />
+  
+  <property name="update.init" value="false" description="For internal usage only, please do not modify this property by a file" />
+  
+  <!--
+    add the antcontrib library
+    -->
+  <taskdef resource="net/sf/antcontrib/antlib.xml" />
+
+  <!--
+    initialize - do some things that have to be done
+    -->
+  <if>
+    <equals arg1="${update.init}" arg2="false" />
+    <then>
+      
+      <if>
+        <or><equals arg1="${update.isUpdatable}" arg2="y" /><equals arg1="${update.isUpdatable}" arg2="yes" /><equals arg1="${update.isUpdatable}" arg2="true" /></or>
+        <then>
+          <mkdir dir="${update.dir}" />
+        </then>
+      </if>
+      
+      <!-- initialization finshed -->
+      <var name="update.init" value="true" />
+    </then>
+  </if>
+  
+  <!--
+    updateCleanUp - cleans up after the update process
+    -->
+  <macrodef name="updateCleanUp">
+ 
+    <sequential>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="updateCreateBackUp">
+    <attribute name="srcLocations" />
+    <attribute name="destLocation" default="." />
+    <attribute name="destFilename" default="backup" />
+    <attribute name="appendDate" default ="true" />
+    
+    <sequential>
+      <if>
+        <not><or><equals arg1="${update.isUpdatable}" arg2="y" /><equals arg1="${update.isUpdatable}" arg2="yes" /><equals arg1="${update.isUpdatable}" arg2="true" /></or></not>
+        <then>
+          <fail>The project is not updatable, please set update.isUpdatable to true.</fail>
+        </then>
+      </if>
+    
+      <if>
+        <or><equals arg1="@{appendDate}" arg2="y" /><equals arg1="@{appendDate}" arg2="yes" /><equals arg1="@{appendDate}" arg2="true" /></or>
+        <then>
+          <var name="update.tmp.timestamp" value="" unset="true" />
+          <tstamp>
+            <format property="update.tmp.timestamp" pattern="yyyyMMdd_HHmmss" />
+          </tstamp>
+          <var name="update.tmp.filename" value="${update.tmp.timestamp}_@{destFilename}" />
+        </then>
+        <else>
+          <var name="update.tmp.filename" value="@{destFilename}" />
+        </else>
+      </if>
+      
+      <!-- copy the locations to the destLocation -->
+      <mkdir dir="@{destLocation}" />
+      <fileZipLocations zipLocations="@{srcLocations}" destLocation="@{destLocation}" destFilePrefix="${update.tmp.filename}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="updateCreateBatch">
+    <attribute name="genericfile" />
+    <attribute name="srcLocation" />
+    <attribute name="destLocations" />
+    <attribute name="property" default="update.tmp.batchfile.file" />
+    
+    <sequential>
+      <if>
+        <os family="windows" />
+        <then>
+          <var name="update.tmp.batchfile.suffix" value=".bat" />
+        </then>
+        <else>
+          <var name="update.tmp.batchfile.suffix" value="" />
+        </else>
+      </if>
+      <var name="update.tmp.batchfile.file" value="@{genericfile}${update.tmp.batchfile.suffix}" />
+      <var name="@{property}" value="${update.tmp.batchfile.file}" />
+    
+      <delete file="${update.tmp.batchfile.file}" />
+      <if>
+        <os family="windows" />
+        <then>
+          <echo file="${update.tmp.batchfile.file}">
+          @ECHO OFF
+          ECHO The update will be installed at:</echo>
+          
+          <for list="@{destLocations}" param="update.tmp.dest" trim="true">
+            <sequential>
+              <fileGetCanonicalFile property="update.tmp.destpath" file="@{update.tmp.dest}" />
+              <echo file="${update.tmp.batchfile.file}" append="true">
+              ECHO - ${update.tmp.destpath}</echo>
+            </sequential>
+          </for>
+          
+          <echo file="${update.tmp.batchfile.file}" append="true">
+          set sleep=cscript //NoLogo ${misc.library.resfile.js.sleep}
+
+          ECHO.
+          ECHO The update will start automatically in 10 seconds, please be patient...
+          %sleep% 10</echo>
+
+          <for list="@{destLocations}" param="update.tmp.dest" trim="true">
+            <sequential>
+              <fileGetCanonicalFile property="update.tmp.destlibpath" file="@{update.tmp.dest}\${build.library.dir}" />
+              <echo file="${update.tmp.batchfile.file}" append="true">
+              IF EXIST "${update.tmp.destlibpath}" RD /S /Q "${update.tmp.destlibpath}"</echo>
+
+              <for param="update.tmp.src">
+                <path><fileset dir="@{srcLocation}" /></path>
+                <sequential>
+                  <fileGetSubPath basedir="@{srcLocation}" file="@{update.tmp.src}" property="update.tmp.subpath" />
+                  <fileGetFileName property="update.tmp.filename" file="@{update.tmp.src}" />
+                  <fileGetCanonicalFile property="update.tmp.destsubpath" file="@{update.tmp.dest}\${update.tmp.subpath}" />
+                  <fileGetCanonicalFile property="update.tmp.destfilename" file="@{update.tmp.dest}\${update.tmp.subpath}\${update.tmp.filename}" />
+
+                  <echo file="${update.tmp.batchfile.file}" append="true">
+                  IF EXIST "${update.tmp.destfilename}" DEL "${update.tmp.destfilename}" /F /A:H /A:S /A:R /A:A</echo>
+                  <echo file="${update.tmp.batchfile.file}" append="true">
+                  IF NOT EXIST "${update.tmp.destsubpath}" MKDIR "${update.tmp.destsubpath}"</echo>
+                  <echo file="${update.tmp.batchfile.file}" append="true">
+                  COPY /Y /V "@{update.tmp.src}" "${update.tmp.destfilename}"</echo>
+                </sequential>
+              </for>
+            </sequential>
+          </for>
+          
+          <echo file="${update.tmp.batchfile.file}" append="true">
+          IF EXIST "@{srcLocation}" RD /S /Q "@{srcLocation}"
+          echo Update successful
+          PAUSE</echo>
+        </then>
+        <else>
+          <fail>The operation system is not supported.</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="updateUpdate">
+    <attribute name="srcFile" />
+    <attribute name="destLocations" />
+    
+    <sequential>
+      <if>
+        <not><or><equals arg1="${update.isUpdatable}" arg2="y" /><equals arg1="${update.isUpdatable}" arg2="yes" /><equals arg1="${update.isUpdatable}" arg2="true" /></or></not>
+        <then>
+          <fail>The project is not updatable, please set update.isUpdatable to true.</fail>
+        </then>
+      </if>
+
+      <!-- create the repository directory -->
+      <mkdir dir="${update.dir}" />
+      <fileCleanUp dir="${update.tmpdir}" />
+    
+      <!-- generate UUID for the update id to be unique -->
+      <generateUUID property="update.tmp.updateid" />
+      
+      <!-- get the data to be updated somewhere -->
+      <var name="update.tmp.updatedata" value="${update.tmpdir}/${update.tmp.updateid}" />
+      <fileCleanUp dir="${update.tmp.updatedata}" />
+      <unzip src="@{srcFile}" dest="${update.tmp.updatedata}" />
+
+      <!-- lets create an update batch file -->
+      <var name="update.tmp.genericfile" value="${update.tmpdir}/update_${update.tmp.updateid}" />
+      <updateCreateBatch genericfile="${update.tmp.genericfile}" srcLocation="${update.tmp.updatedata}" destLocations="@{destLocations}" />
+    
+      <!-- do the job asynchronous -->
+      <asyncExec title="Update Process" exec="${update.tmp.genericfile}" />
+    </sequential>
+  </macrodef>
+  
+  <target name="distributeAssembly" depends="assemble">
+    <if>
+      <isset property="distribute.assembly.to" />
+      <then>
+        <fileUnzipZipFileTo zipfile="${build.appFile}" locations="${distribute.assembly.to}" />
+      </then>
+    </if>
+  </target>
+  
+  <target name="updateAssembly" depends="assemble">
+    <if>
+      <not><or><equals arg1="${update.isUpdatable}" arg2="y" /><equals arg1="${update.isUpdatable}" arg2="yes" /><equals arg1="${update.isUpdatable}" arg2="true" /></or></not>
+      <then>
+        <fail>The project is not updatable, please set update.isUpdatable to true to create backups.</fail>
+      </then>
+      <elseif>
+        <isset property="distribute.assembly.to" />
+        <then>
+          <updateCreateBackUp srcLocations="${distribute.assembly.to}" destLocation="${update.dir}" />
+          <updateUpdate srcFile="${build.appFile}" destLocations="${distribute.assembly.to}" />
+        </then>
+      </elseif>
+    </if>
+  </target>
+</project>
