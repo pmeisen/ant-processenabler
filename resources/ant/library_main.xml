@@ -12,46 +12,39 @@
   <property name="main.library.version" value="1.0.5" description="The current version of the library" />
   <dirname property="library_main.basedir" file="${ant.file.library_main}"/>
   <property name="main.root" location="${library_main.basedir}\..\" />
-   
-  <!--
-    Load the properties for the main library which might be specified
-    -->
-  <property name="main.config.default" location="${main.root}/ant/settings.properties" />
-  <property file="${main.config.default}" />
-  
-  <!-- the default location of the configuration -->
-  <property name="main.config.location" location="${main.root}/ant/" />
-  
-  <!-- files used by the script -->
-  <property name="main.config.project.user" location="${basedir}/override.properties" />
-  <property name="main.config.project" location="${basedir}/config.properties" />
-  <property name="main.config.user.default" location="${main.config.location}/config.properties" />
-  <property name="main.config.general.default" location="${main.config.location}/scriptconfig.properties" />
+
+  <!-- resource files needed by this module -->
   <property name="main.library.resfile.build.example" location="${main.root}/build.xml" />
   <property name="main.library.resfile.config.example" location="${main.root}/ant/settings.properties.example" />
   <property name="main.library.resfile.config.user.example" location="${main.root}/ant/config.properties.example" />
   <property name="main.library.resfile.config.general.example" location="${main.root}/ant/scriptconfig.properties.example" />
   <property name="main.library.resfile.config.libraries" location="${main.root}/ant/libraryconfig.properties" />
-  
-  <!--
-    Load the library configuration
-    -->
+
+  <!-- Load the library configuration -->
   <property file="${main.library.resfile.config.libraries}" />
-  <!--
-    Load the user-specific override.properties of the project
-    -->
+  
+  <!-- Load the properties for the main library which might be specified -->
+  <property name="main.config.default" location="${main.root}/ant/settings.properties" />
+  <property file="${main.config.default}" />
+  
+  <!-- load also the project specific properties now, because those could overwrite the location of the configuration -->
+  <property name="main.config.project.user" location="${basedir}/override.properties" />
+  <property name="main.config.project" location="${basedir}/config.properties" />
+  <!-- Load the user-specific override.properties of the project -->
   <property file="${main.config.project.user}" />
-  <!--
-    Load the config.properties of the project the main is used in
-    -->
+  <!-- Load the config.properties of the project the main is used in -->
   <property file="${main.config.project}" />
-  <!--
-    Load the user properties for the main library which might be specified
-    -->
+  
+  <!-- the default location of the configuration -->
+  <property name="main.config.location" location="${main.root}/ant/" />
+  
+  <!-- load further properties -->
+  <property name="main.config.user.default" location="${main.config.location}/config.properties" />
+  <property name="main.config.general.default" location="${main.config.location}/scriptconfig.properties" />
+  
+  <!-- Load the user properties for the main library which might be specified -->
   <property file="${main.config.user.default}" />
-  <!--
-    Load the general properties for the main library which might be specified
-    -->
+  <!-- Load the general properties for the main library which might be specified -->
   <property file="${main.config.general.default}" />
     
   <!--

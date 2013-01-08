@@ -2,3 +2,5 @@
 /resources/ant/scriptconfig.properties
 /resources/ant/config.properties
 /override.properties
+/.classpath
+/.project

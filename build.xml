@@ -6,7 +6,7 @@
   <property name="main.import.library.svn" value="false" />
   <property name="main.addExtensionsByDefault" value="false" />
 
-  <!-- get the process enabler -->
+  <!-- get the process enabler current version -->
   <import file="resources\ant\library_main.xml" />
   
   <macrodef name="resourceMapper">
