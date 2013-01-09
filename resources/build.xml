@@ -18,4 +18,39 @@
     <fileCleanUp dir="${build.dir}" recreate="false" />
     <fileCleanUp dir="${test.dir}" recreate="false" />
   </target>
+  
+  <target name="checkArtifactory">
+    <setLogLevel logLevel="info" />
+    <echo>SVN            Offline: ${svn.repository.offline}</echo>
+    <echo>Maven (Source) Offline: ${maven.repository.source.offline}</echo>
+    <echo>Maven (Target) Offline: ${maven.repository.target.offline}</echo>
+    <setLogLevel logLevel="${main.logLevel}" />
+    
+    <!-- get some data -->
+    <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
+      <try>
+        <mavenResolveSingleDependency groupid="${build.launcher.groupId}" artifactid="${build.launcher.artifactId}" version="${build.launcher.version}-SNAPSHOT" fileset="app.tmp.check" />
+      </try>
+      <catch>
+        <fileset id="app.tmp.check" dir=".">
+          <exclude name="**/*" />
+        </fileset>
+      </catch>
+      <finally />
+    </trycatch>
+    <setLogLevel logLevel="info" />
+    <if>
+      <resourcecount refid="app.tmp.check" when="equal" count="1" />
+      <then>
+        <echo>Dependency Resolved   : true</echo>
+      </then>
+      <else>
+        <echo>Dependency Resolved   : false</echo>
+      </else>
+    </if>
+    <setLogLevel logLevel="${main.logLevel}" />
+    
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
 </project>

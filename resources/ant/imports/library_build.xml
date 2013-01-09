@@ -10,9 +10,13 @@
 <project name="library_build">
   <property name="build.library.version" value="2.1.0" description="The current version of the library" />
   <dirname property="library_build.basedir" file="${ant.file.library_build}"/>
+
+  <property name="build.template.startBatch.generic" value="templateStart" description="The generic (cross-platform) name of the file to start an application" />  
+  <property name="build.template.startBatch.folder" location="${main.root}/app" description="Folder to look for the templates" />
   
   <property name="build.library.resfile.template.launcher" location="${main.root}/app/templateLauncher.properties" />
-  <property name="build.library.resfile.template.startBatch" location="${main.root}/app/templateStart.bat" />
+  <property name="build.library.resfile.template.startBatch.unix" location="${main.root}/app/templateStart" description="Script to be executed (Unix)" />
+  <property name="build.library.resfile.template.startBatch.windows" location="${main.root}/app/templateStart.bat" description="Batch file to be executed (Windows)" />
   <property name="build.library.resfile.maven.pomLauncher" location="${main.root}/app/pomLauncher.xml" />
     
   <property name="build.javac.source" value="1.6" description="Provide source compatibility with specified release" />
@@ -45,8 +49,8 @@
   <property name="build.launcher.xmx" value="512M" description="The Xmx value to be used by the launcher" />
   <property name="build.launcher.resourcesDir" value="" description="the list of resource directories used by the launcher, the default resource dir (i.e. ${build.resources.dir}) will be appended" />
   <property name="build.launcher.libraryDir" value="" description="the list of libhrary directories used by the launcher, the default library dir (i.e. ${build.library.dir}) will be appended" />
-  
-  <property name="build.startbatch.filename" value="start.bat" description="Name of the file used to start the application" />
+
+  <property name="build.startbatch.filename.generic" value="start" description="The generic (cross-platform) name of the file to start an application" />  
   <property name="build.startbatch.create" value="true" description="Defines if a start batch file should be created, this property is always true if a launcher is created (i.e. if build.launcher.create is true, this setting is ignored)" />
   
   <property name="build.assembly.create" value="false" description="set this attribute to true to create an assembly of the project" />
@@ -525,9 +529,9 @@
   <macrodef name="buildAssembly">
     <attribute name="mainClass" default="${build.launcher.mainClass}" />
     <attribute name="templateLauncher" default="${build.library.resfile.template.launcher}" />
-    <attribute name="templateStartBatch" default="${build.library.resfile.template.startBatch}" />
+    <attribute name="templateGenericStartBatch" default="${build.template.startBatch.folder}/${build.template.startBatch.generic}" />
     <attribute name="launcherPropertiesName" default="launcher.properties" />
-    <attribute name="startBatchName" default="${build.startbatch.filename}" />
+    <attribute name="startGenericStartBatchName" default="${build.startbatch.filename.generic}" />
   
     <sequential>
     
@@ -641,8 +645,9 @@
           <var name="build.tmp.libPaths" value="${build.tmp.launcher.libraryDir}" />
 
           <!-- copy the files -->
-          <fileReplaceAllProperties file="@{templateLauncher}" destFile="${build.tmp.appFolder}/launcher/@{launcherPropertiesName}" />
-          <fileReplaceAllProperties file="@{templateStartBatch}" destFile="${build.tmp.appFolder}/@{startBatchName}" />
+          <fileReplaceAllProperties file="@{templateLauncher}" destFile="${build.tmp.appFolder}/launcher/@{launcherPropertiesName}" force="true" />
+          <fileReplaceAllProperties file="@{templateGenericStartBatch}" destFile="${build.tmp.appFolder}/@{startGenericStartBatchName}" force="true" />
+          <fileReplaceAllProperties file="@{templateGenericStartBatch}.bat" destFile="${build.tmp.appFolder}/@{startGenericStartBatchName}.bat" force="true" />
         </then>
         
         <!-- its possible to create only a batch file of a template, so lets check if that should be done -->
@@ -661,7 +666,8 @@
             <var name="build.tmp.libPaths" value="${build.tmp.launcher.libraryDir}" />
 
             <!-- copy the files -->
-            <fileReplaceAllProperties file="@{templateStartBatch}" destFile="${build.tmp.appFolder}/@{startBatchName}" />
+            <fileReplaceAllProperties file="@{templateGenericStartBatch}" destFile="${build.tmp.appFolder}/@{startGenericStartBatchName}" force="true" />
+            <fileReplaceAllProperties file="@{templateGenericStartBatch}.bat" destFile="${build.tmp.appFolder}/@{startGenericStartBatchName}.bat" force="true" />
           </then>
         </elseif>
       </if>

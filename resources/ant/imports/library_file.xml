@@ -115,6 +115,7 @@
     <attribute name="file" />
     <attribute name="destFile" />
     <attribute name="tmp" default="${main.tmpdir}" />
+    <attribute name="force" default="false" />
 
     <sequential>
     
@@ -122,7 +123,12 @@
       <if>
         <and>
           <length file="@{file}" when="greater" length="0" />
-          <matches string="@{file}" pattern="(?:\.xml|\.properties|\.html|\.txt|\.bat|\.mf|\.project|\.classpath|\.template)$" casesensitive="false" />
+          <or>
+            <matches string="@{file}" pattern="(?:\.xml|\.properties|\.html|\.txt|\.bat|\.mf|\.project|\.classpath|\.template|\.sh)$" casesensitive="false" />
+            <equals arg1="@{force}" arg2="true" />
+            <equals arg1="@{force}" arg2="y" />
+            <equals arg1="@{force}" arg2="yes" />
+          </or>
         </and>
         <then>   
           <!-- replace all the properties of the file specified -->
@@ -135,7 +141,7 @@
           <copy file="${main.tmpdir}/file.tmp" tofile="@{destFile}" overwrite="true" />
         </then>
         <else>
-        <echo>---> @{file}</echo>
+          <echo level="warn">Skipping replacment of values in file '@{file}', because of invalid file-type</echo>
           <copy file="@{file}" tofile="@{destFile}" overwrite="true" />
         </else>
       </if>
@@ -183,7 +189,7 @@
                     
           <!-- first copy the once with possibility to replace -->
           <unzip src="@{file}" dest="${file.tmp.stagingArea}" overwrite="true">
-            <patternset excludes="@{excludes}" includes="**/*.xml,**/*.properties,**/*.html,**/*.txt,**/*.bat,**/*.mf,**/*.project,**/*.classpath,**/*.template" />
+            <patternset excludes="@{excludes}" includes="**/*.xml,**/*.properties,**/*.html,**/*.txt,**/*.bat,**/*.mf,**/*.project,**/*.classpath,**/*.template,**/*.sh" />
           </unzip>
 
           <!-- copy and replace properties -->
@@ -196,7 +202,7 @@
           
           <!-- now copy the rest -->
           <unzip src="@{file}" dest="${file.tmp.destLocation}">
-            <patternset excludes="@{excludes},**/*.xml,**/*.properties,**/*.html,**/*.txt,**/*.bat,**/*.mf,**/*.project,**/*.classpath,**/*.template" />
+            <patternset excludes="@{excludes},**/*.xml,**/*.properties,**/*.html,**/*.txt,**/*.bat,**/*.mf,**/*.project,**/*.classpath,**/*.template,**/*.sh" />
           </unzip>
           
           <!-- zip the stuff -->

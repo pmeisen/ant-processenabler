@@ -21,6 +21,10 @@ REM support, things would be much easier, but sadly, it is not yet time.
 REM Be cautious about editing this, and only add WinNT specific stuff in code that
 REM only runs on WinNT.
 
+REM set the new main to be used
+set ANT_ARGS=-main net.meisen.ant.core.Main
+
+REM Default ant.bat starts here
 if "%HOME%"=="" goto homeDrivePathPre
 if exist "%HOME%\antrc_pre.bat" call "%HOME%\antrc_pre.bat"
 
