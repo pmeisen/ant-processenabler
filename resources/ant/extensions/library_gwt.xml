@@ -131,9 +131,19 @@
       <!-- set the directory -->
       <var name="gwt.addBinDir" value="${build.dir}/${gwt.add.binary.dir}" />
       <mkdir dir="${gwt.addBinDir}" />
-      
+
+      <!-- get the dependencies defined within the pomEclipse.xml -->
       <eclipseResolveDependencies fileset="gwt.tmp.eclipse.dependencies" />
-      <buildBuild dest="${gwt.addBinDir}" cpfileset="gwt.tmp.eclipse.dependencies" addExcludes="${gwt.server.defaultExcludedFiles}" />
+      <!-- get the generally defined GWT dependencies for compilation -->
+      <mavenResolveDependencies fileset="gwt.tmp.gwtLibs" pomid="gwt.tmp.pomGWTLibs" pomfile="${gwt.library.resfile.maven.gwtPom}" />
+
+      <!-- combine the dependencies -->
+      <fileCombineFilesets filesetid="gwt.tmp.buildAdd.dependencies">
+        <fileset refid="gwt.tmp.eclipse.dependencies" />
+        <fileset refid="gwt.tmp.gwtLibs" />
+      </fileCombineFilesets>
+      
+      <buildBuild dest="${gwt.addBinDir}" cpfileset="gwt.tmp.buildAdd.dependencies" addExcludes="${gwt.server.defaultExcludedFiles}" />
     </sequential>
   </macrodef>
 
