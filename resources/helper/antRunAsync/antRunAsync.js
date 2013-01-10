@@ -58,5 +58,5 @@ if (outputFile != "") {
 
 // WScript.Echo(exeStr);
 // WshShell.Run(exeStr);
-WScript.Echo("Starting '" + WScript.Arguments(0) + "' asynchroniously");
+WScript.Echo("Starting '" + WScript.Arguments(0) + "' asynchronously");
 WshShell.Run(exeStr, windowStyle, false);

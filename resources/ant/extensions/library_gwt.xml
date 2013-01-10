@@ -19,8 +19,6 @@
   <property name="gwt.library.resfile.template.webXml" location="${library_gwt.basedir}/web.xml.template" />
   <property name="gwt.library.resfile.template.plugin" location="${library_gwt.basedir}/com.google.gdt.eclipse.core.prefs.gwt.settings.template" />
   <property name="gwt.library.resfile.template.index" location="${library_gwt.basedir}/index.html.template" />
-  <property name="gwt.library.resfile.template.index" location="${library_gwt.basedir}/index.html.template" />
-  <property name="gwt.library.resfile.template.index" location="${library_gwt.basedir}/index.html.template" />
   <property name="gwt.library.resfile.template.project" location="${library_gwt.basedir}/library_eclipse_project.template" description="The name of the project template" />
   <property name="gwt.library.resfile.template.classpath" location="${library_gwt.basedir}/library_eclipse_classpath.template" description="The name of the classpath template" />
   
@@ -833,7 +831,18 @@
         <if>
           <not><available file="${gwt.tmp.warDir}/index.html"/></not>
           <then>
-            <fileReplaceAllProperties file="${gwt.library.resfile.template.index}" destFile="${gwt.tmp.warDir}/index.html" />
+            <if>
+              <or>
+                <not><isset property="gwt.module" /></not>
+                <equals arg1="gwt.module" arg2="" />
+              </or>
+              <then>
+                <echo level="warn">You have to set the gwt.module property, prior to creating the index.html. The creation will be skipped. The index.html will only be created if it doesn't exists, therefore keep in mind to delete it if you change the gwt.module property.</echo>
+              </then>
+              <else>
+                <fileReplaceAllProperties file="${gwt.library.resfile.template.index}" destFile="${gwt.tmp.warDir}/index.html" />
+              </else>
+            </if>
           </then>
         </if>
         
