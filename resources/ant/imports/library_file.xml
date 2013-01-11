@@ -118,31 +118,40 @@
     <attribute name="force" default="false" />
 
     <sequential>
-    
-      <!-- files with zero length cannot be property-replaced -->
       <if>
-        <and>
-          <length file="@{file}" when="greater" length="0" />
-          <or>
-            <matches string="@{file}" pattern="(?:\.xml|\.properties|\.html|\.txt|\.bat|\.mf|\.project|\.classpath|\.template|\.sh)$" casesensitive="false" />
-            <equals arg1="@{force}" arg2="true" />
-            <equals arg1="@{force}" arg2="y" />
-            <equals arg1="@{force}" arg2="yes" />
-          </or>
-        </and>
-        <then>   
-          <!-- replace all the properties of the file specified -->
-          <copy file="@{file}" tofile="${main.tmpdir}/file.tmp" overwrite="true">
-            <filterchain>
-              <expandproperties/>
-            </filterchain>
-          </copy>
-          
-          <copy file="${main.tmpdir}/file.tmp" tofile="@{destFile}" overwrite="true" />
+        <not><length file="@{file}" when="greater" length="0" /></not>
+        <then>
+          <!-- files with zero length cannot be property-replaced -->
+          <echo level="debug">File @{file} has size of 0 and no properties will be replaced</echo>
         </then>
         <else>
-          <echo level="warn">Skipping replacment of values in file '@{file}', because of invalid file-type</echo>
-          <copy file="@{file}" tofile="@{destFile}" overwrite="true" />
+          <if>
+            <or>
+              <matches string="@{file}" pattern="(?:\.xml|\.properties|\.html|\.txt|\.bat|\.mf|\.project|\.classpath|\.template|\.sh|\.js|\.php|\.jsp)$" casesensitive="false" />
+              <equals arg1="@{force}" arg2="true" />
+              <equals arg1="@{force}" arg2="y" />
+              <equals arg1="@{force}" arg2="yes" />
+            </or>
+            <then>   
+              <!-- replace all the properties of the file specified -->
+              <copy file="@{file}" tofile="${main.tmpdir}/file.tmp" overwrite="true">
+                <filterchain>
+                  <expandproperties/>
+                </filterchain>
+              </copy>
+              
+              <copy file="${main.tmpdir}/file.tmp" tofile="@{destFile}" overwrite="true" />
+            </then>
+            <elseif>
+              <equals arg1="@{file}" arg2="@{destFile}" />
+              <then>
+                <!-- do nothing -->
+              </then>
+            </elseif>
+            <else>
+              <copy file="@{file}" tofile="@{destFile}" overwrite="true" />
+            </else>
+          </if>
         </else>
       </if>
     </sequential>
@@ -186,24 +195,24 @@
               <var name="file.tmp.destLocation" value="@{dest}" />
             </else>
           </if>
-                    
+
           <!-- first copy the once with possibility to replace -->
-          <unzip src="@{file}" dest="${file.tmp.stagingArea}" overwrite="true">
-            <patternset excludes="@{excludes}" includes="**/*.xml,**/*.properties,**/*.html,**/*.txt,**/*.bat,**/*.mf,**/*.project,**/*.classpath,**/*.template,**/*.sh" />
-          </unzip>
+          <unzip src="@{file}" dest="${file.tmp.stagingArea}" overwrite="true" />
+          
+          <!-- now replace each file -->
+          <for param="zippedFile">
+            <path>
+              <fileset dir="${file.tmp.stagingArea}" />
+            </path>
+            <sequential>
+              <fileReplaceAllProperties file="@{zippedFile}" destFile="@{zippedFile}" />
+            </sequential>
+          </for>
 
           <!-- copy and replace properties -->
           <copy todir="${file.tmp.destLocation}">
             <fileset dir="${file.tmp.stagingArea}" />
-            <filterchain>
-              <expandproperties/>
-            </filterchain>
           </copy>
-          
-          <!-- now copy the rest -->
-          <unzip src="@{file}" dest="${file.tmp.destLocation}">
-            <patternset excludes="@{excludes},**/*.xml,**/*.properties,**/*.html,**/*.txt,**/*.bat,**/*.mf,**/*.project,**/*.classpath,**/*.template,**/*.sh" />
-          </unzip>
           
           <!-- zip the stuff -->
           <if>

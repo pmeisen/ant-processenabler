@@ -13,8 +13,8 @@
 
   <property name="svn.init" value="false" description="For internal usage only, please do not modify this property by any file" />
   
-  <property name="svn.username" value="" description="Username used for SVN, currently not needed" />
-  <property name="svn.password" value="" description="Password used for SVN, currently not needed" />
+  <property name="svn.username" value="" description="Username used for SVN" />
+  <property name="svn.password" value="" description="Password used for SVN" />
     
   <property name="svn.folder.tags" value="tags" description="Name of the tags folder" />
   <property name="svn.folder.trunk" value="trunk" description="Name of the trunk folder" />

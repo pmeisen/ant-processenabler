@@ -955,9 +955,7 @@
               
                 <!-- unzip does not support the filterchain -->
                 <if>
-                  <and>
-                    <equals arg1="${resMapper.replaceProperties}" arg2="true" />
-                  </and>
+                  <equals arg1="${resMapper.replaceProperties}" arg2="true" />
                   <!-- replace the properties -->
                   <then>
                     <fileReplaceAllPropertiesInZip file="@{resource}" dest="@{rootFolder}/${resMapper.location}" rezip="false" excludes="${resMapper.excludeFiles}" />
