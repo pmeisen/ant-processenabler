@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testFileEncoding">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+<macrodef name="getEncoding">
+    <sequential>
+      <!-- check Ascii -->
+      <fileEncoding file="${build.resourcedir}/asciichars.properties" />
+      <if>
+        <equals arg1="${file.encoding}" arg2="US-ASCII" />
+        <then><echo>Ascii encoding was successful (file)!</echo></then>
+        <else><fail>Ascii encoding failed - ${file.encoding} (file)!</fail></else>
+      </if>
+      
+      <!-- check UTF8 by characters -->
+      <fileEncoding file="${build.resourcedir}/utf8chars.properties" />
+      <if>
+        <equals arg1="${file.encoding}" arg2="UTF-8" />
+        <then><echo>UTF-8 encoding by line was successful (file)!</echo></then>
+        <else><fail>UTF-8 encoding by line failed - ${file.encoding} (file)!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!-- check XML files -->
+  <macrodef name="getXmlEncoding">
+    <sequential>
+
+      <!-- check Ascii -->
+      <fileXmlEncoding xmlFile="${build.resourcedir}/ASCIIENCODEDBYCHAR.xml" />
+      <if>
+        <equals arg1="${file.encoding}" arg2="US-ASCII" />
+        <then><echo>Ascii encoding was successful (xmlFile)!</echo></then>
+        <else><fail>Ascii encoding failed - ${file.encoding} (xmlFile)!</fail></else>
+      </if>
+    
+      <!-- check UTF8 by line -->
+      <fileXmlEncoding xmlFile="${build.resourcedir}/UTF8ENCODEDBYLINE.xml" />
+      <if>
+        <equals arg1="${file.encoding}" arg2="UTF-8" />
+        <then><echo>UTF-8 encoding by line was successful (xmlFile)!</echo></then>
+        <else><fail>UTF-8 encoding by line failed - ${file.encoding} (xmlFile)!</fail></else>
+      </if>
+
+      <!-- check UTF8 by BOM -->
+      <fileXmlEncoding xmlFile="${build.resourcedir}/UTF8ENCODEDBYBOM.xml" />
+      <if>
+        <equals arg1="${file.encoding}" arg2="UTF-8" />
+        <then><echo>UTF-8 encoding by BOM was successful (xmlFile)!</echo></then>
+        <else><fail>UTF-8 encoding by BOM failed - ${file.encoding} (xmlFile)!</fail></else>
+      </if>
+     
+      <!-- check UTF8 by character -->
+      <fileXmlEncoding xmlFile="${build.resourcedir}/UTF8ENCODEDBYCHAR.xml" />
+      <if>
+        <equals arg1="${file.encoding}" arg2="UTF-8" />
+        <then><echo>UTF-8 encoding by character was successful (xmlFile)!</echo></then>
+        <else><fail>UTF-8 encoding by character failed - ${file.encoding} (xmlFile)!</fail></else>
+      </if>
+      
+      <!-- check large file with UTF8 by character -->
+      <fileXmlEncoding xmlFile="${build.resourcedir}/LARGEUTF8ENCODEDFILEBYCHAR.xml" />
+      <if>
+        <equals arg1="${file.encoding}" arg2="UTF-8" />
+        <then><echo>UTF-8 encoding by character in large file was successful (xmlFile)!</echo></then>
+        <else><fail>UTF-8 encoding by character in large file failed - ${file.encoding} (xmlFile)!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <getEncoding />
+    <getXmlEncoding />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

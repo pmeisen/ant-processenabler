@@ -18,6 +18,8 @@
   <property name="configuration.config.filename" value="config.properties" description="The name of the configurationf ile to be read" />
   
   <property name="configuration.resource.dependency" value="configuration.dependency" description="The resource type of a dependency" />
+  <property name="configuration.replacement.default.pattern" value="${file.replacement.default.pattern}" description="The pattern to check which files should be property-replaced" />
+  <property name="configuration.replacement.additional.pattern" value="" description="Additional list of pattern, i.e. \.script|\.test to check for files of property replacement" />
   
   <property name="configuration.init" value="false" description="For internal usage only, please do not modify this property by a file" />
             
@@ -114,10 +116,22 @@
         <fileset refid="configuration.tmp.libs" />
       </first>
       
+      <!-- create the pattern -->
+      <var name="configuration.tmp.replacement.pattern" value="${configuration.replacement.default.pattern}" />
+      <if>
+        <and>
+          <isset property="configuration.replacement.additional.pattern" />
+          <not><equals arg1="${configuration.replacement.additional.pattern}" arg2="" /></not>
+        </and>
+        <then>
+          <var name="configuration.tmp.replacement.pattern" value="${configuration.replacement.default.pattern}|${configuration.replacement.additional.pattern}" />
+        </then>
+      </if>
+      
       <!-- get the new zip -->
       <var name="configuration.tmp.filename" value="" unset="true" />
       <basename property="configuration.tmp.filename" file="${toString:configuration.tmp.app}"/>
-      <fileReplaceAllPropertiesInZip file="${toString:configuration.tmp.app}" dest="@{location}/${configuration.tmp.filename}" />
+      <fileReplaceAllPropertiesInZip file="${toString:configuration.tmp.app}" dest="@{location}/${configuration.tmp.filename}" filePattern="${configuration.tmp.replacement.pattern}" />
     </sequential>
   </macrodef>
   

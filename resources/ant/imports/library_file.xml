@@ -14,6 +14,8 @@
   <dirname property="library_file.basedir" file="${ant.file.library_file}" />
   
   <property name="file.library.resfile.default.merge" location="${library_eclipse.basedir}/library_file_xmlMerge.properties" />
+  
+  <property name="file.replacement.default.pattern" value="\.xml|\.properties|\.htm|\.html|\.txt|\.bat|\.mf|\.project|\.classpath|\.template|\.sh" />
 
   <!--
     add the antcontrib library
@@ -116,8 +118,12 @@
     <attribute name="destFile" />
     <attribute name="tmp" default="${main.tmpdir}" />
     <attribute name="force" default="false" />
+    <attribute name="encoding" default="" />
+    <attribute name="filePattern" default="${file.replacement.default.pattern}" />
 
     <sequential>
+      <var name="file.tmp.doReplace" value="false" />
+      
       <if>
         <not><length file="@{file}" when="greater" length="0" /></not>
         <then>
@@ -127,36 +133,74 @@
         <else>
           <if>
             <or>
-              <matches string="@{file}" pattern="(?:\.xml|\.properties|\.html|\.txt|\.bat|\.mf|\.project|\.classpath|\.template|\.sh|\.js|\.php|\.jsp)$" casesensitive="false" />
               <equals arg1="@{force}" arg2="true" />
               <equals arg1="@{force}" arg2="y" />
               <equals arg1="@{force}" arg2="yes" />
+              <matches string="@{file}" pattern="(?:@{filePattern})$" casesensitive="false" />
             </or>
-            <then>   
-              <!-- replace all the properties of the file specified -->
-              <copy file="@{file}" tofile="${main.tmpdir}/file.tmp" overwrite="true">
-                <filterchain>
-                  <expandproperties/>
-                </filterchain>
-              </copy>
+            <then>
+                        
+              <!-- determine the encoding of the file -->
+              <if>
+                <equals arg1="@{encoding}" arg2="" />
+                <then>
+                  <if>
+                    <matches string="@{file}" pattern="(?:\.xml)$" casesensitive="false" />
+                    <then><fileEncoding file="@{file}" property="file.tmp.replaceEncoding" /></then>
+                    <else><fileXmlEncoding xmlfile="@{file}" property="file.tmp.replaceEncoding" /></else>
+                  </if>
+                </then>
+                <else>
+                  <var name="file.tmp.replaceEncoding" value="@{encoding}" />
+                </else>
+              </if>
               
-              <copy file="${main.tmpdir}/file.tmp" tofile="@{destFile}" overwrite="true" />
+              <!-- check if the file contains any properties -->
+              <var name="file.tmp.replaceContainsProperty" value="" unset="true" />
+              <loadfile property="file.tmp.replaceContainsProperty" srcfile="@{file}" encoding="${file.tmp.replaceEncoding}">  
+                <filterchain>  
+                  <linecontainsregexp>
+                    <regexp pattern="\$\{.*\}"/>  
+                  </linecontainsregexp>
+                </filterchain>
+              </loadfile>
+              
+              <!-- we have to replace if there are properties -->
+              <if>
+                <isset property="file.tmp.replaceContainsProperty" />
+                <then>
+                  <var name="file.tmp.doReplace" value="true" />
+                </then>
+              </if>
             </then>
-            <elseif>
-              <equals arg1="@{file}" arg2="@{destFile}" />
-              <then>
-                <!-- do nothing -->
-              </then>
-            </elseif>
-            <else>
-              <copy file="@{file}" tofile="@{destFile}" overwrite="true" />
-            </else>
           </if>
         </else>
       </if>
+      
+      <!-- check if we have to replace, otherwise just copy if necessary -->
+      <if>
+        <equals arg1="${file.tmp.doReplace}" arg2="true" />
+        <then>
+
+          <!-- replace all the properties of the file specified -->
+          <copy file="@{file}" tofile="${main.tmpdir}/file.tmp" overwrite="true" encoding="${file.tmp.replaceEncoding}" >
+            <filterchain>
+              <expandproperties/>
+            </filterchain>
+          </copy>
+          
+          <copy file="${main.tmpdir}/file.tmp" tofile="@{destFile}" overwrite="true" />
+        </then>
+        <elseif>
+          <not><equals arg1="@{file}" arg2="@{destFile}" /></not>
+          <then>
+            <copy file="@{file}" tofile="@{destFile}" overwrite="true" />
+          </then>
+        </elseif>
+      </if>
     </sequential>
   </macrodef>
-  
+    
   <macrodef name="fileGetFileName">
     <attribute name="file" />
     <attribute name="property" />
@@ -173,6 +217,7 @@
     <attribute name="tmp" default="${main.tmpdir}" />
     <attribute name="rezip" default="true" />
     <attribute name="excludes" default="" />
+    <attribute name="filePattern" default="${file.replacement.default.pattern}" />
 
     <sequential>
     
@@ -205,7 +250,7 @@
               <fileset dir="${file.tmp.stagingArea}" />
             </path>
             <sequential>
-              <fileReplaceAllProperties file="@{zippedFile}" destFile="@{zippedFile}" />
+              <fileReplaceAllProperties file="@{zippedFile}" destFile="@{zippedFile}" filePattern="@{filePattern}" />
             </sequential>
           </for>
 
@@ -268,11 +313,12 @@
     <attribute name="targets" />
     <attribute name="parameters" default="" />
     <attribute name="dirPattern" default=".*" />
+    <attribute name="subDirectories" default="trunk" />
   
     <sequential>
       <basename file="@{directory}" property="dirname"/>
       
-      <var name="buildDir" value="@{directory}/trunk" />
+      <var name="buildDir" value="@{directory}/@{subDirectories}" />
       <var name="buildFile" value="${buildDir}/build.xml" />
 
       <if>
@@ -298,11 +344,13 @@
     <attribute name="targets" />
     <attribute name="parameters" default="" />
     <attribute name="dirPattern" default=".*" />
+    <attribute name="projectSubDirectories" default="trunk" />
     
     <sequential>
       <var name="file.tmp.wrapperTargets" value="@{targets}" />
       <var name="file.tmp.wrapperParameters" value="@{parameters}" />
       <var name="file.tmp.wrapperDirPattern" value="@{dirPattern}" />
+      <var name="file.tmp.projectSubDirectories" value="@{projectSubDirectories}" />
 
       <foreach target="fileWrapperRunAnt" param="directory">
         <path>
@@ -316,7 +364,8 @@
     Just a wrapper target to do the foreach
     -->
   <target name="fileWrapperRunAnt">
-    <runAnt directory="${directory}" targets="${file.tmp.wrapperTargets}" parameters="${file.tmp.wrapperParameters}" dirPattern="${file.tmp.wrapperDirPattern}" />
+    <runAnt directory="${directory}" targets="${file.tmp.wrapperTargets}" parameters="${file.tmp.wrapperParameters}" 
+            dirPattern="${file.tmp.wrapperDirPattern}" subDirectories="${file.tmp.projectSubDirectories}"/>
   </target>
   
   <scriptdef name="fileInfo" language="javascript">
@@ -451,7 +500,7 @@
     
     <![CDATA[
       var macro = attributes.get("macro");
-      var regExpFilter = attributes.containsKey("regexpfilter") ? attributes.get("regexpfilter") : ".*";;
+      var regExpFilter = attributes.containsKey("regexpfilter") ? attributes.get("regexpfilter") : ".*";
       var parameters = attributes.containsKey("parameters") ? attributes.get("parameters") : "";
       var parameterList = parameters.equals("") ? new Array() : parameters.split("\\]\\]\\s*(;\\s*|\\s*$)");
       var filesets = elements.get("fileset");
@@ -736,6 +785,210 @@
       var setProperty = project.createTask("var");
       setProperty.setName(property);
       setProperty.setValue(cname);
+      setProperty.execute();
+    ]]>
+  </scriptdef>
+  
+  <scriptdef name="fileXmlEncoding" language="javascript">
+    <attribute name="xmlFile" />
+    <!-- optional -->
+    <attribute name="property" />  <!-- default file.encoding -->
+    <attribute name="default" />   <!-- default UTF-8 -->
+    
+    <![CDATA[
+      var convert = function(val) {
+        var conv = new java.lang.String.format("%02X", new java.lang.Integer(val));
+        var convLength = conv.length();
+        
+        return convLength >= 2 ? conv.substring(conv.length() - 2) : convLength == 1 ? "0" + conv : "00";
+      };
+    
+      var xmlFileName = attributes.get("xmlfile");
+      var xmlFile = new java.io.File(xmlFileName);
+      var property = attributes.containsKey("property") ? attributes.get("property") : "file.encoding";
+      var defaultEncoding = attributes.containsKey("default") ? attributes.get("default") : "UTF-8";
+      var inStream = null;
+      
+      try {
+        inStream = new java.io.FileInputStream(xmlFile); 
+      } catch (e) {
+          e.printStackTrace();
+      }
+      
+      var encoding = null;
+      var readEncoding = false;
+      
+      var bufferContent = "";
+      var bufferSize = 400;
+      for (var i = 0; i < bufferSize; i++) {
+        bufferContent += "0";
+      }
+      var buffer = java.lang.String(bufferContent).getBytes();
+      bufferSize = buffer.length;
+      var read = inStream.read(buffer, 0, 4);
+
+      // get the first four characters
+      var firstSign = convert(buffer[0]);
+      var secondSign = convert(buffer[1]); 
+      var thirdSign = convert(buffer[2]); 
+      var fourthSign = convert(buffer[3]); 
+      
+      // check the first characters
+      if (firstSign == null) {
+        // nothing to do
+      } else if (firstSign.equals("00")) {
+
+        if (secondSign.equals("00") && thirdSign.equals("FE") && fourthSign.equals("FF")) {
+          encoding = "UTF_32BE";
+        } else if (secondSign.equals("00") && thirdSign.equals("00") && fourthSign.equals("3C")) {
+          encoding = "UTF_32BE";
+          readEncoding = true;
+        } else if (secondSign.equals("3C") && thirdSign.equals("00") && fourthSign.equals("3F")) {
+          encoding = "UnicodeBigUnmarked";
+          readEncoding = true;
+        }
+      } else if (firstSign.equals("FF")) {
+        if (secondSign.equals("FE") && thirdSign.equals("00") && fourthSign.equals("00")) {
+          encoding = "UTF_32LE";
+        } else if (secondSign.equals("FE")) {
+          encoding = "UnicodeLittleUnmarked";
+        }
+      } else if (firstSign.equals("3C")) {
+        readEncoding = true;
+        if (secondSign.equals("00") && thirdSign.equals("00") && fourthSign.equals("00")) {
+          encoding = "UTF_32LE";
+        } else if (secondSign.equals("00") && thirdSign.equals("3F") && fourthSign.equals("00")) {
+          encoding = "UnicodeLittleUnmarked";
+        } else if (secondSign.equals("3F") && thirdSign.equals("78") && fourthSign.equals("6D")) {
+          encoding = "US-ASCII";
+        }
+      } else if (firstSign.equals("FE")) {
+        if (secondSign.equals("FF")) {
+          encoding = "UnicodeBigUnmarked";
+        }
+      } else if (firstSign.equals("EF")) {
+        if (secondSign.equals("BB") && thirdSign.equals("BF")) {
+          encoding = "UTF-8";
+        }
+      } else if (firstSign.equals("4C")) {
+        if (secondSign.equals("6F") && thirdSign.equals("A7") && fourthSign.equals("94")) {
+          encoding = "CP037";
+        }
+      }
+            
+      if (readEncoding) {
+      
+        // look for the word encoding in the first lines, maybe one is defined
+        read = inStream.read(buffer, 0, bufferSize);
+        var cs = new java.nio.charset.Charset.forName("US-ASCII");
+        var s = new java.lang.String(buffer, 0, read, cs);
+        var pos = s.indexOf("encoding");
+                
+        if (pos == -1) {
+          
+          // check the file
+          var getEncodingOfFile = project.createTask("fileEncoding");
+          getEncodingOfFile.setDynamicAttribute("file", xmlFileName);
+          getEncodingOfFile.setDynamicAttribute("property", property);
+          getEncodingOfFile.execute();
+          
+          // get the defined encoding
+          encoding = project.getProperty(property);
+        } else {
+        
+          // get the encoding defined by a tag
+          var delim;
+          var start = s.indexOf(delim = '\'', pos);
+          if (start == -1) {
+            start = s.indexOf(delim = '"', pos); 
+          }
+          var end = s.indexOf(delim, start + 1);
+          if (end == -1 || start == -1) {
+            encoding = defaultEncoding;
+          } else {
+            encoding = s.substring(start + 1, end);
+          }
+        }
+      }
+  
+      // if we still don't know set the default
+      if (encoding == null) {
+        encoding = defaultEncoding;
+      }
+      
+      // close the stream
+      try {
+        inStream.close(); 
+      } catch (e) {
+        // nothing
+      }
+      
+      // set the property
+      var setProperty = project.createTask("var");
+      setProperty.setName(property);
+      setProperty.setValue(encoding);
+      setProperty.execute();
+    ]]>
+  </scriptdef>
+  
+  <scriptdef name="fileEncoding" language="javascript">
+    <attribute name="file" />
+    <!-- optional -->
+    <attribute name="property" />  <!-- default file.encoding -->
+    <attribute name="default" />   <!-- default US-ASCII -->
+    
+    <![CDATA[    
+      var file = new java.io.File(attributes.get("file"));
+      var property = attributes.containsKey("property") ? attributes.get("property") : "file.encoding";
+      var inStream = null;
+      
+      try {
+        inStream = new java.io.FileInputStream(file); 
+      } catch (e) {
+          e.printStackTrace();
+      }
+      
+      var encoding = null;
+      
+      var bufferContent = "";
+      var bufferSize = 400;
+      for (var i = 0; i < bufferSize; i++) {
+        bufferContent += "0";
+      }
+      var buffer = java.lang.String(bufferContent).getBytes();
+      bufferSize = buffer.length;
+      
+      // look for the word encoding in the first lines, maybe one is defined
+      read = inStream.read(buffer, 0, bufferSize);
+      encoding = "US-ASCII";
+      
+      // try to define the encoding by the content
+      do {
+        var d = java.nio.charset.Charset.forName("US-ASCII").newDecoder();
+        try {
+          var r = d.decode(java.nio.ByteBuffer.wrap(buffer));
+          r.toString();
+        } catch(e) {
+        
+          // let's use UTF-8 to be sure
+          encoding = "UTF-8";
+          break;
+        }
+        
+        read = inStream.read(buffer, 0, bufferSize);
+      } while (read != -1);
+      
+      // close the stream
+      try {
+        inStream.close(); 
+      } catch (e) {
+        // nothing
+      }
+      
+      // set the property
+      var setProperty = project.createTask("var");
+      setProperty.setName(property);
+      setProperty.setValue(encoding);
       setProperty.execute();
     ]]>
   </scriptdef>

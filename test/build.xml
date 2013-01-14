@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="ant-processenabler-test" default="fullAntTest">
+  <import file="..\resources\ant\imports\library_file.xml" />
+  <import file="..\resources\ant\imports\library_misc.xml" />
+  
+  <!-- 
+    runs all files like:
+      -> ant -Dparameters="-Dmain.logLevel=INFO" -Dtargets=testXYZ
+    -->
+  <target name="fullAntTest">
+    
+    <!-- we need a target -->
+    <if>
+      <isset property="targets"/>
+      <then>
+        <var name="tmp.targetList" value="${targets}" />
+      </then>
+      <else>
+        <var name="tmp.targetList" value="antTest" />
+      </else>
+    </if>
+  
+    <!-- get the dir pattern -->
+    <if>
+      <isset property="dirPattern"/>
+      <then>
+        <var name="tmp.dirPattern" value="${dirPattern}" />
+      </then>
+      <else>
+        <var name="tmp.dirPattern" value="^.*" />
+      </else>
+    </if>
+  
+    <!-- get the parameters pattern -->
+    <if>
+      <isset property="parameters"/>
+      <then>
+        <var name="tmp.parameters" value="${parameters}" />
+      </then>
+      <else>
+        <var name="tmp.parameters" value="-Dmain.logLevel=INFO" />
+      </else>
+    </if>
+    
+    <!-- get the excludes -->
+    <if>
+      <isset property="excludes"/>
+      <then>
+        <var name="tmp.excludes" value="${excludes}" />
+      </then>
+      <else>
+        <var name="tmp.excludes" value="" />
+      </else>
+    </if>
+  
+    <!-- make sure we do a antTestCleanUp -->
+    <createList property="tmp.targetListWithCleanUp" list="${tmp.targetList}" value="antTestCleanUp" separatore="," />
+
+    <!-- run each test -->
+    <doTargetForEachFolder excludes="${tmp.excludes}" targets="${tmp.targetListWithCleanUp}" parameters="${tmp.parameters}" 
+                           dirPattern="${tmp.dirPattern}" projectSubDirectories="" />
+  </target>
+</project>

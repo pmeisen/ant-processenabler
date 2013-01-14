@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testReplaceProperties">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <!-- do a simple replacement -->
+  <macrodef name="simpleReplacement">
+    <sequential>
+      <var name="antTest.testReplaceProperties.sampleFile" value="This is a ${antTest.testReplaceProperties.sample}" />
+      <echo file="${build.tmpdir}/file.properties" append="false">${antTest.testReplaceProperties.sampleFile}</echo>
+      <var name="antTest.testReplaceProperties.sample" value="Sample Value" />
+
+      <fileReplaceAllProperties file="${build.tmpdir}/file.properties" destFile="${build.tmpdir}/replacedFile.properties" force="false" />
+      <var name="antTest.testReplaceProperties.fileContent" value="" unset="true" />
+      <var name="antTest.testReplaceProperties.replacedFileContent" value="" unset="true" />
+      <loadfile property="antTest.testReplaceProperties.fileContent" srcFile="${build.tmpdir}/file.properties" />
+      <loadfile property="antTest.testReplaceProperties.replacedFileContent" srcFile="${build.tmpdir}/replacedFile.properties" />
+      
+      <if>
+        <and>
+          <equals arg1="${antTest.testReplaceProperties.fileContent}" arg2="${antTest.testReplaceProperties.sampleFile}" />
+          <equals arg1="${antTest.testReplaceProperties.replacedFileContent}" arg2="This is a ${antTest.testReplaceProperties.sample}" />
+        </and>
+        <then>
+          <echo level="info">simpleReplacement was successful!</echo>
+        </then>
+        <else>
+          <fail>simpleReplacement failed!</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!-- do multiple replacements -->
+  <macrodef name="multipleReplacement">
+    <sequential>
+      <var name="antTest.testReplaceProperties.sampleFile" value="This is a ${antTest.testReplaceProperties.sample1} ${antTest.testReplaceProperties.sample1} --- ${antTest.testReplaceProperties.sample2}" />
+      <echo file="${build.tmpdir}/file.properties" append="false">${antTest.testReplaceProperties.sampleFile}</echo>
+      <var name="antTest.testReplaceProperties.sample1" value="First Sample Value" />
+      <var name="antTest.testReplaceProperties.sample2" value="Second Value" />
+
+      <fileReplaceAllProperties file="${build.tmpdir}/file.properties" destFile="${build.tmpdir}/replacedFile.properties" force="false" />
+      <var name="antTest.testReplaceProperties.fileContent" value="" unset="true" />
+      <var name="antTest.testReplaceProperties.replacedFileContent" value="" unset="true" />
+      <loadfile property="antTest.testReplaceProperties.fileContent" srcFile="${build.tmpdir}/file.properties" />
+      <loadfile property="antTest.testReplaceProperties.replacedFileContent" srcFile="${build.tmpdir}/replacedFile.properties" />
+      
+      <if>
+        <and>
+          <equals arg1="${antTest.testReplaceProperties.fileContent}" arg2="${antTest.testReplaceProperties.sampleFile}" />
+          <equals arg1="${antTest.testReplaceProperties.replacedFileContent}" arg2="This is a ${antTest.testReplaceProperties.sample1} ${antTest.testReplaceProperties.sample1} --- ${antTest.testReplaceProperties.sample2}" />
+        </and>
+        <then>
+          <echo level="info">multipleReplacement was successful!</echo>
+        </then>
+        <else>
+          <fail>multipleReplacement failed!</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="utfReplacementByLine">
+    <sequential>
+      <var name="antTest.testReplaceProperties.fileReplacedContent" value="" unset="true" />
+      
+      <!-- check replacement in a file with UTF-8 marker -->
+      <var name="antTest.testReplaceProperties.fileContent" value="" unset="true" />
+      <fileXmlEncoding xmlfile="${build.resourcedir}/BUG_UTF8ENCODEDBYLINE.xml" property="file.tmp.encoding" />
+      <loadfile property="antTest.testReplaceProperties.fileContent" srcFile="${build.resourcedir}/BUG_UTF8ENCODEDBYLINE.xml" encoding="${file.tmp.encoding}" />
+
+      <fileReplaceAllProperties file="${build.resourcedir}/BUG_UTF8ENCODEDBYLINE.xml" destFile="${build.tmpdir}/BUG_UTF8ENCODEDBYLINE.xml" />
+      <fileXmlEncoding xmlfile="${build.tmpdir}/BUG_UTF8ENCODEDBYLINE.xml" property="file.tmp.replaceEncoding" />
+      <loadfile property="antTest.testReplaceProperties.fileReplacedContent" srcFile="${build.tmpdir}/BUG_UTF8ENCODEDBYLINE.xml" encoding="${file.tmp.replaceEncoding}" />
+      
+      <if>
+        <equals arg1="${antTest.testReplaceProperties.fileContent}" arg2="${antTest.testReplaceProperties.fileReplacedContent}" />
+        <then>
+          <echo level="info">utfReplacement with UTF-8 encoded line was successful!</echo>
+        </then>
+        <else>
+          <fail>utfReplacement with UTF-8 encoded line failed!</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="utfReplacementByBOM">
+    <sequential>
+      <var name="antTest.testReplaceProperties.fileReplacedContent" value="" unset="true" />
+      
+      <!-- check replacement in a file with UTF-8 marker -->
+      <var name="antTest.testReplaceProperties.fileContent" value="" unset="true" />
+      <fileXmlEncoding xmlfile="${build.resourcedir}/BUG_UTF8ENCODEDBYBOM.xml" property="file.tmp.encoding" />
+      <loadfile property="antTest.testReplaceProperties.fileContent" srcFile="${build.resourcedir}/BUG_UTF8ENCODEDBYBOM.xml" encoding="${file.tmp.encoding}" />
+
+      <fileReplaceAllProperties file="${build.resourcedir}/BUG_UTF8ENCODEDBYBOM.xml" destFile="${build.tmpdir}/BUG_UTF8ENCODEDBYBOM.xml" />
+      <fileXmlEncoding xmlfile="${build.tmpdir}/BUG_UTF8ENCODEDBYBOM.xml" property="file.tmp.replaceEncoding" />
+      <loadfile property="antTest.testReplaceProperties.fileReplacedContent" srcFile="${build.tmpdir}/BUG_UTF8ENCODEDBYBOM.xml" encoding="${file.tmp.replaceEncoding}" />
+      
+      <if>
+        <equals arg1="${antTest.testReplaceProperties.fileContent}" arg2="${antTest.testReplaceProperties.fileReplacedContent}" />
+        <then>
+          <echo level="info">utfReplacement with UTF-8 encoded BOM was successful!</echo>
+        </then>
+        <else>
+          <fail>utfReplacement with UTF-8 encoded BOM failed! ${antTest.testReplaceProperties.fileContent} != ${antTest.testReplaceProperties.fileReplacedContent}</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="utfReplacementByChar">
+    <sequential>
+      <var name="antTest.testReplaceProperties.fileReplacedContent" value="" unset="true" />
+      
+      <!-- check replacement in a file with UTF-8 marker -->
+      <var name="antTest.testReplaceProperties.fileContent" value="" unset="true" />
+      <fileXmlEncoding xmlfile="${build.resourcedir}/BUG_INVALIDENCODING.xml" property="file.tmp.encoding" />
+      <loadfile property="antTest.testReplaceProperties.fileContent" srcFile="${build.resourcedir}/BUG_INVALIDENCODING.xml" encoding="${file.tmp.encoding}" />
+
+      <fileReplaceAllProperties file="${build.resourcedir}/BUG_INVALIDENCODING.xml" destFile="${build.tmpdir}/BUG_INVALIDENCODING.xml" />
+      <fileXmlEncoding xmlfile="${build.tmpdir}/BUG_INVALIDENCODING.xml" property="file.tmp.replaceEncoding" />
+      <loadfile property="antTest.testReplaceProperties.fileReplacedContent" srcFile="${build.tmpdir}/BUG_INVALIDENCODING.xml" encoding="${file.tmp.replaceEncoding}" />
+      
+      <if>
+        <equals arg1="${antTest.testReplaceProperties.fileContent}" arg2="${antTest.testReplaceProperties.fileReplacedContent}" />
+        <then>
+          <echo level="info">utfReplacement with UTF-8 encoded by characters was successful!</echo>
+        </then>
+        <else>
+          <fail>utfReplacement with UTF-8 encoded by characters failed! ${antTest.testReplaceProperties.fileContent} != ${antTest.testReplaceProperties.fileReplacedContent}</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <simpleReplacement />
+    <multipleReplacement />
+    <utfReplacementByLine />
+    <utfReplacementByBOM />
+    <utfReplacementByChar />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>
