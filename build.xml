@@ -9,6 +9,8 @@
   <!-- get the process enabler current version -->
   <import file="resources\ant\library_main.xml" />
   
+  <target name="default" depends="updateAssembly,cleanUp" />
+  
   <macrodef name="resourceMapper">
     <attribute name="resourceFolder" />
     <attribute name="resourceFileName" />

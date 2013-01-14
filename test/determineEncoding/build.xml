@@ -30,50 +30,19 @@
   <macrodef name="getXmlEncoding">
     <sequential>
 
-      <!-- check Ascii -->
-      <fileXmlEncoding xmlFile="${build.resourcedir}/ASCIIENCODEDBYCHAR.xml" />
-      <if>
-        <equals arg1="${file.encoding}" arg2="US-ASCII" />
-        <then><echo>Ascii encoding was successful (xmlFile)!</echo></then>
-        <else><fail>Ascii encoding failed - ${file.encoding} (xmlFile)!</fail></else>
-      </if>
-    
-      <!-- check UTF8 by line -->
-      <fileXmlEncoding xmlFile="${build.resourcedir}/UTF8ENCODEDBYLINE.xml" />
-      <if>
-        <equals arg1="${file.encoding}" arg2="UTF-8" />
-        <then><echo>UTF-8 encoding by line was successful (xmlFile)!</echo></then>
-        <else><fail>UTF-8 encoding by line failed - ${file.encoding} (xmlFile)!</fail></else>
-      </if>
-
-      <!-- check UTF8 by BOM -->
-      <fileXmlEncoding xmlFile="${build.resourcedir}/UTF8ENCODEDBYBOM.xml" />
-      <if>
-        <equals arg1="${file.encoding}" arg2="UTF-8" />
-        <then><echo>UTF-8 encoding by BOM was successful (xmlFile)!</echo></then>
-        <else><fail>UTF-8 encoding by BOM failed - ${file.encoding} (xmlFile)!</fail></else>
-      </if>
-     
-      <!-- check UTF8 by character -->
-      <fileXmlEncoding xmlFile="${build.resourcedir}/UTF8ENCODEDBYCHAR.xml" />
-      <if>
-        <equals arg1="${file.encoding}" arg2="UTF-8" />
-        <then><echo>UTF-8 encoding by character was successful (xmlFile)!</echo></then>
-        <else><fail>UTF-8 encoding by character failed - ${file.encoding} (xmlFile)!</fail></else>
-      </if>
       
       <!-- check large file with UTF8 by character -->
-      <fileXmlEncoding xmlFile="${build.resourcedir}/LARGEUTF8ENCODEDFILEBYCHAR.xml" />
+      <fileXmlEncoding xmlFile="${build.resourcedir}/ISOENCODEDBYLINE.xml" />
       <if>
-        <equals arg1="${file.encoding}" arg2="UTF-8" />
-        <then><echo>UTF-8 encoding by character in large file was successful (xmlFile)!</echo></then>
-        <else><fail>UTF-8 encoding by character in large file failed - ${file.encoding} (xmlFile)!</fail></else>
+        <equals arg1="${file.encoding}" arg2="ISO-8859-1" />
+        <then><echo>ISO-8859-1 encoding by line was successful (xmlFile)!</echo></then>
+        <else><echo>ISO-8859-1 encoding by line failed - ${file.encoding} (xmlFile)!</echo></else>
       </if>
     </sequential>
   </macrodef>
   
   <target name="antTest">
-    <getEncoding />
+    <!--<getEncoding />-->
     <getXmlEncoding />
   </target>
   

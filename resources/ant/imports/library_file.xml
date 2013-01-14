@@ -146,8 +146,8 @@
                 <then>
                   <if>
                     <matches string="@{file}" pattern="(?:\.xml)$" casesensitive="false" />
-                    <then><fileEncoding file="@{file}" property="file.tmp.replaceEncoding" /></then>
-                    <else><fileXmlEncoding xmlfile="@{file}" property="file.tmp.replaceEncoding" /></else>
+                    <then><fileXmlEncoding xmlfile="@{file}" property="file.tmp.replaceEncoding" /></then>
+                    <else><fileEncoding file="@{file}" property="file.tmp.replaceEncoding" /></else>
                   </if>
                 </then>
                 <else>
@@ -819,7 +819,7 @@
       var readEncoding = false;
       
       var bufferContent = "";
-      var bufferSize = 400;
+      var bufferSize = 1000;
       for (var i = 0; i < bufferSize; i++) {
         bufferContent += "0";
       }
@@ -879,13 +879,19 @@
       if (readEncoding) {
       
         // look for the word encoding in the first lines, maybe one is defined
-        read = inStream.read(buffer, 0, bufferSize);
+        read = inStream.read(buffer, 4, bufferSize - 4);
         var cs = new java.nio.charset.Charset.forName("US-ASCII");
         var s = new java.lang.String(buffer, 0, read, cs);
         var pos = s.indexOf("encoding");
-                
-        if (pos == -1) {
-          
+        
+        // create the regular expression to search for encodings
+        var regEx = "encoding\\s*\\=\\s*(?:\"([^\"]*)\"|'([^\']*)')";        
+        var pattern = java.util.regex.Pattern.compile(regEx, java.util.regex.Pattern.DOTALL);
+        var matcher = pattern.matcher(s);
+        
+        if (matcher.find()) {
+          var encoding = matcher.group(1) == null ? matcher.group(2) : matcher.group(1);
+        } else {          
           // check the file
           var getEncodingOfFile = project.createTask("fileEncoding");
           getEncodingOfFile.setDynamicAttribute("file", xmlFileName);
@@ -894,20 +900,6 @@
           
           // get the defined encoding
           encoding = project.getProperty(property);
-        } else {
-        
-          // get the encoding defined by a tag
-          var delim;
-          var start = s.indexOf(delim = '\'', pos);
-          if (start == -1) {
-            start = s.indexOf(delim = '"', pos); 
-          }
-          var end = s.indexOf(delim, start + 1);
-          if (end == -1 || start == -1) {
-            encoding = defaultEncoding;
-          } else {
-            encoding = s.substring(start + 1, end);
-          }
         }
       }
   
