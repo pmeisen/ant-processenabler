@@ -103,19 +103,6 @@
       <!-- load the dependency of the version -->
       <mavenResolveDependencies fileset="configuration.tmp.libs" pomid="configuration.tmp.pom" pomfile="${configuration.settings.pom}" />
 
-      <!-- make sure we have one dependency -->
-      <if>
-        <not><resourcecount refid="configuration.tmp.libs" when="equal" count="1" /></not>
-        <then>
-          <fail>The '${configuration.settings.pom}' does not define a valid dependency please validate</fail>
-        </then>
-      </if>
-      
-      <!-- get the one dependency, there shouldn't be more we want a running application -->
-      <first id="configuration.tmp.app">
-        <fileset refid="configuration.tmp.libs" />
-      </first>
-      
       <!-- create the pattern -->
       <var name="configuration.tmp.replacement.pattern" value="${configuration.replacement.default.pattern}" />
       <if>
@@ -128,10 +115,71 @@
         </then>
       </if>
       
-      <!-- get the new zip -->
-      <var name="configuration.tmp.filename" value="" unset="true" />
-      <basename property="configuration.tmp.filename" file="${toString:configuration.tmp.app}"/>
-      <fileReplaceAllPropertiesInZip file="${toString:configuration.tmp.app}" dest="@{location}/${configuration.tmp.filename}" filePattern="${configuration.tmp.replacement.pattern}" />
+      <!-- make sure we have one dependency -->
+      <if>
+        <resourcecount refid="configuration.tmp.libs" when="equal" count="0" />
+        <then>
+          <fail>The '${configuration.settings.pom}' does not define a valid dependency please validate</fail>
+        </then>
+        <else>
+          
+          <!-- we have several dependencies which have to be setup -->
+          <fileCleanUp dir="@{location}/tmp" recreate="true" />
+          <fileCallMacroForEach macro="configurationBuildPackage" parameters="rootFolder=[[@{location}/tmp]];filePattern=[[${configuration.tmp.replacement.pattern}]];">
+            <fileset refid="configuration.tmp.libs" />
+          </fileCallMacroForEach>
+          
+          <!-- now pack the whole thing and wrap it up -->
+          <zip destfile="@{location}/${configuration.tmp.pom.artifactId}-${configuration.version}-@{customer}.zip" basedir="@{location}/tmp" />
+          
+          <!-- cleanUp -->
+          <delete dir="@{location}/tmp" />
+        </else>
+      </if>
+      
+
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="configurationBuildPackage">
+    <attribute name="resourceFolder" />
+    <attribute name="resourceFileName" />
+    <attribute name="resource" />
+    <attribute name="rootFolder" />
+    <attribute name="filePattern" />
+    <attribute name="basedir" />
+    
+    <sequential>
+
+      <!-- default location is empty -->
+      <var name="confMapper.location" value="" />
+      <var name="confMapper.replaceProperties" value="true" />
+    
+      <!-- get the new location -->
+      <configurationMapper resourceFolder="@{resourceFolder}" resource="@{resource}" resourceFileName="@{resourceFileName}" />
+      
+      <!-- replace all properties and copy the new file -->
+      <if>
+        <equals arg1="${confMapper.replaceProperties}" arg2="true" />
+        <then>
+          <fileReplaceAllPropertiesInZip file="@{resource}" dest="@{rootFolder}/${confMapper.location}" filePattern="@{filePattern}" rezip="false" />
+        </then>
+        <else>
+          <unzip src="@{resource}" dest="@{rootFolder}/${confMapper.location}" overwrite="true" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="configurationMapper">
+    <attribute name="resourceFolder" />
+    <attribute name="resourceFileName" />
+    <attribute name="resource" />
+    
+    <sequential>
+      <!-- do nothing -->
+      <!-- ${confMapper.location}          - contains the location within the rootFolder to copy the data to, default=""       -->
+      <!-- ${confMapper.replaceProperties} - defines if properties should be replace, can be "true" or "false", default="true" -->
     </sequential>
   </macrodef>
   
