@@ -10,14 +10,14 @@
 <project name="library_maven" xmlns:artifact="antlib:org.apache.maven.artifact.ant" xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
   <property name="maven.library.version" value="1.2.5" description="The current version of the library" />
   <dirname property="library_maven.basedir" file="${ant.file.library_maven}"/>
-
-  <property name="maven.dependencies.dir" value="_deps" description="Folder in which dependencies should be copied when using target copyDeps" />
-  <property name="maven.depsdir" location="${maven.dependencies.dir}" description="Full path to the folder in which dependencies should be copied when using target copyDeps" />
   
   <property name="maven.library.resfile.settings.source" location="${main.root}/maven/settings_source.xml" description="The master settings.xml for all projects (sources)" />
   <property name="maven.library.resfile.settings.target" location="${main.root}/maven/settings_target.xml" description="The master settings.xml for all projects (targets)" />
   <property name="maven.library.resfile.pom.snapshot" location="${main.root}/maven/pomSnapshot.xml" />
   <property name="maven.library.resfile.pomSnapshot.merge" location="${main.root}/maven/pomSnapShot_xmlMerge.properties" />
+
+  <property name="maven.dependencies.dir" value="_deps" description="Folder in which dependencies should be copied when using target copyDeps" />
+  <property name="maven.depsdir" location="${maven.dependencies.dir}" description="Full path to the folder in which dependencies should be copied when using target copyDeps" />
   
   <property name="maven.artifactory.source.url" value="" description="URL to access the artifactory (to resolve dependencies)" />
   <property name="maven.artifactory.target.url" value="" description="URL to access the artifactory (for artifacts to be deployed)" />

@@ -11,18 +11,24 @@
   <property name="configuration.library.version" value="1.0.0" description="The current version of the library" />
   <dirname property="library_configuration.basedir" file="${ant.file.library_configuration}"/>
 
+  <property name="configuration.library.resfile.pomConfiguration.merge" location="${main.root}/maven/pomConfiguration_xmlMerge.properties" />
+  
   <property name="configuration.properties.location" value="" description="The location to load the settings from, should be defined in the scriptconfig.properties, must be relative to the library_main" />
   <property name="configuration.versions.foldername" value="" description="The name of the folder in which the versions are found, must be a sub-directory wherever the build.xml is found" />
   <property name="configuration.settings.defaultconfig" value="_default" description="The folder in which the default configuration can be found" />
   <property name="configuration.settings.defaultcustomer" value="inform" description="The folder in which the default customer can be found" />
   <property name="configuration.config.filename" value="config.properties" description="The name of the configurationf ile to be read" />
+  <property name="configuration.resources.foldername" value="resources" description="The folder in which resources added for the customer are located" />
   
   <property name="configuration.resource.dependency" value="configuration.dependency" description="The resource type of a dependency" />
   <property name="configuration.replacement.default.pattern" value="${file.replacement.default.pattern}" description="The pattern to check which files should be property-replaced" />
   <property name="configuration.replacement.additional.pattern" value="" description="Additional list of pattern, i.e. \.script|\.test to check for files of property replacement" />
   
-  <property name="configuration.init" value="false" description="For internal usage only, please do not modify this property by a file" />
-            
+  <property name="configuration.resourcetype.dependency" value="configuration.dependency" />
+  <property name="configuration.resourcetype.resource" value="configuration.resource" />
+  
+  <property name="configuration.init" value="false" description="For internal usage only, please do not modify this property by a file" />  
+  
   <!--
     add the antcontrib library
     -->
@@ -81,27 +87,41 @@
         </else>
       </if>
     
-      <!-- reload the properties first the default, than the customer -->
+      <!-- reload the properties first the default, then the customer - it's var not property -->
       <var file="${configuration.settings.default}/${configuration.config.filename}" />
       <var file="${configuration.settings.customer}/${configuration.config.filename}" />
     
-      <!-- set some variables we need -->
+      <!-- get the pom file to be loaded, create it if additional customer specific dependencies are defined -->
       <var name="configuration.settings.pom" value="${configuration.settings.pomfolder}/pom-${configuration.version}.xml" />
+      <var name="configuration.settings.additionalpom" value="${configuration.settings.customer}/${configuration.version.property}/pom.xml" />
+      <if>
+        <available file="${configuration.settings.additionalpom}" />
+        <then>
+          <var name="configuration.settings.tmp.pom" value="${maven.tmpdir}/merged_pom.xml" />
+          <fileMergeXml file1="${configuration.settings.pom}" 
+                        file2="${configuration.settings.additionalpom}" 
+                        dest="${configuration.settings.tmp.pom}" 
+                        conf="${configuration.library.resfile.pomConfiguration.merge}" />
+        </then>
+        <else>
+          <var name="configuration.settings.tmp.pom" value="${configuration.settings.pom}" />
+        </else>
+      </if>
 
       <!-- check if the files exists -->
       <if>
         <or>
           <not><available file="${configuration.settings.default}"/></not>
           <not><available file="${configuration.settings.customer}"/></not>
-          <not><available file="${configuration.settings.pom}"/></not>
+          <not><available file="${configuration.settings.tmp.pom}"/></not>
         </or>
         <then>
-          <fail>At least one needed folder/file cannot be found, please check the list of '${configuration.settings.default}', '${configuration.settings.customer}', and '${configuration.settings.pom}'</fail>
+          <fail>At least one needed folder/file cannot be found, please check the list of '${configuration.settings.default}', '${configuration.settings.customer}', and '${configuration.settings.tmp.pom}'</fail>
         </then>
       </if>
-            
+                  
       <!-- load the dependency of the version -->
-      <mavenResolveDependencies fileset="configuration.tmp.libs" pomid="configuration.tmp.pom" pomfile="${configuration.settings.pom}" />
+      <mavenResolveDependencies fileset="configuration.tmp.libs" pomid="configuration.tmp.pom" pomfile="${configuration.settings.tmp.pom}" />
 
       <!-- create the pattern -->
       <var name="configuration.tmp.replacement.pattern" value="${configuration.replacement.default.pattern}" />
@@ -125,19 +145,28 @@
           
           <!-- we have several dependencies which have to be setup -->
           <fileCleanUp dir="@{location}/tmp" recreate="true" />
-          <fileCallMacroForEach macro="configurationBuildPackage" parameters="rootFolder=[[@{location}/tmp]];filePattern=[[${configuration.tmp.replacement.pattern}]];">
+          <fileCallMacroForEach macro="configurationBuildPackage" parameters="resourceType=[[${configuration.resourcetype.dependency}]];rootFolder=[[@{location}/tmp]];filePattern=[[${configuration.tmp.replacement.pattern}]];">
             <fileset refid="configuration.tmp.libs" />
           </fileCallMacroForEach>
-          
-          <!-- now pack the whole thing and wrap it up -->
-          <zip destfile="@{location}/${configuration.tmp.pom.artifactId}-${configuration.version}-@{customer}.zip" basedir="@{location}/tmp" />
-          
-          <!-- cleanUp -->
-          <delete dir="@{location}/tmp" />
         </else>
       </if>
       
-
+      <!-- get the additional stuff -->
+      <var name="configuration.resources.tmp.location" value="${configuration.settings.customer}/${configuration.version.property}/${configuration.resources.foldername}" />
+      <if>
+        <available file="${configuration.resources.tmp.location}" />
+        <then>
+          <fileCallMacroForEach macro="configurationBuildPackage" parameters="resourceType=[[${configuration.resourcetype.resource}]];rootFolder=[[@{location}/tmp]];filePattern=[[${configuration.tmp.replacement.pattern}]];">
+            <fileset dir="${configuration.resources.tmp.location}" />
+          </fileCallMacroForEach>
+        </then>
+      </if>
+      
+      <!-- now pack the whole thing and wrap it up -->
+      <zip destfile="@{location}/${configuration.tmp.pom.artifactId}-${configuration.version}-@{customer}.zip" basedir="@{location}/tmp" />
+      
+      <!-- cleanUp -->
+      <delete dir="@{location}/tmp" />
     </sequential>
   </macrodef>
   
@@ -145,6 +174,7 @@
     <attribute name="resourceFolder" />
     <attribute name="resourceFileName" />
     <attribute name="resource" />
+    <attribute name="resourceType" />
     <attribute name="rootFolder" />
     <attribute name="filePattern" />
     <attribute name="basedir" />
@@ -154,20 +184,61 @@
       <!-- default location is empty -->
       <var name="confMapper.location" value="" />
       <var name="confMapper.replaceProperties" value="true" />
+      <var name="confMapper.useDefault" value="true" />
     
       <!-- get the new location -->
-      <configurationMapper resourceFolder="@{resourceFolder}" resource="@{resource}" resourceFileName="@{resourceFileName}" />
+      <configurationCustomerMapper resourceType="@{resourceType}" resourceFolder="@{resourceFolder}" resource="@{resource}" resourceFileName="@{resourceFileName}" />
+      <if>
+        <or>
+          <equals arg1="${confMapper.useDefault}" arg2="y" />
+          <equals arg1="${confMapper.useDefault}" arg2="yes" />
+          <equals arg1="${confMapper.useDefault}" arg2="true" />
+        </or>
+        <then>
+          <configurationMapper resourceType="@{resourceType}" resourceFolder="@{resourceFolder}" resource="@{resource}" resourceFileName="@{resourceFileName}" />
+        </then>
+      </if>
       
       <!-- replace all properties and copy the new file -->
       <if>
-        <equals arg1="${confMapper.replaceProperties}" arg2="true" />
+        <equals arg1="@{resourceType}" arg2="${configuration.resourcetype.dependency}" />
         <then>
-          <fileReplaceAllPropertiesInZip file="@{resource}" dest="@{rootFolder}/${confMapper.location}" filePattern="@{filePattern}" rezip="false" />
+          <if>
+            <equals arg1="${confMapper.replaceProperties}" arg2="true" />
+            <then>
+              <fileReplaceAllPropertiesInZip file="@{resource}" dest="@{rootFolder}/${confMapper.location}" filePattern="@{filePattern}" rezip="false" />
+            </then>
+            <else>
+              <unzip src="@{resource}" dest="@{rootFolder}/${confMapper.location}" overwrite="true" />
+            </else>
+          </if>
         </then>
         <else>
-          <unzip src="@{resource}" dest="@{rootFolder}/${confMapper.location}" overwrite="true" />
+          <if>
+            <equals arg1="${confMapper.replaceProperties}" arg2="true" />
+            <then>
+              <fileReplaceAllProperties file="@{resource}" destFile="@{rootFolder}/${confMapper.location}/@{resourceFileName}" filePattern="@{filePattern}" />
+            </then>
+            <else>
+              <copy file="@{resource}" todir="@{rootFolder}/${confMapper.location}" overwrite="true" />
+            </else>
+          </if>
         </else>
       </if>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="configurationCustomerMapper">
+    <attribute name="resourceFolder" />
+    <attribute name="resourceFileName" />
+    <attribute name="resource" />
+    <attribute name="resourceType" />
+    
+    <sequential>
+      <!-- do nothing -->
+      <!-- ${confMapper.location}          - contains the location within the rootFolder to copy the data to, default=""       -->
+      <!-- ${confMapper.replaceProperties} - defines if properties should be replace, can be "true" or "false", default="true" -->
+      <!-- ${confMapper.useDefault}        - defines that the default behaviour should be used, default="true"                 -->
     </sequential>
   </macrodef>
   
@@ -175,6 +246,7 @@
     <attribute name="resourceFolder" />
     <attribute name="resourceFileName" />
     <attribute name="resource" />
+    <attribute name="resourceType" />
     
     <sequential>
       <!-- do nothing -->
