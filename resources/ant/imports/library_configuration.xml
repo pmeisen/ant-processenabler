@@ -16,7 +16,7 @@
   <property name="configuration.properties.location" value="" description="The location to load the settings from, should be defined in the scriptconfig.properties, must be relative to the library_main" />
   <property name="configuration.versions.foldername" value="" description="The name of the folder in which the versions are found, must be a sub-directory wherever the build.xml is found" />
   <property name="configuration.settings.defaultconfig" value="_default" description="The folder in which the default configuration can be found" />
-  <property name="configuration.settings.defaultcustomer" value="inform" description="The folder in which the default customer can be found" />
+  <property name="configuration.settings.defaultcustomer" value="default" description="The folder in which the default customer can be found" />
   <property name="configuration.config.filename" value="config.properties" description="The name of the configurationf ile to be read" />
   <property name="configuration.resources.foldername" value="resources" description="The folder in which resources added for the customer are located" />
   

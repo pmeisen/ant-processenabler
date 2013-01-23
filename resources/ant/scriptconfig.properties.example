@@ -4,6 +4,7 @@ main.vendor=
 # Build settings
 build.launcher.groupId=
 build.applications.groupId=
+configuration.settings.defaultcustomer=
 
 # Maven settings
 maven.artifactory.source.url=
