@@ -128,7 +128,10 @@
     }
     
     // set the userProperty
-    project.setProperty(userProperty, "" + foundEntry);    
+    var setProperty = project.createTask("var");
+    setProperty.setName(userProperty);
+    setProperty.setValue("" + foundEntry);
+    setProperty.execute();
     ]]>
   </scriptdef>
   
@@ -151,7 +154,7 @@
     var separatore = attributes.get("separatore");
         
     if (packs == null || packs.trim() == "") {
-      project.setProperty(property, "");
+      packs = "";
     } else {
       var split = packs.split(",");
       
@@ -164,9 +167,12 @@
         
         packs += (packs == "" ? "" : separatore) + pack;
       }
-      
-      project.setProperty(property, packs);
     }
+    
+    var setProperty = project.createTask("var");
+    setProperty.setName(property);
+    setProperty.setValue(packs);
+    setProperty.execute();
     ]]>
   </scriptdef>
   
@@ -204,7 +210,10 @@
       finalList += (sizeOfList > 0 && !finalList.equals("") ? separatore : "") + value;
     }
     
-    project.setProperty(property, finalList);
+    var setProperty = project.createTask("var");
+    setProperty.setName(property);
+    setProperty.setValue(finalList);
+    setProperty.execute();
     ]]>
   </scriptdef>
   

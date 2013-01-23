@@ -60,6 +60,19 @@
     </then>
   </if>
   
+  <macrodef name="configurationLoadProperties">
+    <attribute name="customer" default="${configuration.settings.defaultcustomer}" />
+    
+    <sequential>
+      <var name="configuration.customer" value="@{customer}" />
+      <var name="configuration.settings.customer" value="${configuration.settings.root}/@{customer}" />
+        
+      <!-- reload the properties first the default, then the customer - it's var not property -->
+      <var file="${configuration.settings.default}/${configuration.config.filename}" />
+      <var file="${configuration.settings.customer}/${configuration.config.filename}" />
+    </sequential>
+  </macrodef>
+  
   <!--
     configurationSetup - setups a configuration
     -->
@@ -69,8 +82,7 @@
     <attribute name="customer" default="${configuration.settings.defaultcustomer}" />
   
     <sequential>
-      <var name="configuration.customer" value="@{customer}" />
-      <var name="configuration.settings.customer" value="${configuration.settings.root}/@{customer}" />
+      <configurationLoadProperties customer="@{customer}" />
     
       <!-- get the version -->
       <if>
@@ -86,10 +98,6 @@
           <propertycopy name="configuration.version" from="${configuration.version.property}" />   
         </else>
       </if>
-    
-      <!-- reload the properties first the default, then the customer - it's var not property -->
-      <var file="${configuration.settings.default}/${configuration.config.filename}" />
-      <var file="${configuration.settings.customer}/${configuration.config.filename}" />
     
       <!-- get the pom file to be loaded, create it if additional customer specific dependencies are defined -->
       <var name="configuration.settings.pom" value="${configuration.settings.pomfolder}/pom-${configuration.version}.xml" />
@@ -256,6 +264,14 @@
   </macrodef>
   
   <target name="create">
-    <configurationSetup version="${version}" customer="${customer}" />
+    <if>
+      <isset property="configuration.location" />
+      <then>
+        <configurationSetup location="${configuration.location}" version="${version}" customer="${customer}" />
+      </then>
+      <else>
+        <configurationSetup version="${version}" customer="${customer}" />
+      </else>
+    </if>
   </target>
 </project>

@@ -345,6 +345,7 @@
     <attribute name="parameters" default="" />
     <attribute name="dirPattern" default=".*" />
     <attribute name="projectSubDirectories" default="trunk" />
+    <attribute name="rootDirectories" default="." />
     
     <sequential>
       <var name="file.tmp.wrapperTargets" value="@{targets}" />
@@ -352,21 +353,17 @@
       <var name="file.tmp.wrapperDirPattern" value="@{dirPattern}" />
       <var name="file.tmp.projectSubDirectories" value="@{projectSubDirectories}" />
 
-      <foreach target="fileWrapperRunAnt" param="directory">
+      <for param="directory">
         <path>
-          <dirset dir="." includes="@{includes}" excludes="@{excludes}" />
+          <dirset dir="@{rootDirectories}" includes="@{includes}" excludes="@{excludes}" />
         </path>
-      </foreach>
+        <sequential>
+          <runAnt directory="@{directory}" targets="${file.tmp.wrapperTargets}" parameters="${file.tmp.wrapperParameters}" 
+                  dirPattern="${file.tmp.wrapperDirPattern}" subDirectories="${file.tmp.projectSubDirectories}"/>
+        </sequential>
+      </for>
     </sequential>
   </macrodef>
-  
-  <!--
-    Just a wrapper target to do the foreach
-    -->
-  <target name="fileWrapperRunAnt">
-    <runAnt directory="${directory}" targets="${file.tmp.wrapperTargets}" parameters="${file.tmp.wrapperParameters}" 
-            dirPattern="${file.tmp.wrapperDirPattern}" subDirectories="${file.tmp.projectSubDirectories}"/>
-  </target>
   
   <scriptdef name="fileInfo" language="javascript">
     <attribute name="file" />
