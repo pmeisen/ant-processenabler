@@ -316,6 +316,7 @@
     <attribute name="subDirectories" default="trunk" />
   
     <sequential>
+      <var name="dirname" value="" unset="true" />
       <basename file="@{directory}" property="dirname"/>
       
       <var name="buildDir" value="@{directory}/@{subDirectories}" />
