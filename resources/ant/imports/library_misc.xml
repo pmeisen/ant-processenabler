@@ -217,6 +217,61 @@
     ]]>
   </scriptdef>
   
+  <!--
+    createList - Creates a ResourceCollection into a list
+    -->
+  <scriptdef name="createResourceList" language="javascript">
+    <attribute name="property" />
+    <attribute name="resourceCollectionId" />
+    <attribute name="separatore" />
+    
+    <![CDATA[
+    var property = attributes.get("property");
+    var resourceCollectionId = attributes.get("resourcecollectionid");
+    var separatore = attributes.get("separatore");
+    
+    // get the resource collection
+    var refs = project.hasReference(resourceCollectionId) ? project.getReference(resourceCollectionId) : null;
+    
+    // check the resource collection
+    var finalList = "";
+    if (refs != null && refs.size() > 0) {
+      var entries = refs.iterator();
+      
+      finalList = separatore;
+      while (entries.hasNext()) {
+        var value;
+        var entry = entries.next();
+        if (entry instanceof org.apache.tools.ant.types.resources.PropertyResource ||
+            entry instanceof org.apache.tools.ant.types.resources.StringResource) {
+          value = entry.getValue();
+        } else if (entry instanceof org.apache.tools.ant.types.resources.URLResource) {
+          value = entry.getURL() == null ? "" : entry.getURL().toString();
+        } else if (entry instanceof org.apache.tools.ant.types.resources.FileResource) {
+          try {
+            value = entry.getFile() == null ? "" : entry.getFile().getCanonicalPath();
+          } catch (e) {
+            value = entry.getFile() == null ? "" : entry.getFile().getAbsolutePath();
+          }
+        } else {
+          value = entry == null ? "" : entry.toString();
+        }
+        
+        finalList = finalList + value + separatore;
+      }
+      
+      var length = separatore.length();
+      var listLength = finalList.length;      
+      finalList = finalList.substring(length, listLength - length);
+    }
+       
+    var setProperty = project.createTask("var");
+    setProperty.setName(property);
+    setProperty.setValue(finalList);
+    setProperty.execute();
+    ]]>
+  </scriptdef>
+  
   <macrodef name="importLibrariesFromList">
     <attribute name="list" />
     <attribute name="default" default="true" />

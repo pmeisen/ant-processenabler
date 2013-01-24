@@ -6,7 +6,7 @@
   -->
 	<import file="..\..\resources\ant\library_main.xml"/>
 
-<macrodef name="getEncoding">
+  <macrodef name="getEncoding">
     <sequential>
       <!-- check Ascii -->
       <fileEncoding file="${build.resourcedir}/asciichars.properties" />
@@ -42,7 +42,7 @@
   </macrodef>
   
   <target name="antTest">
-    <!--<getEncoding />-->
+    <getEncoding />
     <getXmlEncoding />
   </target>
   

@@ -247,6 +247,59 @@
       <!-- ${confMapper.location}          - contains the location within the rootFolder to copy the data to, default=""       -->
       <!-- ${confMapper.replaceProperties} - defines if properties should be replace, can be "true" or "false", default="true" -->
       <!-- ${confMapper.useDefault}        - defines that the default behaviour should be used, default="true"                 -->
+      
+      <!-- the default implementation reads a property to map the location of a dependency/resource -->
+      <propertyset id="configuration.tmp.patternDef">
+        <propertyref regex="^configuration.configurationCustomerMapper\..+\.pattern$" />
+      </propertyset>
+      
+      <!-- convert it to a path -->
+      <var name="configuration.tmp.resource" value="@{resource}" />
+      <script language="javascript"><![CDATA[
+        var resourceCollectionId = "configuration.tmp.patternDef";
+        var resource = project.getProperty("configuration.tmp.resource");
+        
+        // get the resource collection
+        var refs = project.hasReference(resourceCollectionId) ? project.getReference(resourceCollectionId) : null;
+
+        // check the resource collection
+        var finalList = "";
+        if (refs != null && refs.size() > 0) {
+          var entries = refs.iterator();
+
+          while (entries.hasNext()) {
+            var entry = entries.next();
+            
+              var entryRegExp = entry.getValue();
+              var entryPattern = java.util.regex.Pattern.compile(entryRegExp);
+            
+            // check if the resource matches
+            if (entryPattern.matcher(resource).find()) {
+
+              // get the id of the property
+              var regExp = "^configuration\\.configurationCustomerMapper\\.(.+)\\.pattern$";
+              var pattern = java.util.regex.Pattern.compile(regExp);
+              var matcher = pattern.matcher(entry.getName());
+              var id = matcher.find() ? matcher.group(1) : null;
+              
+              // get the property
+              var location = project.getProperty("configuration.configurationCustomerMapper." + id + ".location");
+              
+              // set the location
+              var setProperty = project.createTask("var");
+              setProperty.setName("confMapper.location");
+              setProperty.setValue(location);
+              setProperty.execute();
+              
+              // disable the default behaviour and use this setting
+              setProperty.setName("confMapper.useDefault");
+              setProperty.setValue("false");
+              setProperty.execute();
+            }
+          }
+        }
+      ]]></script>
+
     </sequential>
   </macrodef>
   

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testFileEncoding">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkEmptyList">
+    <sequential>
+     
+      <propertyset id="test.properties">
+        <propertyref regex="^$" />
+      </propertyset>
+      
+      <createResourceList property="test.result" resourceCollectionId="test.properties" separatore="|" />
+      <if>
+        <equals arg1="${test.result}" arg2="" />
+        <then><echo>EmptyList was successful!</echo></then>
+        <else><fail>EmptyList failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkPropertyList">
+    <sequential>
+      <!-- set some properties -->
+      <var name="test.property.1" value="1" />
+      <var name="test.property.2" value="2" />
+      <var name="test.property.3" value="3" />
+      <var name="test.property.ABC" value="ABC" />
+      
+      <propertyset id="test.properties">
+        <propertyref regex="^test\.property\..+$" />
+      </propertyset>
+      
+      <createResourceList property="test.result" resourceCollectionId="test.properties" separatore="|" />
+      
+      <if>
+        <equals arg1="${test.result}" arg2="2|1|3|ABC" />
+        <then><echo>PropertyList was successful!</echo></then>
+        <else><fail>PropertyList failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkFileList">
+    <sequential>
+      
+      <!-- get the fileset -->
+      <fileset id="test.properties" dir="resources" />      
+      <createResourceList property="test.result" resourceCollectionId="test.properties" separatore="," />
+      
+      <if>
+        <matches string="${test.result}" casesensitive="false" 
+                 pattern="\Q${basedir}\E[\\/]\Qresources\E[\\/]\QA.txt,${basedir}\E[\\/]\Qresources\E[\\/]\QB.txt,${basedir}\E[\\/]\Qresources\E[\\/]\QC.txt\E" />
+        <then><echo>FileList was successful!</echo></then>
+        <else><fail>FileList failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+
+  
+  <target name="antTest">
+    <checkEmptyList />
+    <checkPropertyList />
+    <checkFileList />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>
