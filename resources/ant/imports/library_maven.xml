@@ -348,7 +348,7 @@
       <if>
         <not><equals arg1="@{dir}" arg2="" /></not>
         <then>
-          <fileCleanUp dir="@{dir}" recreate="true" />
+          <fileCleanUp dir="@{dir}" recreate="true" failonerror="false" />
           
           <!-- copy the dependent files -->
           <copy todir="@{dir}">

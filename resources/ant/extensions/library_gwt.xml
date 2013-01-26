@@ -857,7 +857,7 @@
         </if>
         
         <!-- copy the servlet.jar to the library of the war -->
-        <fileCleanUp dir="${gwt.tmp.webInfLibDir}" />
+        <fileCleanUp dir="${gwt.tmp.webInfLibDir}" failonerror="false" />
         <copy file="${eclipse.dir}/${gwt.eclipse.pluginDir}/gwt-servlet.jar" todir="${gwt.tmp.webInfLibDir}" />
         
         <!-- copy compile dependencies -->        

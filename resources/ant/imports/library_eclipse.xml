@@ -80,7 +80,7 @@
       </if>
 
       <!-- clean the folders -->
-      <fileCleanUp dir="${eclipse.libdir}" recreate="true" />
+      <fileCleanUp dir="${eclipse.libdir}" recreate="true" failonerror="false" />
       <fileCleanUp dir="${eclipse.srcdir}" recreate="true" />
       <fileCleanUp dir="${eclipse.javadocdir}" recreate="true" />
       
