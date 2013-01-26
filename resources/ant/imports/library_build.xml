@@ -1000,13 +1000,7 @@
 
                 <!-- copy the file and replace properties if needed -->
                 <if>
-                  <and>
-                    <equals arg1="${resMapper.replaceProperties}" arg2="true" />
-                    <length file="@{resource}" when="greater" length="0" />
-                    <!-- list of files which really can be modified, otherwise the file can get corrupt (e.g. class or png) -->
-                    <matches string="${fileInfo.extension}" pattern="xml|properties|html|txt|bat|mf" casesensitive="false" />
-                  </and>
-                  <!-- replace the properties -->
+                  <equals arg1="${resMapper.replaceProperties}" arg2="true" />
                   <then>
                     <fileReplaceAllProperties file="@{resource}" destFile="${build.tmp.destBaseFolder}/${build.tmp.destResource}" />
                   </then>
