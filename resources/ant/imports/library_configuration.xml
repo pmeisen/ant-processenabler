@@ -222,24 +222,30 @@
       <var name="configuration.settings.pom" value="${configuration.settings.pomfolder}/pom-${configuration.version}.xml" />
       <var name="configuration.settings.finalpom" value="${maven.tmpdir}/configuration_pom.xml" />
       <var name="configuration.settings.tmp.pom" value="${maven.tmpdir}/configuration_tmp_pom.xml" />
-      <copy file="${configuration.settings.pom}" tofile="${configuration.settings.finalpom}" overwrite="true" />
-
-      <for list="${configuration.settings.includedCustomers}" param="configuration.tmp.includedCustomer" delimiter="|" trim="true">
-        <sequential>
-          <var name="configuration.tmp.customerFolder" value="${configuration.settings.root}/@{configuration.tmp.includedCustomer}" />
-          <var name="configuration.settings.additionalpom" value="${configuration.tmp.customerFolder}/${configuration.version.property}/pom.xml" />
-          <if>
-            <available file="${configuration.settings.additionalpom}" />
-            <then>
-              <copy file="${configuration.settings.finalpom}" tofile="${configuration.settings.tmp.pom}" overwrite="true" />
-              <fileMergeXml file1="${configuration.settings.tmp.pom}" 
-                            file2="${configuration.settings.additionalpom}" 
-                            dest="${configuration.settings.finalpom}" 
-                            conf="${configuration.library.resfile.pomConfiguration.merge}" />
-            </then>
-          </if>
-        </sequential>
-      </for>
+      
+      <if>
+        <available file="${configuration.settings.pom}" />
+        <then>
+          <copy file="${configuration.settings.pom}" tofile="${configuration.settings.finalpom}" overwrite="true" />
+          
+          <for list="${configuration.settings.includedCustomers}" param="configuration.tmp.includedCustomer" delimiter="|" trim="true">
+            <sequential>
+              <var name="configuration.tmp.customerFolder" value="${configuration.settings.root}/@{configuration.tmp.includedCustomer}" />
+              <var name="configuration.settings.additionalpom" value="${configuration.tmp.customerFolder}/${configuration.version.property}/pom.xml" />
+              <if>
+                <available file="${configuration.settings.additionalpom}" />
+                <then>
+                  <copy file="${configuration.settings.finalpom}" tofile="${configuration.settings.tmp.pom}" overwrite="true" />
+                  <fileMergeXml file1="${configuration.settings.tmp.pom}" 
+                                file2="${configuration.settings.additionalpom}" 
+                                dest="${configuration.settings.finalpom}" 
+                                conf="${configuration.library.resfile.pomConfiguration.merge}" />
+                </then>
+              </if>
+            </sequential>
+          </for>
+        </then>
+      </if>
       
       <!-- load the dependency of the version -->
       <if>
@@ -283,14 +289,6 @@
       <configurationLoadProperties customer="@{customer}" alternative="@{alternative}" />
       <!-- this call sets the configuration.version and further properties -->
       <configurationLoadVersionProperties customer="${configuration.customer}" version="@{version}" />
-
-      <!-- check if the version exists -->
-      <if>
-        <not><available file="${configuration.settings.finalpom}"/></not>
-        <then>
-          <fail>The version ${configuration.settings.finalpom} cannot be found</fail>
-        </then>
-      </if>
       
       <!-- make sure we have one dependency -->
       <var name="configuration.tmp.location" value="@{location}/tmp" />
