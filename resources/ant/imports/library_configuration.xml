@@ -8,6 +8,8 @@
       - Creation of library
     28.01.2013
       - added addional configuration possibilities (e.g. files.xml, resources-folder, ...)
+    07.02.2013
+      - added the possibility to import configurations
   -->
 <project name="library_configuration">
   <property name="configuration.library.version" value="1.0.0" description="The current version of the library" />
@@ -20,6 +22,7 @@
   <property name="configuration.settings.defaultconfig" value="_default" description="The folder in which the default configuration can be found" />
   <property name="configuration.settings.defaultcustomer" value="default" description="The folder in which the default customer can be found" />
   <property name="configuration.config.filename" value="config.properties" description="The name of the configuration file to be read" />
+  <property name="configuration.config.import.filename" value="import.properties" description="The name of the configuration file to be read for imports" />
   <property name="configuration.config.user.filename" value="alternative.properties" description="The name of the configuration file to be read for the user (overrides the other settings)" />
   <property name="configuration.resources.foldername" value="resources" description="The folder in which resources added for the customer are located" />
   
@@ -77,27 +80,93 @@
     
     <sequential>
       <var name="configuration.customer" value="@{customer}" />
-      <var name="configuration.settings.customer" value="${configuration.settings.root}/@{customer}" />
 
       <!-- reload the properties first the default, then the customer - it's var not property -->
       <var file="${configuration.settings.default}/${configuration.config.filename}" />
-      <var file="${configuration.settings.customer}/${configuration.config.filename}" />
       
-      <!-- load the customer properties, check if the alternative should be loaded -->
-      <if>
-        <or>
-          <equals arg1="@{alternative}" arg2="y" />
-          <equals arg1="@{alternative}" arg2="yes" />
-          <equals arg1="@{alternative}" arg2="true" />
-        </or>
-        <then>
-          <var name="configuration.alternative" value="true" />
-          <var file="${configuration.settings.customer}/${configuration.config.user.filename}" />
-        </then>
-        <else>
-          <var name="configuration.alternative" value="false" />
-        </else>
-      </if>
+      <!-- resolve possible imports -->
+      <script language="javascript"><![CDATA[
+        var rootCustomerFolder = project.getProperty("configuration.settings.root");
+        var importFilename = project.getProperty("configuration.config.import.filename");
+        var imports = new java.util.Stack();
+        imports.push(project.getProperty("configuration.customer"));
+        
+        // check all the imports
+        var folders = new java.util.ArrayList();
+        while (!imports.empty()) {
+          var nextImport = imports.pop();
+          folders.add(nextImport);          
+          var importFile = new java.io.File(rootCustomerFolder + "/" + nextImport + "/" + importFilename);
+                    
+          if (importFile.exists() && importFile.isFile()) {
+            var prop = new java.util.Properties();
+            var inStream = new java.io.FileInputStream(importFile);
+            
+            // read the import
+            prop.load(inStream);
+            
+            // close the input again
+            try {
+              inStream.close();
+            } catch (e) {
+            }
+            
+            // check the properties
+            var newImportsList = prop.getProperty("configuration.imports");
+            var newImports = newImportsList.split("\\|");
+            
+            for (var i = 0; i < newImports.length; i++) {
+              var newImport = newImports[i].trim();
+              
+              if (newImport != null && !"".equals(newImport)) {
+                imports.push(newImport);
+              }
+            }
+          }
+        }
+        
+        // transform the folders to a list
+        var folderList = "";
+        for (var i = folders.size(); i > 0; i--) {
+          folderList += "|" + folders.get(i - 1);
+        }
+        folderList = folderList.substring(1);
+        
+        // set the property with the list of customers
+        var setProperty = project.createTask("var");
+        setProperty.setName("configuration.settings.includedCustomers");
+        setProperty.setValue(folderList);
+        setProperty.execute();
+      ]]></script>
+      <for list="${configuration.settings.includedCustomers}" param="configuration.tmp.includedCustomer" delimiter="|" trim="true">
+        <sequential>
+          <var name="configuration.tmp.customerFolder" value="${configuration.settings.root}/@{configuration.tmp.includedCustomer}" />
+
+          <!-- get the properties for the customer -->
+          <if>
+            <available file="${configuration.tmp.customerFolder}/${configuration.config.filename}" />
+            <then>
+              <var file="${configuration.tmp.customerFolder}/${configuration.config.filename}" />
+            </then>
+          </if>
+          
+          <!-- load the customer properties, check if the alternative should be loaded -->
+          <if>
+            <or>
+              <equals arg1="@{alternative}" arg2="y" />
+              <equals arg1="@{alternative}" arg2="yes" />
+              <equals arg1="@{alternative}" arg2="true" />
+            </or>
+            <then>
+              <var name="configuration.alternative" value="true" />
+              <var file="${configuration.tmp.customerFolder}/${configuration.config.user.filename}" />
+            </then>
+            <else>
+              <var name="configuration.alternative" value="false" />
+            </else>
+          </if>
+        </sequential>
+      </for>
       
       <!-- now replace all properties within properties one last time -->
       <propertyset id="configuration.tmp.propertiesSet" />
@@ -115,16 +184,21 @@
     
     <sequential>
     
-      <!-- load the file attributes -->
-      <if>
-        <available file="${configuration.settings.customer}/${configuration.version.property}/files.xml" />
-        <then>
-          <var name="configuration.tmp.files.location" value="${java.io.tmpdir}/files.xml" />
-          <fileReplaceAllProperties file="${configuration.settings.customer}/${configuration.version.property}/files.xml" destFile="${configuration.tmp.files.location}" />
-          <xmlproperty file="${configuration.tmp.files.location}" />
-          <delete file="${configuration.tmp.files.location}" />
-        </then>
-      </if>
+      <!-- load the files of the files.xml of the different customers -->
+      <for list="${configuration.settings.includedCustomers}" param="configuration.tmp.includedCustomer" delimiter="|" trim="true">
+        <sequential>
+          <var name="configuration.tmp.customerFolder" value="${configuration.settings.root}/@{configuration.tmp.includedCustomer}" />
+          <if>
+            <available file="${configuration.tmp.customerFolder}/${configuration.version.property}/files.xml" />
+            <then>
+              <var name="configuration.tmp.files.location" value="${java.io.tmpdir}/files.xml" />
+              <fileReplaceAllProperties file="${configuration.tmp.customerFolder}/${configuration.version.property}/files.xml" destFile="${configuration.tmp.files.location}" />
+              <xmlproperty file="${configuration.tmp.files.location}" prefix="@{configuration.tmp.includedCustomer}" />
+              <delete file="${configuration.tmp.files.location}" />
+            </then>
+          </if>
+        </sequential>
+      </for>
       
       <!-- get the version -->
       <if>
@@ -146,20 +220,26 @@
       
       <!-- get the pom file to be loaded, create it if additional customer specific dependencies are defined -->
       <var name="configuration.settings.pom" value="${configuration.settings.pomfolder}/pom-${configuration.version}.xml" />
-      <var name="configuration.settings.additionalpom" value="${configuration.settings.customer}/${configuration.version.property}/pom.xml" />
-      <if>
-        <available file="${configuration.settings.additionalpom}" />
-        <then>
-          <var name="configuration.settings.finalpom" value="${maven.tmpdir}/merged_pom.xml" />
-          <fileMergeXml file1="${configuration.settings.pom}" 
-                        file2="${configuration.settings.additionalpom}" 
-                        dest="${configuration.settings.finalpom}" 
-                        conf="${configuration.library.resfile.pomConfiguration.merge}" />
-        </then>
-        <else>
-          <var name="configuration.settings.finalpom" value="${configuration.settings.pom}" />
-        </else>
-      </if>
+      <var name="configuration.settings.finalpom" value="${maven.tmpdir}/configuration_pom.xml" />
+      <var name="configuration.settings.tmp.pom" value="${maven.tmpdir}/configuration_tmp_pom.xml" />
+      <copy file="${configuration.settings.pom}" tofile="${configuration.settings.finalpom}" overwrite="true" />
+
+      <for list="${configuration.settings.includedCustomers}" param="configuration.tmp.includedCustomer" delimiter="|" trim="true">
+        <sequential>
+          <var name="configuration.tmp.customerFolder" value="${configuration.settings.root}/@{configuration.tmp.includedCustomer}" />
+          <var name="configuration.settings.additionalpom" value="${configuration.tmp.customerFolder}/${configuration.version.property}/pom.xml" />
+          <if>
+            <available file="${configuration.settings.additionalpom}" />
+            <then>
+              <copy file="${configuration.settings.finalpom}" tofile="${configuration.settings.tmp.pom}" overwrite="true" />
+              <fileMergeXml file1="${configuration.settings.tmp.pom}" 
+                            file2="${configuration.settings.additionalpom}" 
+                            dest="${configuration.settings.finalpom}" 
+                            conf="${configuration.library.resfile.pomConfiguration.merge}" />
+            </then>
+          </if>
+        </sequential>
+      </for>
       
       <!-- load the dependency of the version -->
       <if>
@@ -187,24 +267,7 @@
     <attribute name="alternative" default="${alternative}" />
   
     <sequential>
-      <!-- this call sets the configuration.customer, configuration.settings.customer, configuration.alternative and further properties -->
-      <configurationLoadProperties customer="@{customer}" alternative="@{alternative}" />
-      <!-- this call sets the configuration.version and further properties -->
-      <configurationLoadVersionProperties customer="${configuration.settings.customer}" version="@{version}" />
-        
-      <!-- check if the files exists -->
-      <if>
-        <or>
-          <not><available file="${configuration.settings.default}"/></not>
-          <not><available file="${configuration.settings.customer}"/></not>
-          <not><available file="${configuration.settings.finalpom}"/></not>
-        </or>
-        <then>
-          <fail>At least one needed folder/file cannot be found, please check the list of '${configuration.settings.default}', '${configuration.settings.customer}', and '${configuration.settings.finalpom}'</fail>
-        </then>
-      </if>
-
-      <!-- create the pattern -->
+      <!-- create the pattern, which defines the files in which the properties should be replaced -->
       <var name="configuration.tmp.replacement.pattern" value="${configuration.replacement.default.pattern}" />
       <if>
         <and>
@@ -213,6 +276,19 @@
         </and>
         <then>
           <var name="configuration.tmp.replacement.pattern" value="${configuration.replacement.default.pattern}|${configuration.replacement.additional.pattern}" />
+        </then>
+      </if>
+
+      <!-- this call sets the configuration.customer, configuration.settings.includedCustomers, configuration.alternative and further properties -->
+      <configurationLoadProperties customer="@{customer}" alternative="@{alternative}" />
+      <!-- this call sets the configuration.version and further properties -->
+      <configurationLoadVersionProperties customer="${configuration.customer}" version="@{version}" />
+
+      <!-- check if the version exists -->
+      <if>
+        <not><available file="${configuration.settings.finalpom}"/></not>
+        <then>
+          <fail>The version ${configuration.settings.finalpom} cannot be found</fail>
         </then>
       </if>
       
@@ -235,60 +311,74 @@
       
       <configurationPostDependencies />
             
-      <!-- get additional files -->
-      <propertyset id="configuration.tmp.files">
-        <propertyref regex="^files\.file\d+\(from\)$" />
-      </propertyset>
-
+      <!-- get additional files defined in files.xml -->
       <script language="javascript"><![CDATA[
         var location = project.getProperty("configuration.tmp.location");
-        var resourceCollectionId = "configuration.tmp.files";
-        var refs = project.hasReference(resourceCollectionId) ? project.getReference(resourceCollectionId) : null;
-
-        // check the collection
-        var finalList = "";
-        if (refs != null && refs.size() > 0) {
-          var entries = refs.iterator();
-
-          while (entries.hasNext()) {
-            var entry = entries.next();
-            var entryRegExp = "files\\.file(\\d+)\\(from\\)";
-            var entryPattern = java.util.regex.Pattern.compile(entryRegExp);
-            var entryMatcher = entryPattern.matcher(entry.getName());
-            entryMatcher.find();
-            var fileNumber = entryMatcher.group(1);
+        var includedCustomersList = project.getProperty("configuration.settings.includedCustomers");
+        var includedCustomers = includedCustomersList.split("\\|");
+        
+        // get the properties for each customer
+        for (var i = 0; i < includedCustomers.length; i++) {
+          var includedCustomer = includedCustomers[i];
+          
+          // get the files to include for this customer, by filtering all properties by a regular expression
+          var propertyRegEx = "^\\Q" + includedCustomer + "\\E\\.files\\.file(\\d+)\\(from\\)$";         
+          var definePropertyRef = new org.apache.tools.ant.types.PropertySet.PropertyRef();
+          definePropertyRef.setRegex(propertyRegEx);
+          var propertySet = new org.apache.tools.ant.types.PropertySet();
+          propertySet.setProject(project);
+          propertySet.addPropertyref(definePropertyRef);
+          var properties = propertySet.getProperties().propertyNames();
+  
+          // iteratore over the properties
+          var finalList = "";
+          if (properties != null) {
+            while (properties.hasMoreElements()) {
             
-            // get the other properties for the file
-            var from = project.getProperty("files.file" + fileNumber + "(from)");
-            var to = project.getProperty("files.file" + fileNumber + "(to)");
-            var unzip = project.getProperty("files.file" + fileNumber + "(unzip)");
-            var includes = project.getProperty("files.file" + fileNumber + "(includes)");
-            var excludes = project.getProperty("files.file" + fileNumber + "(excludes)");
+              // determine the filenumber of the customer's file
+              var property = properties.nextElement();
+              var propertyPattern = java.util.regex.Pattern.compile(propertyRegEx);
+              var propertyMatcher = propertyPattern.matcher(property);
+              propertyMatcher.find();
+              var fileNumber = propertyMatcher.group(1);
+              
+              // get the other properties for the file
+              var from = project.getProperty(includedCustomer + ".files.file" + fileNumber + "(from)");
+              var to = project.getProperty(includedCustomer + ".files.file" + fileNumber + "(to)");
+              var unzip = project.getProperty(includedCustomer + ".files.file" + fileNumber + "(unzip)");
+              var includes = project.getProperty(includedCustomer + ".files.file" + fileNumber + "(includes)");
+              var excludes = project.getProperty(includedCustomer + ".files.file" + fileNumber + "(excludes)");
 
-            // execute whatever has to be done
-            var configurationCopyFiles = project.createTask("configurationCopyFiles"); 
-            configurationCopyFiles.setDynamicAttribute("from", from);
-            configurationCopyFiles.setDynamicAttribute("to", location + "/" + to);
-            configurationCopyFiles.setDynamicAttribute("unzip", unzip);
-            configurationCopyFiles.setDynamicAttribute("includes", includes);
-            configurationCopyFiles.setDynamicAttribute("excludes", excludes);
-            configurationCopyFiles.execute();
+              // execute whatever has to be done
+              var configurationCopyFiles = project.createTask("configurationCopyFiles"); 
+              configurationCopyFiles.setDynamicAttribute("from", from);
+              configurationCopyFiles.setDynamicAttribute("to", location + "/" + to);
+              configurationCopyFiles.setDynamicAttribute("unzip", unzip);
+              configurationCopyFiles.setDynamicAttribute("includes", includes);
+              configurationCopyFiles.setDynamicAttribute("excludes", excludes);
+              configurationCopyFiles.execute();
+            }
           }
         }
       ]]></script>
       
       <configurationPostFiles />
       
-      <!-- get the additional stuff -->
-      <var name="configuration.resources.tmp.location" value="${configuration.settings.customer}/${configuration.version.property}/${configuration.resources.foldername}" />
-      <if>
-        <available file="${configuration.resources.tmp.location}" />
-        <then>
-          <fileCallMacroForEach macro="configurationBuildPackage" parameters="resourceType=[[${configuration.resourcetype.resource}]];rootFolder=[[${configuration.tmp.location}]];filePattern=[[${configuration.tmp.replacement.pattern}]];">
-            <fileset dir="${configuration.resources.tmp.location}" />
-          </fileCallMacroForEach>
-        </then>
-      </if>
+      <!-- copy the additional resources of the customer -->
+      <for list="${configuration.settings.includedCustomers}" param="configuration.tmp.includedCustomer" delimiter="|" trim="true">
+        <sequential>
+          <var name="configuration.tmp.customerFolder" value="${configuration.settings.root}/@{configuration.tmp.includedCustomer}" />
+          <var name="configuration.resources.tmp.location" value="${configuration.tmp.customerFolder}/${configuration.version.property}/${configuration.resources.foldername}" />
+          <if>
+            <available file="${configuration.resources.tmp.location}" />
+            <then>
+              <fileCallMacroForEach macro="configurationBuildPackage" parameters="resourceType=[[${configuration.resourcetype.resource}]];rootFolder=[[${configuration.tmp.location}]];filePattern=[[${configuration.tmp.replacement.pattern}]];">
+                <fileset dir="${configuration.resources.tmp.location}" />
+              </fileCallMacroForEach>
+            </then>
+          </if>
+        </sequential>
+      </for>
       
       <configurationPostResources />
       
