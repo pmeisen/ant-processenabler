@@ -26,16 +26,28 @@ goto setArgs
 REM **************************************************
 REM ** Get Java                                     **
 REM **************************************************
-if exist "%curDir%..\..\jre\win\bin\%JAVA_EXEC%.exe" (
-  set JAVA_DIR=..\..\jre\win\bin\%JAVA_EXEC%.exe
+if exist "%curDir%jre\bin\%JAVA_EXEC%.exe" (
+  set JAVA_DIR=jre\bin\%JAVA_EXEC%.exe
 ) else (
-  if exist "%curDir%..\..\..\jre\win\bin\%JAVA_EXEC%.exe" (
-    set JAVA_DIR=..\..\..\jre\win\bin\%JAVA_EXEC%.exe
+  if exist "%curDir%jre\win\bin\%JAVA_EXEC%.exe" (
+    set JAVA_DIR=jre\win\bin\%JAVA_EXEC%.exe
   ) else (
-    if exist "%curDir%..\..\..\..\jre\win\bin\%JAVA_EXEC%.exe" (
-      set JAVA_DIR=..\..\..\..\jre\win\bin\%JAVA_EXEC%.exe
+    if exist "%curDir%..\jre\win\bin\%JAVA_EXEC%.exe" (
+      set JAVA_DIR=..\jre\win\bin\%JAVA_EXEC%.exe
     ) else (
-      set JAVA_DIR=%JAVA_EXEC%.exe
+      if exist "%curDir%..\..\jre\win\bin\%JAVA_EXEC%.exe" (
+        set JAVA_DIR=..\..\jre\win\bin\%JAVA_EXEC%.exe
+      ) else (
+        if exist "%curDir%..\..\..\jre\win\bin\%JAVA_EXEC%.exe" (
+          set JAVA_DIR=..\..\..\jre\win\bin\%JAVA_EXEC%.exe
+        ) else (
+          if exist "%curDir%..\..\..\..\jre\win\bin\%JAVA_EXEC%.exe" (
+            set JAVA_DIR=..\..\..\..\jre\win\bin\%JAVA_EXEC%.exe
+          ) else (
+            set JAVA_DIR=%JAVA_EXEC%.exe
+          )
+        )
+      )
     )
   )
 )

@@ -47,6 +47,30 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="fileAppendLine">   
+    <attribute name="file" />
+    <attribute name="line" />
+    <attribute name="create" default="true" />
+
+    <sequential>
+
+      <if>
+        <or>
+          <available file="@{file}" />
+          <equals arg1="@{create}" arg2="true" />
+          <equals arg1="@{create}" arg2="y" />
+          <equals arg1="@{create}" arg2="yes" />
+        </or>
+        <then>
+          <echo level="debug">Adding line: '@{line}' to @{file}</echo>
+<!-- the format is applied to the file so there shouldn't be any extra whitespaces -->
+<echo file="@{file}" append="true">@{line}
+</echo>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
   <macrodef name="filePrintFileset">   
     <attribute name="filesetid" />
 
@@ -668,7 +692,7 @@
       // create the stuff we need
       var basedir = null;
       var files = new java.util.ArrayList();
-              
+
       // check each file
       for (var i = 0; i < filesets.size(); ++i) {      
         var fileset = filesets.get(i);

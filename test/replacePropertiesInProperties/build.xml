@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testReplacePropertiesInProperties">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <!-- do a simple replacement, i.e. a property is replaced within another properties value -->
+  <macrodef name="simpleReplacement">
+    <sequential>
+      <var name="testReplacePropertiesInProperties.tmp.value1" value="$$$${testReplacePropertiesInProperties.tmp.value2}" />
+      <var name="testReplacePropertiesInProperties.tmp.value2" value="Simple Value" />
+      
+      <!-- check the preconditions -->
+      <if>
+        <not><equals arg1="${testReplacePropertiesInProperties.tmp.value1}" arg2="$${testReplacePropertiesInProperties.tmp.value2}" /></not>
+        <then>
+          <fail>simpleReplacement failed because of invalid pre-conditions</fail>
+        </then>
+      </if>
+      
+      <!-- do the test -->
+      <propertyset id="testReplacePropertiesInProperties.tmp.propertySet">
+        <propertyref regex="^testReplacePropertiesInProperties\..+" />
+      </propertyset>
+      <replacePropertiesInProperties propertySetId="testReplacePropertiesInProperties.tmp.propertySet" />
+      <if>
+        <and>
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value1}" arg2="Simple Value" />
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value2}" arg2="Simple Value" />
+        </and>
+        <then>
+          <echo level="info">simpleReplacement was successful!</echo>
+        </then>
+        <else>
+          <fail>simpleReplacement failed (${testReplacePropertiesInProperties.tmp.value1} != ${testReplacePropertiesInProperties.tmp.value2})!</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!-- do a more complex replacement, i.e. a property is replaced within another property, which is replaced by a value -->
+  <macrodef name="complexReplacement">
+    <sequential>
+      <var name="testReplacePropertiesInProperties.tmp.value1" value="$$$${testReplacePropertiesInProperties.tmp.value2}" />
+      <var name="testReplacePropertiesInProperties.tmp.value2" value="$$$${testReplacePropertiesInProperties.tmp.value3}" />
+      <var name="testReplacePropertiesInProperties.tmp.value3" value="Complex Value" />
+
+      <!-- check the preconditions -->
+      <if>
+        <and>
+          <not><equals arg1="${testReplacePropertiesInProperties.tmp.value1}" arg2="$${testReplacePropertiesInProperties.tmp.value2}" /></not>
+          <not><equals arg1="${testReplacePropertiesInProperties.tmp.value2}" arg2="$${testReplacePropertiesInProperties.tmp.value3}" /></not>
+        </and>
+        <then>
+          <fail>complexReplacement failed because of invalid pre-conditions</fail>
+        </then>
+      </if>
+      
+      <!-- do the test -->
+      <propertyset id="testReplacePropertiesInProperties.tmp.propertySet">
+        <propertyref regex="^testReplacePropertiesInProperties\..+" />
+      </propertyset>
+      <replacePropertiesInProperties propertySetId="testReplacePropertiesInProperties.tmp.propertySet" />
+      <if>
+        <and>
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value1}" arg2="Complex Value" />
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value2}" arg2="Complex Value" />
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value3}" arg2="Complex Value" />
+        </and>
+        <then>
+          <echo level="info">complexReplacement was successful!</echo>
+        </then>
+        <else>
+          <fail>complexReplacement failed (${testReplacePropertiesInProperties.tmp.value1} != ${testReplacePropertiesInProperties.tmp.value2} != ${testReplacePropertiesInProperties.tmp.value3})!</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!-- do a more complex replacement, i.e. a property is replaced within another property, which is replaced by a value -->
+  <macrodef name="complexReplacementNoLoop">
+    <sequential>
+      <var name="testReplacePropertiesInProperties.tmp.value1" value="$$$${testReplacePropertiesInProperties.tmp.value2}" />
+      <var name="testReplacePropertiesInProperties.tmp.value2" value="$$$${testReplacePropertiesInProperties.tmp.value3}" />
+      <var name="testReplacePropertiesInProperties.tmp.value3" value="Complex Value" />
+
+      <!-- check the preconditions -->
+      <if>
+        <and>
+          <not><equals arg1="${testReplacePropertiesInProperties.tmp.value1}" arg2="$${testReplacePropertiesInProperties.tmp.value2}" /></not>
+          <not><equals arg1="${testReplacePropertiesInProperties.tmp.value2}" arg2="$${testReplacePropertiesInProperties.tmp.value3}" /></not>
+        </and>
+        <then>
+          <fail>complexReplacementNoLoop failed because of invalid pre-conditions</fail>
+        </then>
+      </if>
+      
+      <!-- do the test -->
+      <propertyset id="testReplacePropertiesInProperties.tmp.propertySet">
+        <propertyref regex="^testReplacePropertiesInProperties\..+" />
+      </propertyset>
+      <replacePropertiesInProperties propertySetId="testReplacePropertiesInProperties.tmp.propertySet" loopUntilAllReplaced="false" sortAlphanumeric="true" />
+      <if>
+        <and>
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value1}" arg2="$${testReplacePropertiesInProperties.tmp.value3}" />
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value2}" arg2="Complex Value" />
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value3}" arg2="Complex Value" />
+        </and>
+        <then>
+          <echo level="info">complexReplacementNoLoop was successful!</echo>
+        </then>
+        <else>
+          <fail>complexReplacementNoLoop failed (${testReplacePropertiesInProperties.tmp.value1} != ${testReplacePropertiesInProperties.tmp.value2} != ${testReplacePropertiesInProperties.tmp.value3})!</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!-- do a more complex replacement, i.e. a property is replaced within another property, which is replaced by a value -->
+  <macrodef name="complexInlineReplacement">
+    <sequential>
+      <var name="testReplacePropertiesInProperties.tmp.value1" value="This is an inline $$$${testReplacePropertiesInProperties.tmp.value2} $$$${unknown}" />
+      <var name="testReplacePropertiesInProperties.tmp.value2" value="This is an inline $$$${testReplacePropertiesInProperties.tmp.value3}" />
+      <var name="testReplacePropertiesInProperties.tmp.value3" value="Inline Value" />
+
+      <!-- check the preconditions -->
+      <if>
+        <and>
+          <not><equals arg1="${testReplacePropertiesInProperties.tmp.value1}" arg2="This is an inline $${testReplacePropertiesInProperties.tmp.value2} $${unknown}" /></not>
+          <not><equals arg1="${testReplacePropertiesInProperties.tmp.value2}" arg2="This is an inline $${testReplacePropertiesInProperties.tmp.value3}" /></not>
+        </and>
+        <then>
+          <fail>complexInlineReplacementNoLoop failed because of invalid pre-conditions</fail>
+        </then>
+      </if>
+      
+      <!-- do the test -->
+      <propertyset id="testReplacePropertiesInProperties.tmp.propertySet">
+        <propertyref regex="^testReplacePropertiesInProperties\..+" />
+      </propertyset>
+      <replacePropertiesInProperties propertySetId="testReplacePropertiesInProperties.tmp.propertySet" sortAlphanumeric="true" />
+      <if>
+        <and>
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value1}" arg2="This is an inline This is an inline Inline Value $${unknown}" />
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value2}" arg2="This is an inline Inline Value" />
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value3}" arg2="Inline Value" />
+        </and>
+        <then>
+          <echo level="info">complexInlineReplacementNoLoop was successful!</echo>
+        </then>
+        <else>
+          <fail>complexInlineReplacementNoLoop failed (${testReplacePropertiesInProperties.tmp.value1} != ${testReplacePropertiesInProperties.tmp.value2} != ${testReplacePropertiesInProperties.tmp.value3})!</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!-- do a more complex replacement, i.e. a property is replaced within another property, which is replaced by a value -->
+  <macrodef name="complexInlineReplacementNoLoop">
+    <sequential>
+      <var name="testReplacePropertiesInProperties.tmp.value1" value="This is an inline $$$${testReplacePropertiesInProperties.tmp.value2} $$$${unknown}" />
+      <var name="testReplacePropertiesInProperties.tmp.value2" value="This is an inline $$$${testReplacePropertiesInProperties.tmp.value3}" />
+      <var name="testReplacePropertiesInProperties.tmp.value3" value="Inline Value" />
+
+      <!-- check the preconditions -->
+      <if>
+        <and>
+          <not><equals arg1="${testReplacePropertiesInProperties.tmp.value1}" arg2="This is an inline $${testReplacePropertiesInProperties.tmp.value2} $${unknown}" /></not>
+          <not><equals arg1="${testReplacePropertiesInProperties.tmp.value2}" arg2="This is an inline $${testReplacePropertiesInProperties.tmp.value3}" /></not>
+        </and>
+        <then>
+          <fail>complexInlineReplacementNoLoop failed because of invalid pre-conditions</fail>
+        </then>
+      </if>
+      
+      <!-- do the test -->
+      <propertyset id="testReplacePropertiesInProperties.tmp.propertySet">
+        <propertyref regex="^testReplacePropertiesInProperties\..+" />
+      </propertyset>
+      <replacePropertiesInProperties propertySetId="testReplacePropertiesInProperties.tmp.propertySet" loopUntilAllReplaced="false" sortAlphanumeric="true" />
+      <if>
+        <and>
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value1}" arg2="This is an inline This is an inline $${testReplacePropertiesInProperties.tmp.value3} ${unknown}" />
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value2}" arg2="This is an inline Inline Value" />
+          <equals arg1="${testReplacePropertiesInProperties.tmp.value3}" arg2="Inline Value" />
+        </and>
+        <then>
+          <echo level="info">complexInlineReplacementNoLoop was successful!</echo>
+        </then>
+        <else>
+          <fail>complexInlineReplacementNoLoop failed (${testReplacePropertiesInProperties.tmp.value1} != ${testReplacePropertiesInProperties.tmp.value2} != ${testReplacePropertiesInProperties.tmp.value3})!</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <simpleReplacement />
+    <complexReplacement />
+    <complexReplacementNoLoop />
+    <complexInlineReplacement />
+    <complexInlineReplacementNoLoop />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

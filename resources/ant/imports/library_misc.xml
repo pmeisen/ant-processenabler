@@ -217,6 +217,66 @@
     ]]>
   </scriptdef>
   
+  <scriptdef name="replacePropertiesInProperties" language="javascript">
+    <attribute name="propertySetId" />
+    <!-- optional attributes -->
+    <attribute name="loopUntilAllReplaced" />    <!-- default: true -->
+    <attribute name="sortAlphanumeric" />        <!-- default: false -->
+    
+    <![CDATA[
+    var propertySetId = attributes.get("propertysetid");
+    var loopUntilAllReplaced = attributes.containsKey("loopuntilallreplaced") ? attributes.get("loopuntilallreplaced").equals("true") : true;
+    var sortAlphanumeric = attributes.containsKey("sortalphanumeric") ? attributes.get("sortalphanumeric").equals("true") : false;
+    var properties = project.hasReference(propertySetId) ? project.getReference(propertySetId) : null;
+
+    // get the properties
+    if (properties != null && properties.size() > 0) {
+      var changes = true;
+
+      var propertyIter = properties.iterator();
+      var set = sortAlphanumeric ? new java.util.TreeSet() : new java.util.LinkedHashSet();
+      while (propertyIter.hasNext()) {
+        set.add(propertyIter.next());
+      }
+
+      while (changes) {
+        var propertyIter = set.iterator();
+        changes = false;
+
+        while (propertyIter.hasNext()) {
+          var property = propertyIter.next();
+          var propertyKey = property.getName();
+          var propertyValue = property.getValue();
+          var replacedNewValue = project.replaceProperties(propertyValue);
+          var propertyNewValue = replacedNewValue;
+          
+          // we have to quote a property within the new value otherwise it would be replaced directly
+          if (propertyNewValue != null) {
+            var propertyRegEx = "\\$\\{[^\\}]+\\}";
+            var propertyPattern = java.util.regex.Pattern.compile(propertyRegEx);
+            var propertyMatcher = propertyPattern.matcher(propertyNewValue);
+            var offset = 0;
+            while (propertyMatcher.find()) {
+              var replacePosition = propertyMatcher.start() + offset;
+              propertyNewValue = new java.lang.String(propertyNewValue.substring(0, replacePosition) + "$" + propertyNewValue.substring(replacePosition));
+              offset++;
+            }
+          }
+
+          // set the new value if it changed
+          if (!(propertyValue == null && replacedNewValue == null) && !propertyValue.equals(replacedNewValue)) {
+            var setProperty = project.createTask("var");
+            setProperty.setName(propertyKey);
+            setProperty.setValue(propertyNewValue);
+            setProperty.execute();
+            changes = loopUntilAllReplaced;
+          } 
+        }
+      }
+    }
+    ]]>
+  </scriptdef>
+  
   <!--
     createList - Creates a ResourceCollection into a list
     -->
