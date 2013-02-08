@@ -356,7 +356,7 @@
         <then>
           <echo level="info">Running targets @{targets} for ${dirname}</echo>
           <exec dir="${buildDir}" executable="cmd.exe">
-            <arg line="/c ant @{targets} @{parameters}"/>
+            <arg line="/c &quot;${ant.home}/bin/ant&quot; @{targets} @{parameters}"/>
           </exec>
         </then>
       </if>

@@ -2,7 +2,7 @@
 #tomcat.webapp.root=<webappDir>
 
 # if you deploy the framework to a Pentaho server you need those settings
-#pentaho.webapp.dir=<webappGSBISDir>
+#pentaho.webapp.dir=<webappDir>
 #pentaho.solutions.dir=<solutionDir>
 
 # build.source.dir                                # default: src
