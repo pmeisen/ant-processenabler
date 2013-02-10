@@ -9,12 +9,7 @@
   <!-- get the process enabler current version -->
   <import file="resources\ant\library_main.xml" />
   
-  <target name="default" depends="updateAssembly,copyAssemblyToVersions,cleanUp" />
-  
-  <target name="copyAssemblyToVersions" depends="assemble">
-    <mkdir dir="versions" />
-    <copy file="${build.appFile}" tofile="versions/${maven.pom.artifactId}-${maven.pom.version}.zip" overwrite="true" />
-  </target>
+  <target name="default" depends="updateAssembly,cleanUp" />
   
   <macrodef name="resourceMapper">
     <attribute name="resourceFolder" />
