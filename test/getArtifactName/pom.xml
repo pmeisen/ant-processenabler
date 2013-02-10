@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project>
+  <modelVersion>4.0.0</modelVersion>
+    
+  <groupId>net.meisen.ant-processenabler.test</groupId>
+  <artifactId>testcase-pom</artifactId>
+  <version>1.0.0</version>
+  <name>Some Name</name>
+  <description>Some Description</description>
+  <packaging>jar</packaging>
+</project>

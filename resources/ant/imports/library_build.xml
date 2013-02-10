@@ -275,6 +275,58 @@
     </sequential>
   </macrodef>
   
+  <!-- determines the name of the resulting artifact -->
+  <macrodef name="buildGetArtifactName">
+    <attribute name="type" default="build" />   <!-- the type can be javadoc, src, app or build -->
+    <attribute name="property" default="build.tmp.@{type}.artifact" />
+    <attribute name="folder" default="${build.dir}" />
+    
+    <sequential>
+      <mavenSetPom />
+      
+      <switch value="@{type}">
+        <case value="build">
+          <var name="build.tmp.artifactClassifier" value="" />
+          <var name="build.tmp.artifactExtension" value="jar" />
+        </case>
+        <case value="app">
+          <var name="build.tmp.artifactClassifier" value="${maven.attachment.app}" />
+          <var name="build.tmp.artifactExtension" value="zip" />
+        </case>
+        <case value="src">
+          <var name="build.tmp.artifactClassifier" value="${maven.attachment.sources}" />
+          <var name="build.tmp.artifactExtension" value="jar" />
+        </case>
+        <case value="javadoc">
+          <var name="build.tmp.artifactClassifier" value="${maven.attachment.javadoc}" />
+          <var name="build.tmp.artifactExtension" value="jar" />
+        </case>
+        <default>
+          <fail>Invalid type for buildGetArtifactName, please use build, javadoc, src or app</fail>
+        </default>
+      </switch>
+      
+      <!-- mark the classifier if there is one -->
+      <if>
+        <not><equals arg1="${build.tmp.artifactClassifier}" arg2="" /></not>
+        <then>
+          <var name="build.tmp.artifactClassifier" value="-${build.tmp.artifactClassifier}" />
+        </then>
+      </if>
+      
+      <!-- mark the extension if there is one -->
+      <if>
+        <not><equals arg1="${build.tmp.artifactExtension}" arg2="" /></not>
+        <then>
+          <var name="build.tmp.artifactExtension" value=".${build.tmp.artifactExtension}" />
+        </then>
+      </if>
+      
+      <var name="@{property}" value="" unset="true" />
+      <property name="@{property}" location="@{folder}/${maven.pom.artifactId}-${maven.pom.version}${build.tmp.artifactClassifier}${build.tmp.artifactExtension}" />
+    </sequential>
+  </macrodef>
+  
   <!--
     buildPack - wraps the bin directory in build in a jar
     -->
@@ -365,7 +417,7 @@
       <mavenSetPom />
     
       <!-- set the jar files -->
-      <var name="build.buildSrcFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}-${maven.attachment.sources}.jar" />
+      <buildGetArtifactName property="build.buildSrcFile" type="src" />
       
       <!-- wrap the src directory -->
       <jar destfile="${build.buildSrcFile}" basedir="${build.srcdir}">
@@ -406,8 +458,8 @@
       <mavenSetPom />
     
       <!-- set the jar files -->
-      <var name="build.buildJavaDocFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}-${maven.attachment.javadoc}.jar" />
-      
+      <buildGetArtifactName property="build.buildJavaDocFile" type="javadoc" />
+
       <!-- wrap the javadoc directory -->
       <jar destfile="${build.buildJavaDocFile}" basedir="${build.javadocDir}">
         
@@ -1134,7 +1186,7 @@
       <mavenSetPom />
       
       <!-- pack it -->
-      <var name="build.appFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}-${maven.attachment.app}.zip" />
+      <buildGetArtifactName property="build.appFile" type="app" />
       <zip basedir="${build.appDir}" destfile="${build.appFile}" />
     </sequential>
   </macrodef>

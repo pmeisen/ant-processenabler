@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testFileEncoding">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkGetArtifactNameDefault">
+    <sequential>
+      <buildGetArtifactName />
+      <if>
+        <matches string="${build.tmp.build.artifact}" casesensitive="true" pattern="\Q${build.dir}\E[\\/]\Qtestcase-pom-1.0.0-SNAPSHOT.jar\E" />
+        <then><echo>getArtifactName with default settings was successful!</echo></then>
+        <else><fail>getArtifactName with default settings failed (${build.tmp.build.artifact})!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkGetArtifactNameBuild">
+    <sequential>
+      <buildGetArtifactName type="build" />
+      <if>
+        <matches string="${build.tmp.build.artifact}" casesensitive="true" pattern="\Q${build.dir}\E[\\/]\Qtestcase-pom-1.0.0-SNAPSHOT.jar\E" />
+        <then><echo>getArtifactName with build-settings was successful!</echo></then>
+        <else><fail>getArtifactName with build-settings failed (${build.tmp.build.artifact})!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkGetArtifactNameSources">
+    <sequential>
+      <buildGetArtifactName type="src" />
+      <if>
+        <matches string="${build.tmp.src.artifact}" casesensitive="true" pattern="\Q${build.dir}\E[\\/]\Qtestcase-pom-1.0.0-SNAPSHOT-${maven.attachment.sources}.jar\E" />
+        <then><echo>getArtifactName with src-settings was successful!</echo></then>
+        <else><fail>getArtifactName with src-settings failed (${build.tmp.build.artifact})!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkGetArtifactNameJavaDoc">
+    <sequential>
+      <buildGetArtifactName type="javadoc" />
+      <if>
+        <matches string="${build.tmp.javadoc.artifact}" casesensitive="true" pattern="\Q${build.dir}\E[\\/]\Qtestcase-pom-1.0.0-SNAPSHOT-${maven.attachment.javadoc}.jar\E" />
+        <then><echo>getArtifactName with javadoc-settings was successful!</echo></then>
+        <else><fail>getArtifactName with javadoc-settings failed (${build.tmp.build.artifact})!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="checkGetArtifactNameApp">
+    <sequential>
+      <buildGetArtifactName type="app" />
+      <if>
+        <matches string="${build.tmp.app.artifact}" casesensitive="true" pattern="\Q${build.dir}\E[\\/]\Qtestcase-pom-1.0.0-SNAPSHOT-${maven.attachment.app}.zip\E" />
+        <then><echo>getArtifactName with app-settings was successful!</echo></then>
+        <else><fail>getArtifactName with app-settings failed (${build.tmp.build.artifact})!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkGetArtifactNameNewProperty">
+    <sequential>
+      <buildGetArtifactName property="test.tmp.value" type="app" />
+      <if>
+        <matches string="${test.tmp.value}" casesensitive="true" pattern="\Q${build.dir}\E[\\/]\Qtestcase-pom-1.0.0-SNAPSHOT-${maven.attachment.app}.zip\E" />
+        <then><echo>getArtifactName with another property was successful!</echo></then>
+        <else><fail>getArtifactName with another property failed (${test.tmp.value})!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <checkGetArtifactNameDefault />
+    <checkGetArtifactNameBuild />
+    <checkGetArtifactNameSources />
+    <checkGetArtifactNameJavaDoc />
+    <checkGetArtifactNameApp />
+    <checkGetArtifactNameNewProperty />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>
