@@ -31,9 +31,12 @@
   
   <!-- load also the project specific properties now, because those could overwrite the location of the configuration -->
   <property name="main.config.project.user" location="${basedir}/override.properties" />
+  <property name="main.config.project.marked" location="${basedir}/marked.properties" />
   <property name="main.config.project" location="${basedir}/config.properties" />
   <!-- Load the user-specific override.properties of the project -->
   <property file="${main.config.project.user}" />
+  <!-- Load the properties which were marked prior to execution somewhen, i.e. marked.properties of the project -->
+  <property file="${main.config.project.marked}" />
   <!-- Load the config.properties of the project the main is used in -->
   <property file="${main.config.project}" />
   
@@ -48,16 +51,18 @@
   <property file="${main.config.user.default}" />
   <!-- Load the general properties for the main library which might be specified -->
   <property file="${main.config.general.default}" />
-    
+
   <!--
     set some properties which are globally of interest and can be used by all libraries
     -->
+  <property name="main.markedProperties.prefix" value="" description="A prefix can be defined which marks a property to be loaded without the prefix, e.g. myPrefix.sample.property=5 should be known by the system with sample.property=5" />
   <property name="main.vendor" value="" description="The vendor used for compiled/build versions" />
   <property name="main.tmpdir" location="${java.io.tmpdir}" description="The temporary folder which should be used by all libraries when generating temporary content" />
-  <property name="main.init" value="false" description="For internal usage only, please do not modify this property by a file" />
   <property name="main.logLevel" value="error" description="The logging level to be used can be error, warn, info, verbose, debug" />
   <property name="main.addExtensionsByDefault" value="false" />
-    
+
+  <property name="main.init" value="false" description="For internal usage only, please do not modify this property by a file" />
+  
   <!--
     add the antcontrib library
     -->
@@ -74,13 +79,13 @@
         <format property="NOW" pattern="dd.MM.yyyy HH:mm:ss" />
       </tstamp>
     
-      <!-- clean the temporary folder -->
+      <!-- make sure we have the temporary folder -->
       <mkdir dir="${main.tmpdir}" />
             
       <!-- core must be added here before any other functionality can be used -->
       <for list="${main.import.order.core}" param="main.core.library">
         <sequential>
-          <var name="misc.tmp.relfile" value="" unset="true" />
+          <var name="main.core.library.relfile" value="" unset="true" />
           <propertycopy name="main.core.library.relfile" from="main.library.file.@{main.core.library}" />
           <var name="main.core.library.file" value="${main.root}/ant/${main.core.library.relfile}" />
           
@@ -88,6 +93,18 @@
           <import file="${main.core.library.file}" />
         </sequential>
       </for>
+      
+      <!-- there is a chance to pass properties to the system which are marked via a prefix which has to be removed now -->
+      <if>
+        <and>
+          <isset property="main.markedProperties.prefix" />
+          <not><equals arg1="${main.markedProperties.prefix}" arg2="" /></not>
+        </and>
+        <then>
+          <modifyProperties prefix="${main.markedProperties.prefix}" resultPropertySetId="main.markedProperties.propertySet" 
+                            setPropertiesWithoutPrefix="true" unsetProperties="true" skipPattern="^main\." />
+        </then>
+      </if>
                 
       <!-- define the loglevel -->
       <setLogLevel logLevel="${main.logLevel}" />
@@ -139,5 +156,23 @@
     <zip destfile="wrapUp.zip">
       <fileset refid="main.tmp.appData" />
     </zip>
+  </target>
+  
+  <target name="removeMarkedProperties">
+    <delete file="${main.config.project.marked}" />
+  </target>
+  
+  <target name="writeMarkedProperties">
+    <if>
+      <and>
+        <isset property="main.markedProperties.prefix" />
+        <not><equals arg1="${main.markedProperties.prefix}" arg2="" /></not>
+      </and>
+      <then>
+        <echoproperties destfile="${main.config.project.marked}">
+          <propertyset refid="main.markedProperties.propertySet" />
+        </echoproperties>
+      </then>
+    </if>
   </target>
 </project>

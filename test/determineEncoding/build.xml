@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
-<project name="testFileEncoding">
+<project name="testDetermineEncoding">
   <!-- use the default settings 
   <property name="main.config.location" value="./../../../_settings/ant" />
   -->

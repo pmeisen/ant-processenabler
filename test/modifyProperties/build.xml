@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testModifyProperties">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkEmptyProperties">
+    <sequential>
+           
+      <modifyProperties prefix="thereisnopropertywithsuchaprefix" propertySetId="test.properties" />
+      <var name="test.resources.count" value="" unset="true" />
+      <resourcecount property="test.resources.count" refid="test.properties" />
+      
+      <if>
+        <equals arg1="${test.resources.count}" arg2="0" />
+        <then><echo>EmptyProperties was successful!</echo></then>
+        <else><fail>EmptyProperties failed - ${test.resources.count}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkPropertiesSelection">
+    <sequential>
+    
+      <!-- lets create some properties -->
+      <var name="checkPropertiesSelection.checkPropertiesSelectionLevel2.value1" value="value1" />
+      <var name="checkPropertiesSelection.checkPropertiesSelectionLevel2.value2" value="value2" />
+      <var name="checkPropertiesSelection.checkPropertiesSelectionLevel2.value3" value="value3" />
+       
+      <!-- modify -->
+      <modifyProperties prefix="checkPropertiesSelection" propertySetId="test.properties" setPropertiesWithoutPrefix="false" unsetProperties="false" />
+      
+      <!-- check the amount selected -->
+      <var name="test.resources.count" value="" unset="true" />
+      <resourcecount property="test.resources.count" refid="test.properties" />
+      
+      <!-- make sure nothing is modified -->
+      <var name="test.resources.level2.count" value="" unset="true" />
+      <resourcecount property="test.resources.level2.count">
+        <propertyset>
+          <propertyref regex="^\QcheckPropertiesSelectionLevel2\E\..*$" />
+        </propertyset>
+      </resourcecount>
+      
+      <if>
+        <and>
+          <equals arg1="${test.resources.count}" arg2="3" />
+          <equals arg1="${test.resources.level2.count}" arg2="0" />
+        </and>
+        <then><echo>PropertiesSelection was successful!</echo></then>
+        <else><fail>PropertiesSelection failed - ${test.resources.count}/${test.resources.level2.count}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkPropertiesModification">
+    <sequential>
+    
+      <!-- lets create some properties -->
+      <var name="checkPropertiesModification.checkPropertiesModificationLevel2.value1" value="value1" />
+      <var name="checkPropertiesModification.checkPropertiesModificationLevel2.value2" value="value2" />
+      <var name="checkPropertiesModification.checkPropertiesModificationLevel2.value3" value="value3" />
+       
+      <!-- modify -->
+      <modifyProperties prefix="checkPropertiesModification" propertySetId="test.properties" unsetProperties="false" />
+      
+      <!-- check the amount selected -->
+      <var name="test.resources.count" value="" unset="true" />
+      <resourcecount property="test.resources.count" refid="test.properties" />
+      
+      <!-- make sure nothing is modified -->
+      <var name="test.resources.level2.count" value="" unset="true" />
+      <resourcecount property="test.resources.level2.count">
+        <propertyset>
+          <propertyref regex="^\QcheckPropertiesModificationLevel2\E\..*$" />
+        </propertyset>
+      </resourcecount>
+      
+      <if>
+        <and>
+          <equals arg1="${test.resources.count}" arg2="3" />
+          <equals arg1="${test.resources.level2.count}" arg2="3" />
+        </and>
+        <then><echo>PropertiesModification was successful!</echo></then>
+        <else><fail>PropertiesModification failed - ${test.resources.count}/${test.resources.level2.count}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkPropertiesUnset">
+    <sequential>
+    
+      <!-- lets create some properties -->
+      <var name="checkPropertiesUnset.checkPropertiesUnsetLevel2.value1" value="value1" />
+      <var name="checkPropertiesUnset.checkPropertiesUnsetLevel2.value2" value="value2" />
+       
+      <!-- modify -->
+      <modifyProperties prefix="checkPropertiesUnset" propertySetId="test.properties" setPropertiesWithoutPrefix="false" unsetProperties="true" />
+      
+      <!-- check the amount selected -->
+      <var name="test.resources.count" value="" unset="true" />
+      <resourcecount property="test.resources.count" refid="test.properties" />
+      
+      <!-- make sure nothing is modified -->
+      <var name="test.resources.level2.count" value="" unset="true" />
+      <resourcecount property="test.resources.level2.count">
+        <propertyset>
+          <propertyref regex="^\QcheckPropertiesUnsetLevel2\E\..*$" />
+        </propertyset>
+      </resourcecount>
+      
+      <if>
+        <and>
+          <equals arg1="${test.resources.count}" arg2="0" />
+          <equals arg1="${test.resources.level2.count}" arg2="0" />
+        </and>
+        <then><echo>PropertiesUnset was successful!</echo></then>
+        <else><fail>PropertiesUnset failed - ${test.resources.count}/${test.resources.level2.count}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkPropertiesModifyAndUnset">
+    <sequential>
+    
+      <!-- lets create some properties -->
+      <var name="checkPropertiesModifyAndUnset.checkPropertiesModifyAndUnsetLevel2.value1" value="value1" />
+      <var name="checkPropertiesModifyAndUnset.checkPropertiesModifyAndUnsetLevel2.value2" value="value2" />
+       
+      <!-- modify -->
+      <modifyProperties prefix="checkPropertiesModifyAndUnset" propertySetId="test.properties" setPropertiesWithoutPrefix="true" unsetProperties="true" />
+      
+      <!-- check the amount selected -->
+      <var name="test.resources.count" value="" unset="true" />
+      <resourcecount property="test.resources.count" refid="test.properties" />
+      
+      <!-- make sure nothing is modified -->
+      <var name="test.resources.level2.count" value="" unset="true" />
+      <resourcecount property="test.resources.level2.count">
+        <propertyset>
+          <propertyref regex="^\QcheckPropertiesModifyAndUnsetLevel2\E\..*$" />
+        </propertyset>
+      </resourcecount>
+      
+      <if>
+        <and>
+          <equals arg1="${test.resources.count}" arg2="0" />
+          <equals arg1="${test.resources.level2.count}" arg2="2" />
+          <equals arg1="${checkPropertiesModifyAndUnsetLevel2.value1}" arg2="value1" />
+          <equals arg1="${checkPropertiesModifyAndUnsetLevel2.value2}" arg2="value2" />
+        </and>
+        <then><echo>PropertiesModifyAndUnset was successful!</echo></then>
+        <else><fail>PropertiesModifyAndUnset failed - ${test.resources.count}/${test.resources.level2.count}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkSkipPattern">
+    <sequential>
+    
+      <!-- lets create some properties -->
+      <var name="checkSkipPattern.checkSkipPatternLevel2.value1" value="value1" />
+      <var name="checkSkipPattern.checkSkipPatternLevel2.value2" value="value2" />
+      <var name="checkSkipPattern.checkSkipPatternLevel2.value3" value="value3" />
+       
+      <!-- modify -->
+      <modifyProperties prefix="checkSkipPattern" propertySetId="test.properties" unsetProperties="true" skipPattern="^checkSkipPatternLevel2\.value3$" />
+      
+      <!-- check the amount selected -->
+      <var name="test.resources.count" value="" unset="true" />
+      <resourcecount property="test.resources.count" refid="test.properties" />
+      
+      <!-- make sure nothing is modified -->
+      <var name="test.resources.level2.count" value="" unset="true" />
+      <resourcecount property="test.resources.level2.count">
+        <propertyset>
+          <propertyref regex="^\QcheckSkipPatternLevel2\E\..*$" />
+        </propertyset>
+      </resourcecount>
+      
+      <if>
+        <and>
+          <equals arg1="${test.resources.count}" arg2="0" />
+          <equals arg1="${test.resources.level2.count}" arg2="2" />
+          <equals arg1="${checkSkipPatternLevel2.value1}" arg2="value1" />
+          <equals arg1="${checkSkipPatternLevel2.value2}" arg2="value2" />
+        </and>
+        <then><echo>SkipPattern was successful!</echo></then>
+        <else><fail>SkipPattern failed - ${test.resources.count}/${test.resources.level2.count}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkResultPropertySet">
+    <sequential>
+    
+      <!-- lets create some properties -->
+      <var name="checkResultPropertySet.checkResultPropertySetLevel2.value1" value="value1" />
+      <var name="checkResultPropertySet.checkResultPropertySetLevel2.value2" value="value2" />
+      <var name="checkResultPropertySet.checkResultPropertySetLevel2.value3" value="value3" />
+       
+      <!-- modify -->
+      <modifyProperties prefix="checkResultPropertySet" propertySetId="test.properties" resultPropertySetId="test.result.properties" unsetProperties="true" 
+                        skipPattern="value3" />
+      
+      <!-- check the amount selected -->
+      <var name="test.resources.count" value="" unset="true" />
+      <resourcecount property="test.resources.count" refid="test.properties" />
+      
+      <!-- make sure nothing is modified -->
+      <var name="test.resources.level2.count" value="" unset="true" />
+      <resourcecount property="test.resources.level2.count" refid="test.result.properties" />
+
+      <if>
+        <and>
+          <equals arg1="${test.resources.count}" arg2="0" />
+          <equals arg1="${test.resources.level2.count}" arg2="2" />
+          <equals arg1="${checkResultPropertySetLevel2.value1}" arg2="value1" />
+          <equals arg1="${checkResultPropertySetLevel2.value2}" arg2="value2" />
+        </and>
+        <then><echo>ResultPropertySet was successful!</echo></then>
+        <else><fail>ResultPropertySet failed - ${test.resources.count}/${test.resources.level2.count}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <checkEmptyProperties />
+    <checkPropertiesSelection />
+    <checkPropertiesModification />
+    <checkPropertiesUnset />
+    <checkPropertiesModifyAndUnset />
+    <checkSkipPattern />
+    <checkResultPropertySet />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

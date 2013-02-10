@@ -463,4 +463,97 @@
       </exec>
     </sequential>
   </macrodef>
+  
+  <macrodef name="modifyProperties">
+    <attribute name="prefix" />
+    <attribute name="propertySetId" default="misc.tmp.propertySet" />
+    <attribute name="resultPropertySetId" default="misc.tmp.resultPropertySet" />
+    <attribute name="setPropertiesWithoutPrefix" default="true" />
+    <attribute name="unsetProperties" default="false" />
+    <attribute name="skipPattern" default="" />
+    
+    <sequential>
+      <var name="misc.tmp.propertyRegEx" value="^\Q@{prefix}\E\.(.+)$" />
+      <var name="misc.tmp.propertySetId" value="@{propertySetId}" />
+      <var name="misc.tmp.resultPropertySetId" value="@{resultPropertySetId}" />
+      <var name="misc.tmp.skipPattern" value="@{skipPattern}" />
+      <if>
+        <or><equals arg1="@{setPropertiesWithoutPrefix}" arg2="y" /><equals arg1="@{setPropertiesWithoutPrefix}" arg2="yes" /><equals arg1="@{setPropertiesWithoutPrefix}" arg2="true" /></or>
+        <then><var name="misc.tmp.setPropertiesWithoutPrefix" value="true" /></then>
+        <else><var name="misc.tmp.setPropertiesWithoutPrefix" value="false" /></else>
+      </if>
+      <if>
+        <or><equals arg1="@{unsetProperties}" arg2="y" /><equals arg1="@{unsetProperties}" arg2="yes" /><equals arg1="@{unsetProperties}" arg2="true" /></or>
+        <then><var name="misc.tmp.unsetProperties" value="true" /></then>
+        <else><var name="misc.tmp.unsetProperties" value="false" /></else>
+      </if>
+      
+      <!-- create the set -->
+      <propertyset id="@{propertySetId}">
+        <propertyref regex="${misc.tmp.propertyRegEx}" />
+      </propertyset>
+      
+      <!-- set the properties without a prefix -->
+      <if>
+        <or><equals arg1="${misc.tmp.setPropertiesWithoutPrefix}" arg2="true" /><equals arg1="${misc.tmp.unsetProperties}" arg2="true" /></or>
+        <then>
+
+          <script language="javascript"><![CDATA[
+            var propertyRegEx = project.getProperty("misc.tmp.propertyRegEx");
+            var propertySetId = project.getProperty("misc.tmp.propertySetId");
+            var resultPropertySetId = project.getProperty("misc.tmp.resultPropertySetId");
+            var setPropertiesWithoutPrefix = project.getProperty("misc.tmp.setPropertiesWithoutPrefix");
+            var unsetProperties = project.getProperty("misc.tmp.unsetProperties");
+            var skipPattern = project.getProperty("misc.tmp.skipPattern");
+            
+            // get the collection
+            var properties = project.hasReference(propertySetId) ? project.getReference(propertySetId) : null;
+            
+            // create the result property set
+            var resultPropertySet = new org.apache.tools.ant.types.PropertySet();
+            resultPropertySet.setProject(project);
+            
+            // iteratore over the properties
+            if (properties != null && properties.size() > 0) {
+              var iterator = properties.iterator();
+
+              while (iterator.hasNext()) {              
+                var property = iterator.next();
+                var propertyPattern = java.util.regex.Pattern.compile(propertyRegEx);
+                var propertyMatcher = propertyPattern.matcher(property.getName());
+                
+                // trigger the regex we will find something and get the value
+                propertyMatcher.find();
+                var propertySuffix = propertyMatcher.group(1);
+                
+                // set the property if asked for
+                if ("true".equals(setPropertiesWithoutPrefix) && 
+                    ("".equals(skipPattern) || !propertySuffix.matches(".*" + skipPattern + ".*"))) {
+                  var setProperty = project.createTask("var");
+                  setProperty.setName(propertySuffix);
+                  setProperty.setValue(property.getValue());
+                  setProperty.execute();
+                  
+                  var propertyRef = new org.apache.tools.ant.types.PropertySet.PropertyRef();
+                  propertyRef.setRegex("^\\Q" + propertySuffix + "\\E$");
+                  resultPropertySet.addPropertyref(propertyRef);
+                }
+                
+                // unset the property if asked for
+                if ("true".equals(unsetProperties)) {
+                  var unsetProperty = project.createTask("var");
+                  unsetProperty.setName(property.getName());
+                  unsetProperty.setValue(null);
+                  unsetProperty.setUnset(true);
+                  unsetProperty.execute();
+                }
+              }
+            }
+            
+            project.addReference(resultPropertySetId, resultPropertySet);
+          ]]></script>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
 </project>
