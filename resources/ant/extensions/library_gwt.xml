@@ -359,28 +359,30 @@
             <pathelement location="${gwt.addDistribute}" />
             <pathelement location="${build.buildFile}" />
           </path>
+          
+          <!-- create a temporary directory which contains all the needed files -->
+          <generateUUID property="gwt.tmp.dependencyFolderName" />
+          <var name="gwt.tmp.dependencyFolder" value="${main.tmpdir}/${gwt.tmp.dependencyFolderName}" />
+          <fileCleanUp dir="${gwt.tmp.dependencyFolder}" recreate="true" />
+          
+          <!-- copy the dependencies -->
+          <copy todir="${gwt.tmp.dependencyFolder}" flatten="true">
+            <path refid="gwt.tmp.pathTestDependencies" />
+          </copy>
+          
+          <!-- convert the fileset -->
+          <fileset dir="${gwt.tmp.dependencyFolder}" id="@{filesetid}" />
         </then>
         <else>
-          <path id="gwt.tmp.pathTestDependencies">
+          <fileCombineFilesets filesetid="@{filesetid}">
             <fileset refid="gwt.tmp.addLibs" />
             <fileset refid="gwt.tmp.gwtLibs" />
             <fileset refid="gwt.tmp.projectLibs" />
-          </path>
+          </fileCombineFilesets>
         </else>
       </if>
       
-      <!-- create a temporary directory which contains all the needed files -->
-      <generateUUID property="gwt.tmp.dependencyFolderName" />
-      <var name="gwt.tmp.dependencyFolder" value="${main.tmpdir}/${gwt.tmp.dependencyFolderName}" />
-      <fileCleanUp dir="${gwt.tmp.dependencyFolder}" recreate="true" />
-      
-      <!-- copy the dependencies -->
-      <copy todir="${gwt.tmp.dependencyFolder}" flatten="true">
-        <path refid="gwt.tmp.pathTestDependencies" />
-      </copy>
-      
-      <!-- convert the fileset -->
-      <fileset dir="${gwt.tmp.dependencyFolder}" id="@{filesetid}" />
+
     </sequential>
   </macrodef>
   
