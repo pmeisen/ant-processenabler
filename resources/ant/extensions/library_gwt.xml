@@ -748,7 +748,7 @@
     
     <!-- get the full test dependencies -->
     <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" addBuilds="false" />
-    <eclipseCreateClassPath addDependencies="gwt.tmp.fullTestDependencies" template="${gwt.library.resfile.template.classpath}" />
+    <eclipseCreateClassPath addDependenciesFilesetId="gwt.tmp.fullTestDependencies" template="${gwt.library.resfile.template.classpath}" />
   </target>
   
   <target name="copyGwtPlugInLibs" depends="setupEclipseEnv">

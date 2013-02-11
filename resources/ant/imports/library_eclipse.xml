@@ -25,6 +25,9 @@
   <property name="eclipse.libdir" location="${eclipse.dir}/${eclipse.lib.dir}" description="Directory for libraries only needed by eclipse" />
   <property name="eclipse.srcdir" location="${eclipse.dir}/${eclipse.src.dir}" description="Directory for source libraries only needed by eclipse" />
   <property name="eclipse.javadocdir" location="${eclipse.dir}/${eclipse.javadoc.dir}" description="Directory for JavaDoc libraries only needed by eclipse" />
+  <property name="eclipse.dependencies.copy" value="true" description="Defines if dependencies should be resolved, i.e. copied into the eclipse folder of the project, if not resolved the .classpath file will be created using absolute locations" />
+  <property name="eclipse.dependencies.useM2Repo" value="true" description="Defines if the dependencies should be resolved against the M2_REPO variable (only if ${eclipse.dependencies.copy} is false and if the dependency was resolved against the defined maven repository)" />
+  <property name="eclipse.dependencies.mavenRepoPlaceholder" value="M2_REPO" description="Defines the name of the variable used in Eclipse for the maven Repository location, only used if ${eclipse.dependencies.useM2Repo} is true and ${eclipse.dependencies.copy} is false" />
 
   <!--
     add the antcontrib library
@@ -37,31 +40,20 @@
     <attribute name="javadocFileset" default="eclipse.tmp.javaDocDependencies" />
     
     <sequential>
-      <if>
-        <available file="${basedir}/pomEclipse.xml"/>
-        <then>
-          <!-- check if we have a pom to be merged and merge it -->
-          <fileMergeXml file1="${basedir}/pom.xml" 
-                        file2="${basedir}/pomEclipse.xml" 
-                        dest="${build.tmpdir}/merged_pomEclipse.xml" 
-                        conf="${eclipse.library.resfile.maven.eclipseMerge}" />
-          <fileReplaceAllProperties file="${build.tmpdir}/merged_pomEclipse.xml" destFile="${build.tmpdir}/merged_pomEclipse.xml" />
-        </then>
-        <else>
-          <copy file="${basedir}/pom.xml" tofile="${build.tmpdir}/merged_pomEclipse.xml" />
-        </else>
-      </if>
+      <var name="eclipse.tmp.pomFile" value="${build.tmpdir}/merged_pomEclipse.xml" />
+      <eclipseCreatePomFile pomFile="${eclipse.tmp.pomFile}" />
       
-      <mavenResolveDependencies scope="test" pomfile="${build.tmpdir}/merged_pomEclipse.xml" fileset="@{fileset}" 
-                                                                                             sourcesFileset="@{sourcesFileset}" 
-                                                                                             javadocFileset="@{javadocFileset}" />
+      <mavenResolveDependencies scope="test" pomfile="${eclipse.tmp.pomFile}" fileset="@{fileset}" 
+                                                                              sourcesFileset="@{sourcesFileset}" 
+                                                                              javadocFileset="@{javadocFileset}" />
     </sequential>
   </macrodef>
   
   <!--
-    eclipseCopyDependencies - creates an _eclipse folder which contains all needed libs
+    eclipseCreatePomFile - creates the pom-file which contains all dependencies of Eclipse
     -->
-  <macrodef name="eclipseCopyDependencies">   
+  <macrodef name="eclipseCreatePomFile">
+    <attribute name="pomFile" default="${build.tmpdir}/merged_pomEclipse.xml" />
 
     <sequential>
       <if>
@@ -70,14 +62,26 @@
           <!-- check if we have a pom to be merged and merge it -->
           <fileMergeXml file1="${basedir}/pom.xml" 
                         file2="${basedir}/pomEclipse.xml" 
-                        dest="${build.tmpdir}/merged_pomEclipse.xml" 
+                        dest="@{pomFile}" 
                         conf="${eclipse.library.resfile.maven.eclipseMerge}" />
-          <fileReplaceAllProperties file="${build.tmpdir}/merged_pomEclipse.xml" destFile="${build.tmpdir}/merged_pomEclipse.xml" />
+          <fileReplaceAllProperties file="@{pomFile}" destFile="@{pomFile}" />
         </then>
         <else>
-          <copy file="${basedir}/pom.xml" tofile="${build.tmpdir}/merged_pomEclipse.xml" overwrite="true" />
+          <copy file="${basedir}/pom.xml" tofile="@{pomFile}" overwrite="true" />
         </else>
       </if>
+    </sequential>
+  </macrodef>
+
+  
+  <!--
+    eclipseCopyDependencies - creates an _eclipse folder which contains all needed libs
+    -->
+  <macrodef name="eclipseCopyDependencies">   
+
+    <sequential>
+      <var name="eclipse.tmp.pomFile" value="${build.tmpdir}/merged_pomEclipse.xml" />
+      <eclipseCreatePomFile pomFile="${eclipse.tmp.pomFile}" />
 
       <!-- clean the folders -->
       <fileCleanUp dir="${eclipse.libdir}" recreate="true" failonerror="false" />
@@ -85,7 +89,7 @@
       <fileCleanUp dir="${eclipse.javadocdir}" recreate="true" />
       
       <!-- load the dependencies -->
-      <mavenCopyDependecies pomfile="${build.tmpdir}/merged_pomEclipse.xml" dir="${eclipse.libdir}" srcDir="${eclipse.srcdir}" javaDocDir="${eclipse.javadocdir}" scope="test" />
+      <mavenCopyDependecies pomfile="${eclipse.tmp.pomFile}" dir="${eclipse.libdir}" srcDir="${eclipse.srcdir}" javaDocDir="${eclipse.javadocdir}" scope="test" />
     </sequential>
   </macrodef>
   
@@ -107,34 +111,59 @@
     eclipseCreateClassPath - creates a .classpath file used within eclipse to define the classpath
     -->
   <macrodef name="eclipseCreateClassPath">
-    <attribute name="addDependencies" default="" />
+    <attribute name="addDependenciesFilesetId" default="" />
     <attribute name="template" default="${eclipse.library.resfile.template.classpath}" />
 
     <sequential>
     
       <!-- get all the libraries needed -->
-      <eclipseCopyDependencies />
-      
-      <!-- copy further files if specified -->
       <if>
-        <not><equals arg1="@{addDependencies}" arg2="" /></not>
+        <or><equals arg1="${eclipse.dependencies.copy}" arg2="y" /><equals arg1="${eclipse.dependencies.copy}" arg2="yes" /><equals arg1="${eclipse.dependencies.copy}" arg2="true" /></or>
         <then>
-        
-          <!-- copy the dependent files -->
-          <copy todir="${eclipse.libdir}">
-            <fileset refid="@{addDependencies}" />
-            <mapper type="flatten" />
-          </copy>
-        </then>
-      </if>
+          <var name="eclipse.dependencies.copy" value="true" />
+          <eclipseCopyDependencies />
+          
+          <!-- copy further files if specified -->
+          <if>
+            <not><equals arg1="@{addDependenciesFilesetId}" arg2="" /></not>
+            <then>
+            
+              <!-- copy the dependent files -->
+              <copy todir="${eclipse.libdir}">
+                <fileset refid="@{addDependenciesFilesetId}" />
+                <mapper type="flatten" />
+              </copy>
+            </then>
+          </if>
       
-      <!-- get the pom settings -->
-      <mavenSetPom />
-
-      <!-- get all the libraries -->
-      <fileset id="eclipse.tmp.libs" dir="${eclipse.libdir}">
-        <include name="*.jar" />
-      </fileset>
+          <!-- get all the libraries -->
+          <fileset id="eclipse.tmp.libs" dir="${eclipse.libdir}">
+            <include name="*.jar" />
+          </fileset>
+        </then>
+        <else>
+          <!-- check the M2 setting -->
+          <if>
+            <or><equals arg1="${eclipse.dependencies.useM2Repo}" arg2="y" /><equals arg1="${eclipse.dependencies.useM2Repo}" arg2="yes" /><equals arg1="${eclipse.dependencies.useM2Repo}" arg2="true" /></or>
+            <then><var name="eclipse.dependencies.useM2Repo" value="true" /></then>
+            <else><var name="eclipse.dependencies.useM2Repo" value="false" /></else>
+          </if>
+        
+          <var name="eclipse.dependencies.copy" value="false" />
+          <eclipseResolveDependencies fileset="eclipse.tmp.libs" />
+          
+          <!-- add additional dependencies if defined -->
+          <if>
+            <not><equals arg1="@{addDependenciesFilesetId}" arg2="" /></not>
+            <then>
+              <fileCombineFilesets filesetid="eclipse.tmp.libs">
+                <fileset refid="eclipse.tmp.libs" />
+                <fileset refid="@{addDependenciesFilesetId}" />
+              </fileCombineFilesets>
+            </then>
+          </if>
+        </else>
+      </if>
       
       <!-- Create the classpath for the project
         &#xA;  -> is a newline
@@ -144,19 +173,35 @@
         &lt;   -> is a <
         -->
       <!--
+        - relative path:
       	<classpathentry kind="lib" path="_eclipse/lib/ojdbc14-10.1.0.5.jar" sourcepath="">
           <attributes>
-            <attribute name="javadoc_location" value="" />
+            <attribute name="javadoc_location" value="jar:platform:/resource/[projectname]/_eclipse" />
+          </attributes>
+        </classpathentry>
+        
+        - absolute path:
+        <classpathentry kind="lib" path="C:/Users/pmeisen/.m2/repository/ch/elca/el4j/modules/ant-module-xmlMerge/3.1/ant-module-xmlMerge-3.1.jar"/>
+        
+        - with M2_REPO:
+        <classpathentry kind="var" path="M2_REPO/cglib/cglib-nodep/2.1_3/cglib-nodep-2.1_3.jar" sourcepath="M2_REPO/c3p0/c3p0/0.9.1/c3p0-0.9.1-sources.jar">
+          <attributes>
+            <attribute name="javadoc_location" value="jar:file:/P:/.m2/repository/ch/elca/el4j/modules/ant-module-xmlMerge/3.1/ant-module-xmlMerge-3.1.jar!/"/>
           </attributes>
         </classpathentry>
         -->
+      <mavenSetPom />
       <pathconvert pathsep="&#xA;&#x9;" property="eclipse.tmp.classpath" refid="eclipse.tmp.libs">
         <scriptmapper language="javascript">
             <![CDATA[
-
+            // get some meta settings to define how the classpath file looks like
+            var filesCopied = self.getProject().getProperty("eclipse.dependencies.copy").equals("true");
+            var useM2Repo = self.getProject().getProperty("eclipse.dependencies.useM2Repo").equals("true");
+            
             // get some values about the library file
             var libFile = new java.io.File(source);
             var jarName = "" + libFile.getName();
+            var jarLocation = libFile.getParent();
             var jarPos = -1;
 
             var eclipseIndicator = "-" + self.getProject().getProperty("maven.attachment.fullcompiled");
@@ -167,42 +212,100 @@
             } else {
               jarPos = jarName.lastIndexOf(".jar");
             }
-            
+                        
             if (jarPos > -1) {
-              // get the eclipse properties
-              var eclipseDirName = self.getProject().getProperty("eclipse.eclipse.dir");
-              var libDirName = self.getProject().getProperty("eclipse.lib.dir");
-              var srcDirName = self.getProject().getProperty("eclipse.src.dir");
-              var javaDocDirName = self.getProject().getProperty("eclipse.javadoc.dir");
+              
+              // get some properties we need to create the classpath
               var projectName = self.getProject().getProperty("maven.pom.artifactId");
             
-              // get the locations defined
-              var srcDir = self.getProject().getProperty("eclipse.srcdir");
-              var javadocDir = self.getProject().getProperty("eclipse.javadocdir");
-              
               // get the names of the source and javadoc file
               var srcFileName = jarName.substring(0, jarPos) + "-sources.jar";
               var javaDocFileName = jarName.substring(0, jarPos) + "-javadoc.jar";
+  
+              // depending on the settings we have to get some values
+              var sourcePath = null;
+              var javaDocPath = null;
+              var kind = null;
+              var path = null;
+              if (filesCopied) {
               
-              // now create file objects to check if those are available
-              var srcFile = new java.io.File(srcDir, srcFileName);
-              var javaDocFile = new java.io.File(javadocDir, javaDocFileName);
+                // get the eclipse properties
+                var eclipseDirName = self.getProject().getProperty("eclipse.eclipse.dir");
+                var libDirName = self.getProject().getProperty("eclipse.lib.dir");
+                var srcDirName = self.getProject().getProperty("eclipse.src.dir");
+                var javaDocDirName = self.getProject().getProperty("eclipse.javadoc.dir");
               
+                // get the path
+                path = eclipseDirName + "/" + libDirName + "/" + jarName;
+              
+                // get the details of sourcePath
+                var srcDir = self.getProject().getProperty("eclipse.srcdir");
+                var srcFile = new java.io.File(srcDir, srcFileName);
+                if (srcFile.exists() && srcFile.isFile()) {
+                  sourcePath = eclipseDirName + "/" + srcDirName + "/" + srcFile.getName();
+                }
+                
+                // get the details of javaDocPath
+                var javadocDir = self.getProject().getProperty("eclipse.javadocdir");
+                var javaDocFile = new java.io.File(javadocDir, javaDocFileName);
+                if (javaDocFile.exists() && javaDocFile.isFile()) {
+                  javaDocPath = "jar:platform:/resource/" + projectName + "/" + eclipseDirName + "/" + javaDocDirName + "/" + javaDocFile.getName();
+                }
+                
+                // set the kind
+                kind = "lib";
+
+              } else {
+              
+                // get the path
+                path = source;
+                path = new java.lang.String(path).replace("\\", "/");
+                
+                // get the details of sourcePath
+                var srcFile = new java.io.File(jarLocation, srcFileName);
+                if (srcFile.exists() && srcFile.isFile()) {
+                  sourcePath = jarLocation + "/" + srcFile.getName();
+                  sourcePath = new java.lang.String(sourcePath).replace("\\", "/");
+                }
+                
+                // get the details of javaDocPath
+                var javaDocFile = new java.io.File(jarLocation, javaDocFileName);
+                if (javaDocFile.exists() && javaDocFile.isFile()) {
+                  var javaDocPrefix = jarLocation.startsWith("\\") || jarLocation.startsWith("/") ? "" : "/";
+                  javaDocPath = "jar:file:" + javaDocPrefix + jarLocation + "/" + javaDocFile.getName();
+                  javaDocPath = new java.lang.String(javaDocPath).replace("\\", "/");
+                }
+                
+                // set the kind
+                kind = useM2Repo ? "var" : "lib";
+                
+                // replace the M2Repo if asked for
+                if (useM2Repo) {
+                  var localRepo = self.getProject().getProperty("maven.repository.local");
+                  var localRepoDir = new java.io.File(localRepo);
+                  localRepoDir = new java.lang.String(localRepoDir.getCanonicalPath()).replace("\\", "/");
+                
+                  var m2repoPlaceholder = self.getProject().getProperty("eclipse.dependencies.mavenRepoPlaceholder");
+                  path = path.replaceFirst(localRepoDir, m2repoPlaceholder);
+                  sourcePath = sourcePath == null ? null : sourcePath.replaceFirst(localRepoDir, m2repoPlaceholder);
+                }
+              }
+                
               // create the entry
-              var entry = "<classpathentry kind=\"lib\" ";
-              entry += "path=\"" + eclipseDirName + "/" + libDirName + "/" + jarName + "\" ";
+              var entry = "<classpathentry kind=\"" + kind + "\" ";
+              entry += "path=\"" + path + "\" ";
               
-              // add the sourcepath
-              if (srcFile.exists() && srcFile.isFile()) {
-                entry += "sourcepath=\"" + eclipseDirName + "/" + srcDirName + "/" + srcFile.getName() + "\" ";
+              // add the sourcePath
+              if (sourcePath != null) {
+                entry += "sourcepath=\"" + sourcePath + "\" ";
               }
               entry += ">" + '\n';
               
               // add the javadoc
-              if (javaDocFile.exists() && javaDocFile.isFile()) {
+              if (javaDocPath != null) {
                 entry += '\t' + '\t' + "<attributes>" + '\n';
                 entry += '\t' + '\t' + '\t' + "<attribute name=\"javadoc_location\" ";
-                entry += "value=\"jar:platform:/resource/" + projectName + "/" + eclipseDirName + "/" + javaDocDirName + "/" + javaDocFile.getName() + "!/\" ";
+                entry += "value=\"" + javaDocPath + "!/\" ";
                 entry += "/>" + '\n';
                 entry += '\t' + '\t' + "</attributes>" + '\n';
               }
