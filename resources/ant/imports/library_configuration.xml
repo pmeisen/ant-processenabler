@@ -845,6 +845,7 @@
           If the value is set to an empty string, the file will be unzipped if it's a '.zip'-file otherwise it won't (default is '').</li>
       <li><i>confMapper.replaceProperties</i> defines if the properties within the files of the dependency or the resource should be replaced. If the dependency or the 
           resource is unzipped all zipped files will be checked for replacements (default is 'true').</li>
+      <li><i>confMapper.renameTo</i> defines if the resource should be renamed, if left empty the resource won't be renamed otherwise it will be (default is '').</li>
     </ul><br/>
     The mentioned properties should be set by the mappers and not prior to calling this task, because - as mentioned already - this task uses the mapper implementations to 
     retrieve the values for the properties.
@@ -888,6 +889,7 @@
       <var name="confMapper.location" value="" />
       <var name="confMapper.replaceProperties" value="true" />
       <var name="confMapper.useDefault" value="true" />
+      <var name="confMapper.renameTo" value="" />
     
       <!-- get the new location -->
       <configurationCustomerMapper resourceType="@{resourceType}" resourceFolder="@{resourceFolder}" resource="@{resource}" resourceFileName="@{resourceFileName}" />
@@ -908,6 +910,12 @@
         <then>
           <var name="confMapper.location" value="   " />
         </then>
+      </if>
+      <!-- check how the file will be named -->
+      <if>
+        <equals arg1="${confMapper.renameTo}" arg2="" />
+        <then><var name="configuration.tmp.filename" value="@{resourceFileName}" /></then>
+        <else><var name="configuration.tmp.filename" value="${confMapper.renameTo}" /></else>
       </if>
       
       <!-- distribute the file -->
@@ -943,10 +951,10 @@
                 <if>
                   <equals arg1="${confMapper.replaceProperties}" arg2="true" />
                   <then>
-                    <fileReplaceAllPropertiesInZip file="@{resource}" dest="@{rootFolder}/@{configuration.tmp.location}/@{resourceFileName}" filePattern="@{filePattern}" rezip="true" />
+                    <fileReplaceAllPropertiesInZip file="@{resource}" dest="@{rootFolder}/@{configuration.tmp.location}/${configuration.tmp.filename}" filePattern="@{filePattern}" rezip="true" />
                   </then>
                   <else>
-                    <copy file="@{resource}" todir="@{rootFolder}/@{configuration.tmp.location}" overwrite="true" />
+                    <copy file="@{resource}" tofile="@{rootFolder}/@{configuration.tmp.location}/${configuration.tmp.filename}" overwrite="true" />
                   </else>
                 </if>
               </then>
@@ -956,10 +964,10 @@
               <if>
                 <equals arg1="${confMapper.replaceProperties}" arg2="true" />
                 <then>
-                  <fileReplaceAllProperties file="@{resource}" destFile="@{rootFolder}/@{configuration.tmp.location}/${configuration.tmp.subdir}/@{resourceFileName}" filePattern="@{filePattern}" />
+                  <fileReplaceAllProperties file="@{resource}" destFile="@{rootFolder}/@{configuration.tmp.location}/${configuration.tmp.subdir}/${configuration.tmp.filename}" filePattern="@{filePattern}" />
                 </then>
                 <else>
-                  <copy file="@{resource}" todir="@{rootFolder}/@{configuration.tmp.location}/${configuration.tmp.subdir}" overwrite="true" />
+                  <copy file="@{resource}" tofile="@{rootFolder}/@{configuration.tmp.location}/${configuration.tmp.subdir}/${configuration.tmp.filename}" overwrite="true" />
                 </else>
               </if>
             </else>
@@ -981,6 +989,7 @@
           If the value is set to an empty string, the file will be unzipped if it's a '.zip'-file otherwise it won't (default is '').</li>
       <li><i>confMapper.replaceProperties</i> defines if the properties within the files of the dependency or the resource should be replaced. If the dependency or the 
           resource is unzipped all zipped files will be checked for replacements (default is 'true').</li>
+      <li><i>confMapper.renameTo</i> defines if the resource should be renamed, if left empty the resource won't be renamed otherwise it will be (default is '').</li>
     </ul><br/>
     To understand how these properties are retrieved from properties an example is used:<br />
     <pre>    # properties to define the properties confMapper.location, confMapper.replaceProperties and confMapper.unzip
@@ -1102,6 +1111,7 @@
           If the value is set to an empty string, the file will be unzipped if it's a '.zip'-file otherwise it won't (default is '').</li>
       <li><i>confMapper.replaceProperties</i> defines if the properties within the files of the dependency or the resource should be replaced. If the dependency or the 
           resource is unzipped all zipped files will be checked for replacements (default is 'true').</li>
+      <li><i>confMapper.renameTo</i> defines if the resource should be renamed, if left empty the resource won't be renamed otherwise it will be (default is '').</li>
     </ul><br/>
     To define the handling it is necessary to overwrite the <i>configurationMapper</i>. This can be done within the build.xml or every user-library which is loaded
     after this library:<br />
