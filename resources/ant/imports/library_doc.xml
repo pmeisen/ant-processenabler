@@ -218,7 +218,7 @@
     </sequential>
   </macrodef>
   
-<!--
+  <!--
     This task is simply used to zip the created package. If the defined location of the package (retrieved from the property <i>doc.packageFiles</i>) 
     cannot be found, accessed or doesn't contain any files.<br/>
     The task will set the property <i>doc.zippedFile</i>, which will point to the created file.

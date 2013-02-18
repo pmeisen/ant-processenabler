@@ -93,7 +93,7 @@
   &lt;/project&gt;</pre>
   </td>
   </tr></table>
-  </div>
+  </div><br/>
   So each version of the application is defined via pom-files, which are placed at a defined location. If you want to influence the way
   how the dependencies are handled you should have a closer look at the <a href="#task_configurationMapper">configurationMapper</a>. In 
   this section the settings of each customer are defined. Such 'settings' can be:
