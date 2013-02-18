@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testAppendList">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkEmptyLists">
+    <sequential>
+     
+      <var name="test.list1" value="" />
+      <var name="test.list2" value="" />
+      
+      <appendList property="test.result" list1="${test.list1}" list2="${test.list2}" separator="," />
+      <if>
+        <equals arg1="${test.result}" arg2="" />
+        <then><echo>EmptyLists was successful!</echo></then>
+        <else><fail>EmptyLists failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkOneEmptyList">
+    <sequential>
+     
+      <var name="test.list1" value="" />
+      <var name="test.list2" value="a,b,c" />
+      
+      <appendList property="test.result" list1="${test.list1}" list2="${test.list2}" separator="," />
+      <if>
+        <equals arg1="${test.result}" arg2="a,b,c" />
+        <then><echo>OneEmptyList was successful!</echo></then>
+        <else><fail>OneEmptyList failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkTwoListsWithoutDuplicates">
+    <sequential>
+     
+      <var name="test.list1" value="d,e,f" />
+      <var name="test.list2" value="a,b,c" />
+      
+      <appendList property="test.result" list1="${test.list1}" list2="${test.list2}" separator="," />
+      <if>
+        <equals arg1="${test.result}" arg2="d,e,f,a,b,c" />
+        <then><echo>TwoListsWithoutDuplicates was successful!</echo></then>
+        <else><fail>TwoListsWithoutDuplicates failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkTwoListsWithDuplicates">
+    <sequential>
+     
+      <var name="test.list1" value="a,c,e,f,b,f" />
+      <var name="test.list2" value="a,b,c,d,a,r" />
+      
+      <appendList property="test.result" list1="${test.list1}" list2="${test.list2}" separator="," />
+      <if>
+        <equals arg1="${test.result}" arg2="a,c,e,f,b,d,r" />
+        <then><echo>TwoListsWithDuplicates was successful!</echo></then>
+        <else><fail>TwoListsWithDuplicates failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkTwoListsTrimming">
+    <sequential>
+     
+      <var name="test.list1" value="a  ,c,e  , f ,b ,f " />
+      <var name="test.list2" value=" a,  b, c,   d,a,r" />
+      
+      <appendList property="test.result" list1="${test.list1}" list2="${test.list2}" separator="," trimItems="true" />
+      <if>
+        <equals arg1="${test.result}" arg2="a,c,e,f,b,d,r" />
+        <then><echo>TwoListsTrimming was successful!</echo></then>
+        <else><fail>TwoListsTrimming failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+
+  <target name="antTest">
+    <checkEmptyLists />
+    <checkOneEmptyList />
+    <checkTwoListsWithoutDuplicates />
+    <checkTwoListsWithDuplicates />
+    <checkTwoListsTrimming />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

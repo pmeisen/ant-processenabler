@@ -1,37 +1,204 @@
 <!--
-  Library which adds some macros and targets for configuration operations
+  The library adds some tasks and targets for processes dealing with configurations. It is used to assemble
+  resources in a different way than it can be done, e.g. by the build-library. The configuration library allows you 
+  to assemble the following configuration-entities property-based:
+  <ul>
+    <li>dependencies</li>
+    <li>files</li>
+  </ul><br/>
+  Including this library into your build definition, it enables you to use customer's configuration and build customized
+  applications. You can use this library out-of-the-box or define your own processes including tasks defined in this library.
+  In the following the term configuration will be explained and a sample project is used to explain the different settings.<br/> 
+  A configuration can be seen as a definition, which defines an assembly for e.g. a customer, based on:
+  <ul>
+    <li>dependencies (e.g. a specific version of an assembly of an application)</li>
+    <li>files (i.e. additional, general files which are under version control)</li>
+    <li>customer's properties (e.g. the database settings, usernames, passwords, ...)</li>
+    <li>customer's dependencies (e.g. database drivers needed for the customer)</li>
+    <li>customer's resources (i.e. files which are just relevant for the customer, e.g. the customer's logo)</li>
+  </ul><br/>
+  <div style="border-left:2px solid #2D2D2D;padding-left:5px;"><b>Ongoing example - Introduction:</b>
+  To understand the concept behind a configuration lets have a look at an example. Let's assume that you have
+  several projects, whereby each of these projects creates an artifact or an assembly (see the build-library for further details), 
+  which is deployed to a binary-repository (e.g. an Artifactory). Typically at least one of these assemblies is something that 
+  you would call an application, a web-application or a plug-in. Those assemblies might run out of the box, or maybe won't.
+  If it would run out of the box, you probably don't need this library, but if it doesn't you probably do.<br/>
+  Let's for example assume that your application should be shipped with a JRE (32bit or 64bit, Windows or Unix) and that your 
+  application can be shipped with additional plug-ins or not, depending on the customer's configuration. Furthermore each customer
+  has a different version of your application and maybe of the plug-ins.</div>
+  <br/>Such a setup and a lot of others are supported by this library. The library understands that a configuration is defined to create
+  an application, which is based on an assembly of a specific version. The application is based on an assembly (which has to be configured) 
+  - and maybe additional dependencies. The dependencies differ for each version of the application and those different versions are defined 
+  within a folder (e.g. within the project which creates the assembly). This folder is the so called <i>version-folder</i> and it is specified 
+  by the <a href="#property_configuration.versions.foldername">configuration.versions.foldername</a> property. Within this folder pom-files 
+  with a version suffix can be placed, whereby each pom-file defines the dependencies for each version of the application, e.g.:
+  <ul>
+    <li>pom-1.0.0.xml</li>
+    <li>pom-1.2.0.xml</li>
+    <li>pom-1.4.0-SNAPSHOT.xml</li>
+  </ul><br/>
+  <div style="border-left:2px solid #2D2D2D;padding-left:5px;"><b>Ongoing example - Define the application's versions:</b>
+  So let's assume that there are three versions (1.0.0, 1.0.5, 1.1.0) of our example application and each of the version depends on an assembly which is
+  available in our binary-repository. Furthermore each of these versions is delivered to customers and therefore customized (i.e. configured).
+  For each version a pom-<i>version</i>-file is placed in the project's <i>version-folder</i>. So in our 
+  example we defined the <i>version-folder</i> to be named '_versions' (i.e. <i>configuration.versions.foldername=_versions</i>). We place the
+  files pom-1.0.0.xml, pom-1.0.5.xml and pom-1.1.0.xml there, whereby each defines the foundation of a version of our application. 
+  Within each file the 'main-assembly' is defined as dependency and let's assume that since version 1.1.0 a plug-in is added by default 
+  and therefore it is added as additional dependency in the pom-1.1.0.xml.<br/>
+  <table><tr>
+  <td>
+  <pre>  &lt;!&#45;&#45; pom-1.0.0 and pom-1.0.5.xml &#45;&#45;&gt;
+  &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+  &lt;project&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;groupId&gt;my.company&lt;/groupId&gt;
+    &lt;artifactId&gt;myassembly&lt;/artifactId&gt;
+    &lt;version&gt;${configuration.version}&lt;/version&gt;
+    &lt;name&gt;MyApplication (${configuration.customer})&lt;/name&gt;
+    
+    &lt;dependencies&gt;
+      &lt;dependency&gt;
+        &lt;groupId&gt;my.company&lt;/groupId&gt;
+        &lt;artifactId&gt;myassembly&lt;/artifactId&gt;
+        &lt;version&gt;${configuration.version}&lt;/version&gt;
+        &lt;type&gt;zip&lt;/type&gt;
+      &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+  &lt;/project&gt;</pre>
+  </td>
+  <td>
+  <pre>  &lt;!&#45;&#45; pom-1.1.0.xml &#45;&#45;&gt;
+  &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+  &lt;project&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;groupId&gt;my.company&lt;/groupId&gt;
+    &lt;artifactId&gt;myassembly&lt;/artifactId&gt;
+    &lt;version&gt;${configuration.version}&lt;/version&gt;
+    &lt;name&gt;MyApplication (${configuration.customer})&lt;/name&gt;
+    
+    &lt;dependencies&gt;
+      &lt;dependency&gt;
+        &lt;groupId&gt;my.company&lt;/groupId&gt;
+        &lt;artifactId&gt;myassembly&lt;/artifactId&gt;
+        &lt;version&gt;${configuration.version}&lt;/version&gt;
+        &lt;type&gt;zip&lt;/type&gt;
+      &lt;/dependency&gt;
+      &lt;dependency&gt;
+        &lt;groupId&gt;my.company&lt;/groupId&gt;
+        &lt;artifactId&gt;myassembly-standardplugin&lt;/artifactId&gt;
+        &lt;version&gt;${configuration.version}&lt;/version&gt;
+        &lt;type&gt;zip&lt;/type&gt;
+      &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+  &lt;/project&gt;</pre>
+  </td>
+  </tr></table>
+  </div>
+  So each version of the application is defined via pom-files, which are placed at a defined location. If you want to influence the way
+  how the dependencies are handled you should have a closer look at the <a href="#task_configurationMapper">configurationMapper</a>. In 
+  this section the settings of each customer are defined. Such 'settings' can be:
+  <ul>
+    <li>properties</li>
+    <li>additional files</li>
+    <li>additional dependencies</li>
+  </ul><br/>
+  The customer's settings are defined in a customer's folder, which is defined via the 
+  <a href="#property_configuration.properties.location">configuration.properties.location</a> property. Within this directory a folder named like
+  the customer must be located, this is the so called <i>customer's settings-folder</i> - e.g. if the settings of customer 'xyz' should be defined, 
+  it has to be done in the folder <i>${configuration.properties.location}/xyz</i>. The customer's settings are defined by
+  <ul>
+    <li>a config.properties in the root of the customer's settings-folder</li>
+    <li>an import.properties (optional) in the root of the customer's settings-folder</li>
+    <li>a files.xml (optional) in a sub-directory of the customer's settings-folder</li>
+    <li>a pom.xml (optional) in a sub-directory of the customer's settings-folder</li>
+    <li>resources (optional) in a sub-directory of the customer's settings-folder</li>
+  </ul><br/>
+  As seen some of the files are located in a sub-directory instead of the root of the customer's settings-folder. The reason is that a customer can have
+  different configurations for different applications, whereby the configurations (i.e. the customer's settings) should be located at one location
+  (the customer's settings-folder). The sub-directory is defined by the <a href="#property_configuration.version.property">configuration.version.property</a>,
+  which defines also which property should be read to get the version of the application used by the customer.<br/><br/>
+  <div style="border-left:2px solid #2D2D2D;padding-left:5px;"><b>Ongoing example - Define the customer's settings:</b>
+  In our example let's assume that we have a customer 'xyz', which has the version 1.0.5 of our application. Therefore we create the folder 'xyz' within the
+  <i>customer's settings-folder</i>. Within this folder we create a <i>config.properties</i>, which contains the following content:<br/>
+  <pre>  # config.properties of customer xyz
+  # my application version
+  my.app.version=1.0.5</pre><br/>
+  Within the <i>build.xml</i> of the project, we define the property <i>configuration.version.property</i> as 'my.app.version' (this could also be done
+  e.g. within the <i>config.properties</i> of the project).<br/>
+  <pre>  &lt;!&#45;&#45; pom-1.1.0.xml &#45;&#45;&gt;
+  &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+  &lt;project name="MyProject to build MyApplication"&gt;
+    &lt;property name="main.config.location" value="..\..\_settings\ant" /&gt;
+    &lt;import file="${ant.home}\resources\ant\library_main.xml"/&gt;
+    
+    &lt;property name="configuration.version.property" value="my.app.version" /&gt;
+  &lt;/project&gt;</pre><br/>
+  A simple configuration would end here, but there is probably more to do. Let's for example assume that our customer uses a special database driver with
+  our application, which is only shipped for this customer and therefore not included in the standard. To achieve that, we create the folder <i>my.app.version</i>
+  within the customer's settings directory (i.e. <i>${configuration.properties.location}/xyz/my.app.version</i>. Within this directory we create a pom.xml,
+  which defines the additional dependency (and nothing else, i.e. we don't define the artifact or group again, just dependencies).<br/>
+  <pre>  &lt;!&#45;&#45; pom.xml at xyz/my.app.version &#45;&#45;&gt;
+  &lt;!&#45;&#45; within this file you could also use any property defined e.g. for the project or the customer &#45;&#45;&gt;
+  &lt;project&gt;
+    &lt;dependencies&gt;   
+      &lt;dependency&gt;
+        &lt;groupId&gt;dbms.mystic&lt;/groupId&gt;
+        &lt;artifactId&gt;mystic-jdbc-driver&lt;/artifactId&gt;
+        &lt;version&gt;10.0.0.2&lt;/version&gt;
+      &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+  &lt;/project&gt;</pre><br/>
+  Now let's assume that we have a special configuration for our application, which is used quit often, but which is not included in any of our dependencies.
+  We manage this configuration within our version-control tool directly, therefore outside our binary-repository. The check-out is located in the folder 
+  P:\svn\appsettings\tags\1.3 on our hard-drive (e.g. maybe Jenkins checked the data out for us). We want to copy all the files located in the directory directly to 
+  the customer's application (i.e. at a specific location there: 'settings\loadme'). To do that, we create a files.xml within the <i>xyz/my.app.version</i> directory.
+  <pre>  &lt;!&#45;&#45; files.xml at xyz/my.app.version &#45;&#45;&gt;
+  &lt;!&#45;&#45; within this file you could also use any property defined e.g. for the project or the customer &#45;&#45;&gt;
+  &lt;!&#45;&#45; to add another mapping add another file-tag, whereby the number must be increased, i.e. &lt;file2 ... /&gt; &#45;&#45;&gt;
+  &lt;files&gt;
+    &lt;file1 from="P:\svn\appsettings\tags\1.3" to="settings\loadme" /&gt;
+  &lt;/files&gt;</pre><br/>
+  At last, the customer has a special logo, which we want to use within the application. The logo is just a resource used for this customer and therefore it
+  should be part of the configuration. To achieve that we create a 'resources' (the name can be changed via the 
+  <a href="#property_configuration.resources.foldername">configuration.resources.foldername</a>) in the <i>xyz/my.app.version</i> directory, i.e. 
+  <i>xyz/my.app.version/resources</i> and place the logo there, using the directory-structure which is needed by the application to load the logo. So let's assume
+  our application needs the 'logo.jpg' in a folder called 'logos': <i>xyz/my.app.version/resources/logos/logo.jpg</i>.</div><br/>
+  Last but not least it should be mentioned that it's also possible to import configuration. This is done via a <i>import.properties</i> file (the name of the file
+  can be changed by the <a href="#property_configuration.config.import.filename">configuration.config.import.filename</a> property). To import a configuration into
+  another configuration (i.e. somehow make the one depend on the other), simple define a '|' separated list of configuration-settings within the property
+  <i>configuration.imports</i>. Therefore we create the file <i>import.properties</i> in the customer's configuration root-directory and set the property 
+  <i>configuration.imports</i>.<br/><br/>
+  <div style="border-left:2px solid #2D2D2D;padding-left:5px;"><b>Ongoing example - Import customer's settings:</b>
+  In our example let's assume that the customer we have is based on another configuration - the configuration 'abc'.
+  <pre>  # import.properties located in the customer's configuration folder 'xyz'
+  # define a list of imports (each import must be a customer folder and is separated from eachother by a |)
+  configuration.imports=abc</pre></div>
   
-  Created on: 06.12.2012
-  Created by: Philipp Meisen <philipp@meisen.net>
-  History:
-    06.12.2012
-      - Creation of library
-    28.01.2013
-      - added addional configuration possibilities (e.g. files.xml, resources-folder, ...)
-    07.02.2013
-      - added the possibility to import configurations
-  -->
+  @author Philipp Meisen
+-->
 <project name="library_configuration">
   <property name="configuration.library.version" value="1.0.0" description="The current version of the library" />
   <dirname property="library_configuration.basedir" file="${ant.file.library_configuration}"/>
 
-  <property name="configuration.library.resfile.pomConfiguration.merge" location="${main.root}/maven/pomConfiguration_xmlMerge.properties" />
+  <property name="configuration.library.resfile.pomConfiguration.merge" location="${main.root}/maven/pomConfiguration_xmlMerge.properties" description="A mandatory resource-file of the library, defines how to merge pom-files" />
   
-  <property name="configuration.properties.location" value="" description="The location to load the settings from, should be defined in the scriptconfig.properties, must be relative to the library_main" />
-  <property name="configuration.versions.foldername" value="" description="The name of the folder in which the versions are found, must be a sub-directory wherever the build.xml is found" />
+  <property name="configuration.version.property" value="" description="The name of the property to read to determine the version to be build." />
+  <property name="configuration.properties.location" value="" description="The absolute location to load the customer's settings from, should be defined in the scriptconfig.properties" />
+  <property name="configuration.versions.foldername" value="" description="The name of the folder in which the versions are found, must be a relative path to the base-directory, i.e. the folder in which the build.xml is found" />
   <property name="configuration.settings.defaultconfig" value="_default" description="The folder in which the default configuration can be found" />
   <property name="configuration.settings.defaultcustomer" value="default" description="The folder in which the default customer can be found" />
-  <property name="configuration.config.filename" value="config.properties" description="The name of the configuration file to be read" />
+  <property name="configuration.config.filename" value="config.properties" description="The name of the property-file to be read for a customer's configuration" />
   <property name="configuration.config.import.filename" value="import.properties" description="The name of the configuration file to be read for imports" />
-  <property name="configuration.config.user.filename" value="alternative.properties" description="The name of the configuration file to be read for the user (overrides the other settings)" />
-  <property name="configuration.resources.foldername" value="resources" description="The folder in which resources added for the customer are located" />
+  <property name="configuration.config.user.filename" value="alternative.properties" description="The name of the configuration file to be read for the user (overrides the other settings), this file is only read if the 'alternative' configuration is loaded" />
+  <property name="configuration.resources.foldername" value="resources" description="The folder in which resources added for the customer are located" /> 
+  <property name="configuration.location" value="${user.name}" description="The property defines the path (relative to the project's root or absolute) to the location at which the application (defined by the selected configuration) should be build" />
   
   <property name="configuration.resource.dependency" value="configuration.dependency" description="The resource type of a dependency" />
   <property name="configuration.replacement.default.pattern" value="${file.replacement.default.pattern}" description="The pattern to check which files should be property-replaced" />
   <property name="configuration.replacement.additional.pattern" value="" description="Additional list of pattern, i.e. \.script|\.test to check for files of property replacement" />
   
-  <property name="configuration.resourcetype.dependency" value="configuration.dependency" />
-  <property name="configuration.resourcetype.resource" value="configuration.resource" />
+  <property name="configuration.resourcetype.dependency" value="configuration.dependency" description="The resource-type used by the configurationMapper to identify dependencies" />
+  <property name="configuration.resourcetype.resource" value="configuration.resource" description="The resource-type used by the configurationMapper to identify resources" />
   
   <property name="configuration.init" value="false" description="For internal usage only, please do not modify this property by a file" />  
   
@@ -74,6 +241,31 @@
     </then>
   </if>
   
+  <!--
+    This task is called to load the properties defined for a specific customer. Alternatively the properties can be overloaded
+    by an alternative configuration (i.e. alternative properties). The name of this alternative property-file is defined by the 
+    <a href="#property_configuration.config.user.filename">configuration.config.user.filename</a> property. This configuration 
+    sets the following properties:
+    <ul>
+      <li>all properties defined for the customer (i.e. all the properties defined in the <i>config.properties</i> or the alternative file if defined)</li>
+      <li><i>configuration.customer</i></li>
+      <li><i>configuration.alternative</i></li>
+      <li><i>configuration.settings.includedCustomers</i> - a '|' separated list of all the imported other customer settings</li>
+    </ul><br/>
+    The <a href="#task_configurationPostProperties">configurationPostProperties</a> task is called right after the properties
+    are loaded. This hook can be used to modify the properties after loading.
+    
+    @param customer
+      the parameter specifies which customer's properties should be loaded
+    @param alternative
+      the parameter defines if the alternative configuration should be loaded; valid values are 'true', 'yes', 'y' or anything else for 'false'
+      
+    @fails 
+      if the property file cannot be found
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationLoadProperties">
     <attribute name="customer" default="${customer}" />
     <attribute name="alternative" default="${alternative}" />
@@ -178,6 +370,38 @@
     </sequential>
   </macrodef>
   
+  <!--
+    This task is called to load the properties defined for a specific customer's version. This configuration 
+    sets the following:
+    <ul>
+      <li>the property <i>configuration.version</i></li>
+      <li>the property <i>configuration.settings.pom</i> - the standard dependency-file loaded for the specified version</li>
+      <li>the property <i>configuration.settings.finalpom</i> - the merged dependency-file loaded for the specified version and customer</li>
+      <li>the property <i>configuration.settings.additionalpom</i> - the additional dependency-file loaded for the customer</li>
+      <li>the fileset <i>configuration.dependencies.libs</i>, which contains all the files the configuration depend on</li>
+      <li>the fileset <i>configuration.dependencies.componentlibs</i>, which contains all the additional dependencies</li>
+    </ul><br/>
+    The <a href="#task_configurationPostVersionProperties">configurationPostVersionProperties</a> task is called right after the properties
+    are loaded. This hook can be used to modify the filesets and/or properties after loading.<br/><br/>
+    <b>Note:</b><br/>
+    If the libraries added for the customers should be resolved, you can easily get those by calculating the difference of the filesets using:
+    <pre>    &lt;difference id="some.name"&gt;
+      &lt;fileset refid="configuration.dependencies.componentlibs" /&gt;
+      &lt;fileset refid="configuration.dependencies.libs" /&gt;
+    &lt;/difference&gt;</pre>
+    
+    @param version
+      the parameter defines the version to load the properties for
+    @param customer
+      the parameter specifies which customer's properties should be loaded
+      
+    @fails 
+      if one of the mandatory settings' files cannot be found or if one of the mandatory properties (customer or version) is not set and 
+      cannot be resolved against default values
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationLoadVersionProperties">
     <attribute name="version" default="${version}" />
     <attribute name="customer" default="${customer}" />
@@ -202,14 +426,17 @@
       
       <!-- get the version -->
       <if>
-        <not><matches pattern="\$\{.+\}" string="@{version}" /></not>
+        <and>
+          <not><matches pattern="\$\{.+\}" string="@{version}" /></not>
+          <not><matches pattern="@\{.+\}" string="@{version}" /></not>
+        </and>
         <then>
           <var name="configuration.version" value="@{version}" />   
         </then>
         <elseif>
           <not><isset property="configuration.version.property" /></not>
           <then>
-            <var name="configuration.version" value="" unset="true" />
+            <fail>The mandatory property 'version' cannot be determined.</fail>
           </then>
         </elseif>
         <else>
@@ -264,11 +491,36 @@
   </macrodef>
   
   <!--
-    configurationSetup - setups a configuration
-    -->
+    This task can be seen as the main-task of the configuration library. It creates the configuration for the specified <i>version</i> and <i>customer</i> and places
+    it at the specified <i>location</i>. The alternative configuration can be build, if the <i>alternative</i> parameter is set to true.<br/>
+    The task uses the <a href="#task_configurationLoadProperties">configurationLoadProperties</a> and <a href="#task_configurationLoadVersionProperties">configurationLoadVersionProperties</a>
+    to load the properties. Furthermore it uses the <a href="#task_configurationCopyFiles">configurationCopyFiles</a> task to copy the files. 
+    The task calls some hook-tasks, which can be used to modify the configuration after each step. Those hooks are:
+    <ul>
+      <li><i>configurationPostDependencies</i> - is called after the dependencies are resolved and copied</li>
+      <li><i>configurationPostFiles</i> - is called after the files (i.e. of the <i>files.xml</i>) are copied</li>
+      <li><i>configurationPostResources</i> - is called after the resources (i.e. the once defined explicit for the customer) are copied</li>
+    </ul><br/>
+    The task will set the property <i>configuration.zippedFile</i> at the end, which will point to the created file.
+    
+    @param location
+      the parameter defines the location to copy the configuration to
+    @param version
+      the parameter defines the version to load the properties for
+    @param customer
+      the parameter specifies which customer's properties should be loaded
+    @param alternative
+      the parameter defines if the alternative configuration should be loaded; valid values are 'true', 'yes', 'y' or anything else for 'false'
+      
+    @fails 
+      if the customer or a mandatory property file cannot be found
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationSetup">
+    <attribute name="location" />
     <attribute name="version" default="${version}" />
-    <attribute name="location" default="${user.name}" />
     <attribute name="customer" default="${customer}" />
     <attribute name="alternative" default="${alternative}" />
   
@@ -394,34 +646,159 @@
           <var name="configuration.tmp.zipFileName" value="${configuration.dependencies.pom.artifactId}-${configuration.version}-${configuration.customer}.zip" />
         </else>
       </if>
-      <delete file="@{location}/${configuration.tmp.zipFileName}" />
-      <zip destfile="@{location}/${configuration.tmp.zipFileName}" basedir="${configuration.tmp.location}" />
+      
+      <!-- finally set the configuration property to point to the location -->
+      <var name="configuration.zippedFile" value="@{location}/${configuration.tmp.zipFileName}" />
+      <delete file="${configuration.zippedFile}" />
+      <zip destfile="${configuration.zippedFile}" basedir="${configuration.tmp.location}" />
       
       <!-- cleanUp -->
       <delete dir="${configuration.tmp.location}" />
     </sequential>
   </macrodef>
 
+  <!--
+    This is a hook method, which can be used to hook into the main-task <a href="#task_configurationLoadProperties">configurationLoadProperties</a>. 
+    It is called right after the loading of the general properties and can be used to modify those for your needs, i.e.
+    if your project needs some special property that can be determined on the other ones, you can overwrite this method (e.g.
+    if you need to concate to properties or if you want to determine the directory of a file).
+    
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationPostProperties">
     <sequential />
   </macrodef>
   
+  <!--
+    This is a hook method, which can be used to hook into the main-task <a href="#task_configurationLoadVersionProperties">configurationLoadVersionProperties</a>. 
+    It is called right after the loading of the properties and filesets of the version and can be used to modify those for your needs, i.e.
+    if your project needs some special property that can be determined on the other ones, you can overwrite this method (e.g.
+    if you need to concate to properties or if you want to modify the dependencies).
+    
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationPostVersionProperties">
     <sequential />
   </macrodef>
   
+  <!--
+    This is a hook method, which can be used to hook into the main-task <a href="#task_configurationSetup">configurationSetup</a>. 
+    It is called right after the dependencies are resolved and copied. The property <i>configuration.tmp.location</i> is set to the
+    location in which the application is assembled.<br />
+    <pre>    &lt;project ...&gt;
+      &lt;property name="main.config.location" value="..\..\_settings\ant" /&gt;
+      &lt;import file="${ant.home}\resources\ant\library_main.xml" /&gt;
+      [...]
+      
+      &lt;macrodef name="configurationPostDependencies"&gt;
+        &lt;sequential&gt;
+          &lt;!&#45;&#45; copy the dependencies to another location &#45;&#45;&gt;
+          &lt;copy todir="/backuplib"&gt;
+            &lt;fileset dir="/lib"&gt;
+              &lt;include name="**/*"/&gt;
+            &lt;/fileset&gt;
+          &lt;/copy&gt;
+        &lt;/sequential&gt;
+      &lt;/macrodef&gt;
+      
+      [...]
+    &lt;/project&gt;</pre>
+    
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationPostDependencies">
     <sequential />
   </macrodef>
 
+  <!--
+    This is a hook method, which can be used to hook into the main-task <a href="#task_configurationSetup">configurationSetup</a>. 
+    It is called right after the files defined in the <i>files.xml</i> are copied. The property <i>configuration.tmp.location</i> 
+    is set to the location in which the application is assembled.<br />
+    <pre>    &lt;project ...&gt;
+      &lt;property name="main.config.location" value="..\..\_settings\ant" /&gt;
+      &lt;import file="${ant.home}\resources\ant\library_main.xml" /&gt;
+      [...]
+      
+      &lt;macrodef name="configurationPostFiles"&gt;
+        &lt;sequential&gt;
+          &lt;!&#45;&#45; call a user-defined macro which creates additional files based on the configuration &#45;&#45;&gt;
+          &lt;readDatasources macro="createDatasourceFile" skipPrefix="pre" /&gt;
+        &lt;/sequential&gt;
+      &lt;/macrodef&gt;
+
+      [...]
+    &lt;/project&gt;</pre>
+        
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationPostFiles">
     <sequential />
   </macrodef>
 
+  <!--
+    This is a hook method, which can be used to hook into the main-task <a href="#task_configurationSetup">configurationSetup</a>. 
+    It is called right after the resources defined for the customer are copied. The property <i>configuration.tmp.location</i> 
+    is set to the location in which the application is assembled.<br />
+    <pre>    &lt;project ...&gt;
+      &lt;property name="main.config.location" value="..\..\_settings\ant" /&gt;
+      &lt;import file="${ant.home}\resources\ant\library_main.xml" /&gt;
+      [...]
+      
+      &lt;macrodef name="configurationPostResources"&gt;
+        &lt;sequential&gt;
+          &lt;!&#45;&#45; the resources were copied to a folder named 'ontouchedresources' to modify those now &#45;&#45;&gt;
+          &lt;move todir="/" filtering="true"&gt;
+            &lt;fileset dir="/ontouchedresources"&gt;
+              &lt;include name="**/*"/&gt;
+            &lt;/fileset&gt;
+
+            &lt;!&#45;&#45; search for %COPYRIGHT! and %BUILD_DATE! &#45;&#45;&gt;
+            &lt;filterset begintoken="%" endtoken="%"&gt;
+              &lt;filter token="ASSEMBLY_DATE" value="${now}"/&gt;
+            &lt;/filterset&gt;
+          &lt;/move&gt;
+
+          &lt;delete dir="ontouchedresources" /&gt;
+        &lt;/sequential&gt;
+      &lt;/macrodef&gt;
+      
+      [...]
+    &lt;/project&gt;</pre>
+    
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationPostResources">
     <sequential />
   </macrodef>  
   
+  <!--
+    This task is more or less a helper task, which helps to move the specified files or the content of the specified directory 
+    to the specified location.
+    
+    @param from
+      the file or directory to be copied
+    @param to
+      the location to copy the file or the directory to
+    @param unzip
+      'true' to unzip the specified file into the location specified by <i>to</it>, this parameter is ignored if the specified resource  
+      by <i>from</i> is a directory
+    @param includes
+      an ant-pattern to specify the files to be included, this parameter is ingored if the specified resource is a file
+    @param excludes
+      an ant-pattern to specify the files to be excluded, this parameter is ingored if the specified resource is a file
+
+    @fails 
+      if the file or directory specified via the <i>from</i>-parameter cannot be resolved or if the location specified by <i>to</i> is not 
+      available
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationCopyFiles">
     <attribute name="from" />
     <attribute name="to" />
@@ -455,6 +832,48 @@
     </sequential>
   </macrodef>
   
+  <!--
+    This task is a helper task, which is called for each dependency and resource (i.e. customer's specific resource) of the application, which is assembled with the
+    specified configuration. The task should never be modified. Instead the <a href="#task_configurationMapper">configurationMapper</a> should be overwritten, to
+    control the behaviour of the process. This task also calls - prior to the <i>configurationMapper</i> - the so called <i>configurationCustomerMapper</i>. The
+    <a href="#task_configurationCustomerMapper">configurationCustomerMapper</a> is a task, which handles the mapping of dependencies and/or resources via properties.
+    Generally both kinds of mapper are capable to define the handling of the dependency or resource by settings one of the following properties:
+    <ul>
+      <li><i>confMapper.location</i> defines the location of the dependency or the resource within the application's root-folder. Several locations can be passed, 
+          using a ':' as separator, e.g. confMapper.location=resources:default/resources</li>
+      <li><i>confMapper.unzip</i> defines if the dependency or the resource should be unzipped. This property is only read when the dependency or the resource is a file.
+          If the value is set to an empty string, the file will be unzipped if it's a '.zip'-file otherwise it won't (default is '').</li>
+      <li><i>confMapper.replaceProperties</i> defines if the properties within the files of the dependency or the resource should be replaced. If the dependency or the 
+          resource is unzipped all zipped files will be checked for replacements (default is 'true').</li>
+    </ul><br/>
+    The mentioned properties should be set by the mappers and not prior to calling this task, because - as mentioned already - this task uses the mapper implementations to 
+    retrieve the values for the properties.
+    
+    @param resourceFolder
+      the directory the resource is located in
+    @param resourceFileName
+      the filename of the resource to be mapped
+    @param resource
+      the resource (as File object) to be mapped
+    @param resourceType
+      the type of the resource, e.g. <a href="#property_configuration.resourcetype.dependency">configuration.resourcetype.dependency</a> or 
+      <a href="#property_configuration.resourcetype.resource">configuration.resourcetype.resource</a>
+    @param rootFolder
+      the root-folder of the destination, includes pre-defined paths (e.g. when mapping a resource)
+    @param filePattern
+      the file-pattern defines a pattern to determine if properties have to be replaced or not, the actual act of replacing is still only performed
+      if the file is a valid property file (i.e. no binary file)
+    @param basedir
+      the base-directory defines the sources base-directory, i.e. the directory all the dependencies or the resources have in common (it is retrieved
+      from the fileset)
+      
+    @fails 
+      if the passed <i>resource</i> cannot be found or if one of the set parameters retrieved from a mapping is invalid (e.g. a location which cannot be deleted
+      or accessed).
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationBuildPackage">
     <attribute name="resourceFolder" />
     <attribute name="resourceFileName" />
@@ -550,6 +969,47 @@
     </sequential>
   </macrodef>
 
+  <!--
+    This task is a helper task, which is called to determine the handling of a resource used by the configuration. This task - in contrast to the 
+    <a href="#task_configurationMapper">configurationMapper</a> - is not ment to be overwritten. The task uses defined properties to determine how 
+    to handle the resource. If a mapping for the resource is defined via properties, the <i>configurationMapper</i> is not called anymore (because
+    the property <i>confMapper.useDefault</i> is set to 'false'. The following properties can be set to manipulate the handling of a resource:
+    <ul>
+      <li><i>confMapper.location</i> defines the location of the dependency or the resource within the application's root-folder. Several locations can be passed, 
+          using a ':' as separator, e.g. confMapper.location=resources:default/resources</li>
+      <li><i>confMapper.unzip</i> defines if the dependency or the resource should be unzipped. This property is only read when the dependency or the resource is a file.
+          If the value is set to an empty string, the file will be unzipped if it's a '.zip'-file otherwise it won't (default is '').</li>
+      <li><i>confMapper.replaceProperties</i> defines if the properties within the files of the dependency or the resource should be replaced. If the dependency or the 
+          resource is unzipped all zipped files will be checked for replacements (default is 'true').</li>
+    </ul><br/>
+    To understand how these properties are retrieved from properties an example is used:<br />
+    <pre>    # properties to define the properties confMapper.location, confMapper.replaceProperties and confMapper.unzip
+    # the regex-pattern is matched against the location of the resource, so here we check for version 1.[...]
+    configuration.configurationCustomerMapper.allfirstversionsofmyassembly.pattern=my[\\\\/]company[\\\\/]myassembly[\\\\/]1\..*
+    configuration.configurationCustomerMapper.allfirstversionsofmyassembly.location=/unzip_assembly
+    configuration.configurationCustomerMapper.allfirstversionsofmyassembly.unzip=true
+    configuration.configurationCustomerMapper.allfirstversionsofmyassembly.replaceProperties=true
+    # ... and here we check for version 2.[...], 
+    # if not specified the default settings will be used for the properties, i.e. here unzip and replaceProperties
+    configuration.configurationCustomerMapper.allsecondversionsofmyassembly.pattern=my[\\\\/]company[\\\\/]myassembly[\\\\/]2\..*
+    configuration.configurationCustomerMapper.allsecondversionsofmyassembly.location=/changed_foldername</pre>
+
+    @param resourceFolder
+      the directory the resource is located in
+    @param resourceFileName
+      the filename of the resource to be mapped
+    @param resource
+      the resource (as File object) to be mapped
+    @param resourceType
+      the type of the resource, e.g. <a href="#property_configuration.resourcetype.dependency">configuration.resourcetype.dependency</a> or 
+      <a href="#property_configuration.resourcetype.resource">configuration.resourcetype.resource</a>
+      
+    @fails 
+      if the passed <i>resource</i> cannot be found
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationCustomerMapper">
     <attribute name="resourceFolder" />
     <attribute name="resourceFileName" />
@@ -557,13 +1017,7 @@
     <attribute name="resourceType" />
     
     <sequential>
-      <!-- do nothing -->
-      <!-- ${confMapper.location}          - contains the location within the rootFolder to copy the data to, default=""       -->
-      <!-- ${confMapper.replaceProperties} - defines if properties should be replace, can be "true" or "false", default="true" -->
-      <!-- ${confMapper.useDefault}        - defines that the default behaviour should be used, default="true"                 -->
-      <!-- ${confMapper.unzip}             - defines that the file should be unzipped if set to true, 
-                                             if emtpy the file will be unzipped if its a zip file, default=""                  -->
-      
+    
       <!-- the default implementation reads a property to map the location of a dependency/resource -->
       <propertyset id="configuration.tmp.patternDef">
         <propertyref regex="^configuration\.configurationCustomerMapper\..+\.pattern$" />
@@ -637,31 +1091,96 @@
     </sequential>
   </macrodef>
   
+  <!--
+    The <i>confMapper</i> task is used to define the handling of a dependency or a resource. Generally this can be done via properties (see 
+    <a href="#task_configurationCustomerMapper">configurationCustomerMapper</a>), but sometimes it might be necessary or wished to do it directly
+    within the build.xml. The following properties can be used to define the handling:
+    <ul>
+      <li><i>confMapper.location</i> defines the location of the dependency or the resource within the application's root-folder. Several locations can be passed, 
+          using a ':' as separator, e.g. confMapper.location=resources:default/resources</li>
+      <li><i>confMapper.unzip</i> defines if the dependency or the resource should be unzipped. This property is only read when the dependency or the resource is a file.
+          If the value is set to an empty string, the file will be unzipped if it's a '.zip'-file otherwise it won't (default is '').</li>
+      <li><i>confMapper.replaceProperties</i> defines if the properties within the files of the dependency or the resource should be replaced. If the dependency or the 
+          resource is unzipped all zipped files will be checked for replacements (default is 'true').</li>
+    </ul><br/>
+    To define the handling it is necessary to overwrite the <i>configurationMapper</i>. This can be done within the build.xml or every user-library which is loaded
+    after this library:<br />
+    <pre>    &lt;project ...&gt;
+      &lt;property name="main.config.location" value="..\..\_settings\ant" /&gt;
+      &lt;import file="${ant.home}\resources\ant\library_main.xml" /&gt;
+      [...]
+    
+      &lt;macrodef name="configurationMapper"&gt;
+        &lt;attribute name="resourceFolder" /&gt;
+        &lt;attribute name="resourceFileName" /&gt;
+        &lt;attribute name="resource" /&gt;
+        &lt;attribute name="resourceType" /&gt;
+        
+        &lt;sequential&gt;
+          &lt;if&gt;
+            &lt;!&#45;&#45; Check for a dbms driver &#45;&#45;&gt;
+            &lt;matches pattern=".*dbms[\\/]mystic[\\/].*[\\/]mystic-jdbc-driver.*" string="@{resource}" /&gt;
+            &lt;then&gt;
+              &lt;var name="confMapper.location" value="libs/jdbc" /&gt;
+            &lt;/then&gt;
+            &lt;!&#45;&#45; all resources should be handled differently &#45;&#45;&gt;
+            &lt;elseif&gt;
+              &lt;equals arg1="@{resourceType}" arg2="${configuration.resourcetype.resource}" /&gt;
+              &lt;then&gt;
+                &lt;var name="confMapper.location" value="myresources" /&gt;
+                &lt;var name="confMapper.replaceProperties" value="true" /&gt;
+              &lt;/then&gt;
+            &lt;/elseif&gt;
+          &lt;/if&gt;
+        &lt;/sequential&gt;
+      &lt;/macrodef&gt;
+      
+      [...]
+    &lt;/project&gt;</pre>
+
+    @param resourceFolder
+      the directory the resource is located in
+    @param resourceFileName
+      the filename of the resource to be mapped
+    @param resource
+      the resource (as File object) to be mapped
+    @param resourceType
+      the type of the resource, e.g. <a href="#property_configuration.resourcetype.dependency">configuration.resourcetype.dependency</a> or 
+      <a href="#property_configuration.resourcetype.resource">configuration.resourcetype.resource</a>
+      
+    @fails 
+      the default implementation cannot fail
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="configurationMapper">
     <attribute name="resourceFolder" />
     <attribute name="resourceFileName" />
     <attribute name="resource" />
     <attribute name="resourceType" />
     
-    <sequential>
-      <!-- do nothing -->
-      <!-- ${confMapper.location}          - contains the location within the rootFolder to copy the data to, default=""       -->
-      <!-- ${confMapper.replaceProperties} - defines if properties should be replace, can be "true" or "false", default="true" -->
-      <!-- ${confMapper.unzip}             - defines that the file should be unzipped if set to true, 
-                                             if emtpy the file will be unzipped if its a zip file, default=""                  -->
-    </sequential>
+    <sequential />
   </macrodef>
-  
+
+  <!--
+    This target can be used to create an application based on a configuration. The target uses the <a href="#task_configurationSetup">configurationSetup</a> to do so.
+    Therefore the properties <i>customer</i>, <i>version</i> and <i>alternative</i> has to be defined. If not defined explicitly the default values may be used, if defined:
+    <ul>
+      <li><i>customer</i>: the default value is retrieved from the property <a href="#property_configuration.settings.defaultcustomer">configuration.settings.defaultcustomer</a>, which
+      should be defined - if needed - in the setting's of the ant-processenabler (i.e. the <i>scriptconfig.properties</i> or the <i>config.properties</i>)</li>
+      <li><i>version</i>: the default value is retrieved by looking at the property defined by <a href="#property_configuration.version.property">configuration.version.property</a>;
+      the value for this property should be defined in the customer's configuration (e.g. the value for the <i>configuration.version.property</i> is set to 'configuration.myapp.version' within the build.xml,
+      within the config.properties of the customer the property <i>configuration.myapp.version</i> should define the customer's version of myapp)</li>
+      <li><i>alternative</i>: the default is 'false'</li>
+    </ul>
+    The target is mainly based on the <a href="#task_docWriteLibraryFiles">docWriteLibraryFiles</a> and <a href="#task_docWriteIndexFile">docWriteIndexFile</a>,
+    which use both the <a href="#property_doc.template">doc.template</a> property to select the template.
+    
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <target name="create">
-  
-    <if>
-      <isset property="configuration.location" />
-      <then>
-        <configurationSetup location="${configuration.location}" />
-      </then>
-      <else>
-        <configurationSetup />
-      </else>
-    </if>
+    <configurationSetup location="${configuration.location}" />
   </target>
 </project>

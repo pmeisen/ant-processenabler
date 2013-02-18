@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>${library.name}</title>
+    
+    <!-- the meta information -->
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <!-- CSS Style -->
+    ${settings.css}
+  </head>
+  
+  <body>
+    <div class="${settings.cssClass.pageheader}">Documentation of ${library.name}</div>
+    <div class="${settings.cssClass.description}">This is the documentation of the '${library.name}' of the ant-processenabler. The library can be found in the root
+    directory of the ant-processenabler under '${library.file}'.</div>
+        
+    <div class="${settings.cssClass.header}">Overview of available properties</div>
+    <div class="${settings.cssClass.summary}">@(library.elements[type=property] => property){<a href="#property_${property.name}">${property.name}</a> }</div>
+    
+    <div class="${settings.cssClass.header}">Overview of available targets</div>
+    <div class="${settings.cssClass.summary}">@(library.elements[type=target] => target){<a href="#target_${target.name}">${target.name}</a> }</div>
+    
+    <div class="${settings.cssClass.header}">Overview of available tasks</div>
+    <div class="${settings.cssClass.summary}">@(library.elements[type=task] => task){<a href="#task_${task.name}">${task.name}</a> }</div>
+    
+    <div class="${settings.cssClass.header}">Description</div>
+    <div class="${settings.cssClass.description}">${library.comment.description}</div>
+    
+    <div class="${settings.cssClass.header}">Properties</div>
+    <div class="${settings.cssClass.element}">
+    <table cellspacing="0" cellpadding="0">
+      <tr><td class="${settings.cssClass.tdname}">Name</td><td class="${settings.cssClass.tddefault}">Default-Value</td><td class="${settings.cssClass.tddescription}">Description</td></tr>@(library.elements[type=property] => property){
+      <tr><td class="${settings.cssClass.tdname}"><a id="property_${property.name}">${property.name}</a></td><td class="${settings.cssClass.tddefault}">${property.value}</td><td class="${settings.cssClass.tddescription}">${property.comment.description}</td></tr>
+    }</table></div>
+    
+    <div class="${settings.cssClass.header}">Targets</div>
+    @(library.elements[type=target] => target){<div class="${settings.cssClass.subelement}">
+      <div class="${settings.cssClass.header}"><a id="task_${task.name}">${target.name}</a></div>
+      <div class="${settings.cssClass.description}">${target.comment.description}</div>
+    </diV>}
+    
+    <div class="${settings.cssClass.header}">Tasks</div>
+    @(library.elements[type=task] => task){<div class="${settings.cssClass.subelement}">
+      <div class="${settings.cssClass.header}"><a id="task_${task.name}">${task.name}</a></div>
+      <div class="${settings.cssClass.description}">${task.comment.description}</div>
+      <div class="${settings.cssClass.subheader}">Available arguments/attributes:</div>
+      <table cellspacing="0" cellpadding="0">
+        <tr><td class="${settings.cssClass.tdname}">Name</td><td class="${settings.cssClass.tddefault}">Default-Value</td><td class="${settings.cssClass.tddescription}">Description</td></tr>@(task.comment.params => param){
+        <tr><td class="${settings.cssClass.tdname}">${param.name}</td><td class="${settings.cssClass.tddefault}">${param.def}</td><td class="${settings.cssClass.tddescription}">${param.description}</td></tr>
+      }</table>
+    </div>}
+    
+    <div class="${settings.cssClass.pagefooter}">This documentation was created on ${date.now}</div>
+  </body>
+</html>

@@ -14,6 +14,7 @@
   <dirname property="library_file.basedir" file="${ant.file.library_file}" />
   
   <property name="file.library.resfile.default.merge" location="${library_eclipse.basedir}/library_file_xmlMerge.properties" />
+  <property name="file.library.resfile.js.general" location="${main.root}/javascripts/library_file/general.js" description="JavaScript with some helper methods for files" />
   
   <property name="file.replacement.default.pattern" value="\.xml|\.properties|\.htm|\.html|\.txt|\.bat|\.mf|\.project|\.classpath|\.template|\.sh" />
 
@@ -583,41 +584,31 @@
     <attribute name="removePrefix" />
     
     <![CDATA[
+      // helper method to load js files
+      // thanks to http://stackoverflow.com/questions/650377/javascript-rhino-use-library-or-include-other-scripts
+      var l = function(property) {
+        var jsFile = project.getProperty(property);
+        var fileReader = new java.io.FileReader(jsFile);
+        var fullRead = org.apache.tools.ant.util.FileUtils.readFully(fileReader);
+        
+        return "" + new java.lang.String(fullRead);
+      }
+      
+      // load the libraries
+      eval(l("file.library.resfile.js.general"));
+    
+      // get the properties and execute the function
       var basedir = attributes.get("basedir");
       var file = attributes.get("file");
       var property = attributes.containsKey("property") ? attributes.get("property") : "file.subpath";
       var isdir = attributes.containsKey("isdir") ? attributes.get("isdir") : "" + (new java.io.File(file).isDirectory());
       var removePrefix = attributes.containsKey("removeprefix") ? attributes.get("removeprefix") : "";
 
-      // get the file to look for
-      var baseFile = new java.io.File(basedir);
-      var fileFile = new java.io.File(file);
+      // get the booleans
+      isdir = isdir != null && (isdir.equals("true") || isdir.equals("yes"), isdir.equals("y"));
       
-      // check if we have a file and get the directory
-      if (!isdir.equals("true")) {
-        fileFile = fileFile.getParentFile();
-      }
-      
-      // get the relative path
-      var relativePath = baseFile.toURI().relativize(fileFile.toURI()).getPath();
-      
-      // remove any separaters
-      if (relativePath.endsWith("\\") || relativePath.endsWith("/")) {
-        relativePath = relativePath.substring(0, relativePath.length() - 1);
-      }
-      
-      // remove any prefix
-      if (removePrefix != null && !"".equals(removePrefix)) {
-        removePrefix = removePrefix.startsWith("\\") || removePrefix.startsWith("/") ? removePrefix.substring(1) : removePrefix;          
-        var prefixFile = new java.io.File(removePrefix);
-        var relativeFile = new java.io.File(relativePath);
-        relativePath = prefixFile.toURI().relativize(relativeFile.toURI()).getPath();
-      }
-      
-      // empty means the current, i.e. .
-      if (relativePath.equals("")) {
-        relativePath = ".";
-      }
+      // call the script
+      var relativePath = getSubPath(basedir, file, isdir, removePrefix);
 
       var setProperty = project.createTask("var");
       setProperty.setName(property);

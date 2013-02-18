@@ -21,6 +21,7 @@
   <property name="main.library.resfile.config.user.example" location="${main.root}/ant/config.properties.example" />
   <property name="main.library.resfile.config.general.example" location="${main.root}/ant/scriptconfig.properties.example" />
   <property name="main.library.resfile.config.libraries" location="${main.root}/ant/libraryconfig.properties" />
+  <property name="main.library.resfile.js.general" location="${main.root}/javascripts/library_main/general.js" description="JavaScript with some helper methods" />
 
   <!-- Load the library configuration -->
   <property file="${main.library.resfile.config.libraries}" />
@@ -59,7 +60,7 @@
   <property name="main.vendor" value="" description="The vendor used for compiled/build versions" />
   <property name="main.tmpdir" location="${java.io.tmpdir}" description="The temporary folder which should be used by all libraries when generating temporary content" />
   <property name="main.logLevel" value="error" description="The logging level to be used can be error, warn, info, verbose, debug" />
-  <property name="main.addExtensionsByDefault" value="false" />
+  <property name="main.addExtensionsByDefault" value="false" description="Adds all defined extension automatically if set to true, otherwise extensions have to be explicitly added" />
 
   <property name="main.init" value="false" description="For internal usage only, please do not modify this property by a file" />
   
@@ -132,6 +133,23 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="mainGetLibraries">
+    <attribute name="property" />
+    
+    <sequential>
+      <var name="main.tmp.mainLibrary" value="main" />
+      
+      <!-- get all the available libraries -->
+      <var name="main.tmp.libraries" value="${main.tmp.mainLibrary}" />
+      <appendList property="main.tmp.libraries" list1="${main.tmp.libraries}" list2="${main.import.order.core}" separator="," trimItems="true" />
+      <appendList property="main.tmp.libraries" list1="${main.tmp.libraries}" list2="${main.import.order.extension}" separator="," trimItems="true" />
+      <appendList property="main.tmp.libraries" list1="${main.tmp.libraries}" list2="${main.import.order.general}" separator="," trimItems="true" />
+      <appendList property="main.tmp.libraries" list1="${main.tmp.libraries}" list2="${main.import.order.proxy}" separator="," trimItems="true" />
+      
+      <var name="@{property}" value="${main.tmp.libraries}" />
+    </sequential>
+  </macrodef>
+
   <target name="versions">
     <setLogLevel logLevel="INFO" />   
     <echoproperties regex="^.+\.library\.version$" />
@@ -162,7 +180,7 @@
     <delete file="${main.config.project.marked}" />
   </target>
   
-  <target name="writeMarkedProperties">
+  <target name="writeMarkedProperties" description="lala">
     <if>
       <and>
         <isset property="main.markedProperties.prefix" />

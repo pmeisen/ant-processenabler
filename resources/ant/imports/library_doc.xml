@@ -1,0 +1,311 @@
+<!--
+  The library is used to create documentations of the ant-processenabler's libraries. The library adds targets and tasks (i.e. macros and scripts), 
+  which can be used to create a set of files, i.e. a documentation.
+
+  @author Philipp Meisen
+-->
+<project name="library_doc">
+  <property name="doc.library.version" value="1.0.0" description="The current version of the library" />
+  <dirname property="library_doc.basedir" file="${ant.file.library_doc}"/>
+  
+  <property name="doc.library.resfile.js.general" location="${main.root}/javascripts/library_doc/general.js" description="JavaScript which holds the general implementations and includes all other libraries" />
+  <property name="doc.library.resfile.js.datastructure" location="${main.root}/javascripts/library_doc/datastructure.js" description="JavaScript which holds the datastructure to create the documentation" />
+  <property name="doc.library.resfile.js.parser" location="${main.root}/javascripts/library_doc/parser.js" description="JavaScript which defines the parsers used for documentation" /> 
+  <property name="doc.library.resfile.js.writer" location="${main.root}/javascripts/library_doc/writer.js" description="JavaScript which defines the writer used for documentation" /> 
+  <property name="doc.library.resfile.template.library.html" location="${library_doc.basedir}/library_doc_template.library.html" description="The default template used for the html output of a library" /> 
+  <property name="doc.library.resfile.template.index.html" location="${library_doc.basedir}/library_doc_template.index.html" description="The default template used for the html output of the index" /> 
+  <property name="doc.library.resfile.template.settings.properties" location="${library_doc.basedir}/library_doc_template.settings.properties" description="The default template which specifies some properties" /> 
+  <property name="doc.library.resfile.template.style.css" location="${library_doc.basedir}/library_doc_template.style.css" description="The default template used for the styling of the html documents" /> 
+
+  <property name="doc.doc.dir" value="_doc" description="Project documentation directory" />
+  <property name="doc.dir" location="${doc.doc.dir}" description="Project documentation directory (full path), please overwrite the 'doc.doc.dir' property if you wish to modify the folder-name" />
+  <property name="doc.template" value="${library_doc.basedir}/library_doc_template" description="The template to be used, must specify the location (i.e. the directory) and the name of the template (i.e. the prefix). If you want to use the 'myT'-template, which is located at 'C:\sample' you have to specify 'C:\sample\myT' here, whereby the files 'myT.library.html', 'myT.index.html' and optionally 'myT.settings.properties'" />
+  <property name="doc.isDocumented" value="false" description="true if the project is documented, e.g. is an additional library for the ant-processenabler or if it documents the processenabler" />
+
+  <property name="doc.init" value="false" description="For internal usage only, please do not modify this property by a file" />
+  
+  <!--
+    add the antcontrib library
+    -->
+  <taskdef resource="net/sf/antcontrib/antlib.xml" />
+
+  <!--
+    initialize - do some things that have to be done
+    -->
+  <if>
+    <equals arg1="${doc.init}" arg2="false" />
+    <then>
+      
+      <if>
+        <or><equals arg1="${doc.isDocumented}" arg2="y" /><equals arg1="${doc.isDocumented}" arg2="yes" /><equals arg1="${doc.isDocumented}" arg2="true" /></or>
+        <then>
+          <fileCleanUp dir="${doc.dir}" recreate="true" />
+        </then>
+      </if>
+      
+      <!-- initialization finshed -->
+      <var name="doc.init" value="true" />
+    </then>
+  </if>
+  
+  <!--
+    This task can be used to create a documentation file for a specific library, which is specified via the <i>library</i> parameter.
+    The template used for the creation is specified via the <a href="#property_doc.template">doc.template</a> property.
+    
+    @param library 
+      the library's short-name to be parsed, e.g. doc or main
+      
+    @fails 
+      if the library's file (i.e. defined via the 'main.library.file.<i>[library]</i>' property) cannot be found
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
+  <macrodef name="docWriteLibraryFile">
+    <attribute name="library" />
+    
+    <sequential>
+      <!-- get the relative location of the library file -->
+      <var name="doc.tmp.library.relfile" value="" unset="true" />
+      <propertycopy name="doc.tmp.library.relfile" from="main.library.file.@{library}" />
+      <var name="doc.tmp.library.file" value="${main.root}/ant/${doc.tmp.library.relfile}" />
+      
+      <script language="javascript"><![CDATA[
+        // helper method to load js files
+        // thanks to http://stackoverflow.com/questions/650377/javascript-rhino-use-library-or-include-other-scripts
+        var l = function(property) {
+          var jsFile = project.getProperty(property);
+          var fileReader = new java.io.FileReader(jsFile);
+          var fullRead = org.apache.tools.ant.util.FileUtils.readFully(fileReader);
+          
+          return "" + new java.lang.String(fullRead);
+        }
+        
+        // load the libraries
+        eval(l("doc.library.resfile.js.general"));
+
+        // parse the library
+        var library = parseLibrary(project.getProperty("doc.tmp.library.file"));
+        
+        // define the outputSettings
+        var outputSettings = createHtmlOutputSettings();
+        
+        // now write the library
+        var docbasedir = project.getProperty("doc.dir");
+        writeLibrary(library, docbasedir, outputSettings);
+      ]]></script>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    This task can be used to create a bundle of documentation files for the specified libraries, which are specified via the <i>libraries</i> parameter.
+    The template used for the creation is specified via the <a href="#property_doc.template">doc.template</a> property.
+    
+    @param libraries 
+      a comma-separated list of the libraries' short-names to be parsed, e.g. doc,main
+      
+    @fails 
+      if one of the library's file (i.e. defined via the 'main.library.file.<i>[library]</i>' property) cannot be found
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
+  <macrodef name="docWriteLibraryFiles">
+    <attribute name="libraries" />
+    
+    <sequential>
+      <for list="@{libraries}" param="doc.tmp.library">
+        <sequential>
+          <docWriteLibraryFile library="@{doc.tmp.library}" />
+        </sequential>
+      </for>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    This task can be used to create an index-file for the specified libraries, which are specified via the <i>libraries</i> parameter.
+    The template used for the creation is specified via the <a href="#property_doc.template">doc.template</a> property.
+    
+    @param libraries 
+      a comma-separated list of the libraries' short-names to be parsed, e.g. doc,main
+      
+    @fails 
+      if one of the library's file (i.e. defined via the 'main.library.file.<i>[library]</i>' property) cannot be found
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
+  <macrodef name="docWriteIndexFile">
+    <attribute name="libraries" />
+    
+    <sequential>
+      <var name="doc.tmp.library.files" value="@{libraries}" />
+      <script language="javascript"><![CDATA[
+        // helper method to load js files
+        // thanks to http://stackoverflow.com/questions/650377/javascript-rhino-use-library-or-include-other-scripts
+        var l = function(property) {
+          var jsFile = project.getProperty(property);
+          var fileReader = new java.io.FileReader(jsFile);
+          var fullRead = org.apache.tools.ant.util.FileUtils.readFully(fileReader);
+          
+          return "" + new java.lang.String(fullRead);
+        }
+        
+        // load the libraries
+        eval(l("doc.library.resfile.js.general"));
+
+        // parse the libraries and get the files of them
+        var mainbasedir = project.getProperty("main.root");
+        var libraries = project.getProperty("doc.tmp.library.files").split(",");
+        var libraryFiles = new Array();
+        for (var i = 0; i < libraries.length; i++) {
+          var libraryFile = project.getProperty("main.library.file." + libraries[i]);
+          libraryFiles.push(mainbasedir + "/ant/" + libraryFile);
+        }
+        
+        // get the real names of the libraries
+        libraries = parseLibraries(libraryFiles);
+        
+        // define the outputSettings
+        var outputSettings = createHtmlOutputSettings();
+        
+        // now write the index
+        var docbasedir = project.getProperty("doc.dir");
+        writeIndex(libraries, docbasedir, outputSettings);
+      ]]></script>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    This task can be used to create a full documentation package of the specified libraries. Full documentation package means that the specified libraries
+    will be documented and additionally an index will be created. The folder in which the files are created is defined by the 
+    <a href="#property_doc.dir">doc.dir</a>.<br/>
+    The task will set the property <i>doc.packageFiles</i>, which will point to the folder which contains the created file.
+    
+    @param libraries 
+      a comma-separated list of the libraries' short-names to be parsed, e.g. doc,main
+      
+    @fails 
+      if one of the library's file (i.e. defined via the 'main.library.file.<i>[library]</i>' property) cannot be found
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
+  <macrodef name="docCreatePackage">
+    <attribute name="libraries" default="*" />
+    
+    <sequential>
+      <if>
+        <or>
+          <equals arg1="@{libraries}" arg2="*" />
+          <matches pattern="\$\{.+\}" string="@{libraries}" />
+        </or>
+        <then>
+          <mainGetLibraries property="doc.tmp.libraries" />
+        </then>
+        <else>
+          <var name="doc.tmp.libraries" value="@{libraries}" />
+        </else>
+      </if>
+      
+      <!-- set the location variable -->
+      <var name="doc.packageFiles" value="${doc.dir}" />
+      <fileCleanUp dir="${doc.packageFiles}" recreate="true" />
+    
+      <!-- to get all use ${doc.tmp.libraries} -->
+      <docWriteLibraryFiles libraries="${doc.tmp.libraries}" />
+      <docWriteIndexFile libraries="${doc.tmp.libraries}" />
+    </sequential>
+  </macrodef>
+  
+<!--
+    This task is simply used to zip the created package. If the defined location of the package (retrieved from the property <i>doc.packageFiles</i>) 
+    cannot be found, accessed or doesn't contain any files.<br/>
+    The task will set the property <i>doc.zippedFile</i>, which will point to the created file.
+    
+    @param filename
+      the name of the file to be created, whereby the extension cannot be changed (it will be .zip)
+    @param deletePackageFiles
+      this parameter can be set to 'true' to delete all the files contained in the package after zipping
+    
+    @fails 
+      if the defined location of the package (retrieved from the property <i>doc.packageFiles</i>) cannot be found, accessed or 
+      doesn't contain any files
+      
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
+  <macrodef name="docZipPackage">
+    <attribute name="filename" default="docs" />
+    <attribute name="deletePackageFiles" default="true" />
+    
+    <sequential>
+      <if>
+        <or>
+          <not><isset property="doc.packageFiles" /></not>
+          <not><available file="${doc.packageFiles}" type="dir" /></not>
+        </or>
+        <then>
+          <fail>The package location '${doc.packageFiles}' is not set or cannot be accessed</fail>
+        </then>
+      </if>
+      
+      <!-- get the files and validate -->
+      <fileset id="doc.tmp.packageFileset" dir="${doc.packageFiles}" />
+      <if>
+        <resourcecount refid="doc.tmp.packageFileset" when="equal" count="0" />
+        <then>
+          <fail>The package at location '${doc.packageFiles}' doesn't contain any files</fail>
+        </then>
+      </if>
+      
+      <!-- pack the stuff -->
+      <var name="doc.zippedFile" value="${doc.dir}/@{filename}.zip" />
+      <zip destfile="${doc.zippedFile}" basedir="${doc.packageFiles}" />
+      
+      <!-- cleanup -->
+      <if>
+        <or><equals arg1="@{deletePackageFiles}" arg2="true" /><equals arg1="@{deletePackageFiles}" arg2="yes" /><equals arg1="@{deletePackageFiles}" arg2="y" /></or>
+        <then>
+          <delete includeEmptyDirs="true">
+            <fileset dir="${doc.packageFiles}" excludes="@{filename}.zip" />
+          </delete>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    This target can be used to create a documentation for the libraries, which are available with the ant-processenabler.
+    The target checks for the property <b>libraries</b>, which can be used to selected the libraries to be documented. The following
+    values are valid for this property:
+    <ul>
+      <li>the property is not set, i.e. all libraries will be documented</li>
+      <li>the property is equal to '*', i.e. all libraries will be documented</li>
+      <li>the property matches one library short-name, e.g. 'main', i.e. that only the selected library will be documented</li>
+      <li>the property is a comma-separated list of library short-names, e.g. 'main,gwt', i.e. that the selected libraries will be documented</li>
+    </ul><br/>
+    The target is mainly based on the <a href="#task_docCreatePackage">docCreatePackage</a>, which uses the <a href="#property_doc.template">doc.template</a> 
+    property to select the template. The target will zip the files and store the location of the created files in the property <i>doc.packageFiles</i> 
+    for further processing.
+    
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
+  <target name="createDocuments">
+    <docCreatePackage libraries="${libraries}" />   
+  </target>
+  
+  <!--
+    This target can be used to create a documentation for the libraries and pack this documentation. The target depends on the 
+    <a href="#target_createDocuments">createDocuments</a> target and therefore needs all the properties needed there.
+    The target is mainly based on the <a href="#task_docZipPackage">docZipPackage</a>, which is used to zip the created files and delete those.
+    The target will zip the files and store the location of the zipped file in the property <i>doc.zippedFile</i> for further processing.
+    
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
+  <target name="createPackage" depends="createDocuments">
+    <docZipPackage />
+  </target>
+</project>

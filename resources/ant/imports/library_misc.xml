@@ -6,6 +6,8 @@
   History:
     01.03.2012
       - Creation of library
+    12.02.2013
+      - added the 'appendList' task
   -->
 <project name="library_misc">
   <property name="misc.library.version" value="1.2.0" description="The current version of the library" />
@@ -93,7 +95,7 @@
     ]]>
   </scriptdef>
   
-  <scriptdef name="checkTarget" language="javascript">
+  <scriptdef name="checkTarget" language="javascript" description="">
     <attribute name="property" />
     <attribute name="target" />
     <![CDATA[
@@ -213,6 +215,71 @@
     var setProperty = project.createTask("var");
     setProperty.setName(property);
     setProperty.setValue(finalList);
+    setProperty.execute();
+    ]]>
+  </scriptdef>
+  
+  <!--
+    appendList - Appends a list (i.e. list1) to another list (i.e. list2), whereby duplicates will be removed
+    -->
+  <scriptdef name="appendList" language="javascript">
+    <attribute name="property" />
+    <attribute name="list1" />
+    <attribute name="list2" />
+    <attribute name="separator" />
+    <attribute name="trimItems" />
+    
+    <![CDATA[
+    var createSet = function(csvlist, separator, trim) {
+      var set;
+      
+      if (csvlist == null || "".equals(csvlist)) {
+        set = new java.util.LinkedHashSet();
+      } else {
+        var listEntries = csvlist.split("\\s*" + separator + "\\s*");
+        var list = java.util.Arrays.asList(listEntries);
+        var set = new java.util.LinkedHashSet(list);
+      }
+      
+      if (trim) {
+        var trimmedSet = new java.util.LinkedHashSet();
+        
+        var iterator = set.iterator();
+        while(iterator.hasNext()) {
+          var value = iterator.next();
+          trimmedSet.add(value.trim());
+        }
+        set = trimmedSet;
+      }
+      
+      return set;
+    };
+      
+    var property = attributes.get("property");
+    var csvList1 = attributes.get("list1");
+    var csvList2 = attributes.get("list2");
+    var separator = attributes.get("separator");
+    var trimItems = attributes.containsKey("trimitems") ? attributes.get("trimitems") : "false";
+    trimItems = trimItems.equals("true") || trimItems.equals("yes") || trimItems.equals("y")
+    
+    // create the sets and merge those
+    var set1 = createSet(csvList1, separator, trimItems);
+    var set2 = createSet(csvList2, separator, trimItems);
+    set1.addAll(set2);
+            
+    // build the new list
+    var sb = new java.lang.StringBuilder();
+    var loopSeparator = "";
+    var iterator = set1.iterator();
+    while(iterator.hasNext()) {
+      sb.append(loopSeparator);
+      sb.append(iterator.next());            
+      loopSeparator = separator;
+    }
+    
+    var setProperty = project.createTask("var");
+    setProperty.setName(property);
+    setProperty.setValue(sb.toString());
     setProperty.execute();
     ]]>
   </scriptdef>

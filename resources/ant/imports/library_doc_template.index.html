@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>ant-processenabler libraries</title>
+    
+    <!-- the meta information -->
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <!-- CSS Style -->
+    ${settings.css}
+    
+    <script type="text/javascript"><!--
+      function show(location, elementId) {
+        document.getElementById('libraryview').src = location;
+        
+        var elements = getByClassName('${settings.cssClass.index}');
+        for (var i = 0; i < elements.length; i++) {
+          removeClass("selected", elements[i]);
+        }
+        
+        // add the class to mark it
+        addClass("selected", document.getElementById(elementId));
+      }
+      
+      function getByClassName(className) {
+        var matchingItems = new Array();
+        if(!document.getElementsByClassName){
+          var allElements = document.getElementsByTagName("*");
+
+          for(var i = 0; i < allElements.length; i++) {
+            if(allElements [i].className == className) {
+                matchingItems.push(allElements[i]);
+            }
+          }
+        } else {
+          matchingItems = document.getElementsByClassName(className);
+        }
+
+        return matchingItems;
+      }
+      
+      function addClass(classname, element) {
+        var cn = element.className;
+        if(cn.indexOf( classname ) != -1) {
+          return;
+        }
+        if(cn != '') {
+          classname = ' ' + classname;
+        }
+        element.className = cn + classname;
+      }
+
+      function removeClass(classname, element) {
+        var cn = element.className;
+        var rxp = new RegExp("\\s?\\b" + classname + "\\b", "g");
+        
+        cn = cn.replace(rxp, '');
+        element.className = cn;
+      }
+    --></script>
+  </head>
+  
+  <body>
+    <div style="background-color:#2D2D2D;position:absolute;z-index:1000;left:0;top:0;width:200px;height:100%;border-right:1px solid #2D2D2D;">
+      <div style="height:50px;"></div>
+    
+      @(index.entries => indexEntry){<div id="index_${indexEntry.name}" class="${settings.cssClass.index}" onclick="show('${indexEntry.relUrl}','index_${indexEntry.name}');">${indexEntry.name}</div>
+      }
+      <div style="border-top:1px solid #2D2D2D;"></div>
+    </div>
+    
+    <iframe id="libraryview" src="about:blank" frameborder="0" scrolling="yes" style="padding-left:200px;display:block;box-sizing:border-box;-moz-box-sizing:border-box;-webkit-box-sizing:border-box;position:absolute;top:0;left:0;width:100%;height:100%;">
+    </iframe>
+  </body>
+</html>

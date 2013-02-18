@@ -101,7 +101,6 @@
 
   <!--
     gwtCleanUp - cleans up after the build process
-                 set attribute 'complete = true' to delete 'bin' as well
     -->
   <macrodef name="gwtCleanUp">
 
@@ -526,6 +525,34 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="gwtGetServerDependencies">
+    <attribute name="filesetid" default="gwt.tmp.serverLibs" />
+  
+    <sequential>
+      <!-- check if we have a special configuration for the application server -->
+      <if>
+        <or>
+          <not><isset property="server.type"/></not>
+          <equals arg1="${server.type}" arg2="" />
+          <not><available file="${basedir}/pom_${server.type}.xml" /></not>
+        </or>
+        <then>
+          <copy file="${basedir}/pom.xml" tofile="${build.tmpdir}/merged_pomAppServer.xml" />
+        </then>
+        <else>
+          <!-- check if we have a pom to be merged and merge it -->
+          <fileMergeXml file1="${basedir}/pom.xml" 
+                        file2="${basedir}/pom_${server.type}.xml" 
+                        dest="${build.tmpdir}/merged_pomAppServer.xml" 
+                        conf="${gwt.library.resfile.maven.gwtMerge}" />
+        </else>
+      </if>
+      
+      <!-- get the dependencies of the application on server-side, based on the specific pom for the application server -->
+      <mavenResolveDependencies fileset="@{filesetid}" scope="runtime" pomid="gwt.tmp.pomAssembly" pomfile="${build.tmpdir}/merged_pomAppServer.xml" />
+    </sequential>
+  </macrodef>
+  
   <macrodef name="gwtAssembly">
     <attribute name="serverLibraryDir" default="${build.library.dir}" />
   
@@ -554,26 +581,7 @@
       <mkdir dir="${gwt.tmp.webappFolder}" />
 
       <!-- check if we have a special configuration for the application server -->
-      <if>
-        <or>
-          <not><isset property="server.type"/></not>
-          <equals arg1="${server.type}" arg2="" />
-          <not><available file="${basedir}/pom_${server.type}.xml" /></not>
-        </or>
-        <then>
-          <copy file="${basedir}/pom.xml" tofile="${build.tmpdir}/merged_pomAppServer.xml" />
-        </then>
-        <else>
-          <!-- check if we have a pom to be merged and merge it -->
-          <fileMergeXml file1="${basedir}/pom.xml" 
-                        file2="${basedir}/pom_${server.type}.xml" 
-                        dest="${build.tmpdir}/merged_pomAppServer.xml" 
-                        conf="${gwt.library.resfile.maven.gwtMerge}" />
-        </else>
-      </if>
-      
-      <!-- get the dependencies of the application on server-side, based on the specific pom for the application server -->
-      <mavenResolveDependencies fileset="gwt.tmp.serverLibs" scope="runtime" pomid="gwt.tmp.pomAssembly" pomfile="${build.tmpdir}/merged_pomAppServer.xml" />
+      <gwtGetServerDependencies filesetid="gwt.tmp.serverLibs" />
 
       <!-- copy the dependent files -->
       <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${gwt.tmp.webappFolder}]];defaultLocation=[[@{serverLibraryDir}]]">
@@ -711,6 +719,23 @@
     <fileCleanUp dir="${gwt.server.dir}/${maven.pom.artifactId}" recreate="false" />
     <unzip src="${build.appFile}" dest="${gwt.server.dir}" />
   </target>
+  
+  <target name="distributeServer" depends="buildServer">
+    <gwtGetServerDependencies filesetid="gwt.tmp.serverLibs" />
+    <var name="gwt.tmp.lib.dir" value="${gwt.server.dir}/${maven.pom.artifactId}/WEB-INF/lib" />
+
+    <!-- delete all the libraries -->
+    <fileCleanUp dir="${gwt.tmp.lib.dir}" />
+    
+    <!-- copy all the libraries -->
+    <copy file="${build.buildFile}" todir="${gwt.tmp.lib.dir}" />
+    <copy todir="${gwt.tmp.lib.dir}">
+      <fileset refid="gwt.tmp.serverLibs" />
+      <mapper type="flatten" />
+    </copy>
+  </target>
+  
+  <target name="setUpTomCatOnlyServer" depends="serverUseTomCat, distributeServer, serverStart" />
 
   <!-- target to distribute to a TomCat server and start it -->
   <target name="setUpTomCat" depends="serverUseTomCat, distribute, serverStart" />
