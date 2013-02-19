@@ -11,6 +11,7 @@
   <property name="maven.library.version" value="1.2.5" description="The current version of the library" />
   <dirname property="library_maven.basedir" file="${ant.file.library_maven}"/>
   
+  <property name="maven.library.resfile.pom.empty" location="${main.root}/maven/pomEmpty.xml" />
   <property name="maven.library.resfile.settings.source" location="${main.root}/maven/settings_source.xml" description="The master settings.xml for all projects (sources)" />
   <property name="maven.library.resfile.settings.target" location="${main.root}/maven/settings_target.xml" description="The master settings.xml for all projects (targets)" />
   <property name="maven.library.resfile.pom.snapshot" location="${main.root}/maven/pomSnapshot.xml" />
@@ -60,7 +61,7 @@
       
       <!-- generate a unique temp-directory -->
       <generateUUID property="maven.tmpfolder" />
-      <property name="maven.tmpdir" location="${main.tmpdir}/${maven.tmpfolder}" description="Project source code directory" />
+      <property name="maven.tmpdir" location="${main.tmpdir}/${maven.tmpfolder}" />
       <mkdir dir="${maven.tmpdir}" />
       
       <!-- check if the repository is available -->
@@ -93,13 +94,19 @@
       
       <!-- get the right pom.xml -->
       <if>
-        <equals arg1="${build.type}" arg2="release" />
+        <not><available file="${basedir}/pom.xml" /></not>
         <then>
-          <copy file="${basedir}/pom.xml" tofile="${maven.tmpdir}/merged_pom.xml" overwrite="true" />
-          
-          <!-- set the release repository as repository -->
-          <property name="maven.repository.target.url" value="${maven.repository.target.releaseUrl}" />
+          <copy file="${maven.library.resfile.pom.empty}" tofile="${maven.tmpdir}/merged_pom.xml" overwrite="true" />
         </then>
+        <elseif>
+          <equals arg1="${build.type}" arg2="release" />
+          <then>
+            <copy file="${basedir}/pom.xml" tofile="${maven.tmpdir}/merged_pom.xml" overwrite="true" />
+            
+            <!-- set the release repository as repository -->
+            <property name="maven.repository.target.url" value="${maven.repository.target.releaseUrl}" />
+          </then>
+        </elseif>
         <else>
 
           <!-- apply the snapshot-settings -->
@@ -131,6 +138,81 @@
   <macrodef name="mavenCleanUp">
     <sequential>
       <delete dir="${maven.tmpdir}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="mavenRegisterDependencies">
+    <attribute name="dependenciesToResolvePomFile" default="${basedir}/pom.xml" />
+    <attribute name="attachmentsList" default="${maven.attachment.sources},${maven.attachment.javadoc}" />
+    
+    <!-- the target repository -->
+    <attribute name="targetArtifactoryUrl" default="${maven.artifactory.target.url}" />
+    <attribute name="targetRepositoryUrl" default="${maven.repository.target.url}" />
+    <attribute name="targetUser" default="${maven.repository.target.username}" />
+    <attribute name="targetEncPassword" default="${maven.repository.target.password}" />
+    
+    <!-- the source repository -->
+    <attribute name="sourceArtifactoryUrl" default="${maven.artifactory.source.url}" />
+    <attribute name="sourceRepositoryUrl" default="${maven.repository.source.url}" />
+    <attribute name="sourceUser" default="${maven.repository.source.username}" />
+    <attribute name="sourceEncPassword" default="${maven.repository.source.password}" />
+
+    <sequential>
+      
+      <!-- set all the properties to be used for this operation -->
+      <varKeep name="maven.repository.target.offline" value="" property="maven.tmp.repository.target.offline" />
+      <serverHttpNotReachable url="@{targetArtifactoryUrl}" property="maven.repository.target.offline" />
+      <varKeep name="maven.repository.target.url" value="@{targetRepositoryUrl}" property="maven.tmp.repository.target.url" />
+      <varKeep name="maven.repository.target.username" value="@{targetUser}" property="maven.tmp.repository.target.username" />
+      <varKeep name="maven.repository.target.password" value="@{targetEncPassword}" property="maven.tmp.repository.target.password" />
+      <varKeep name="maven.repository.source.offline" value="" property="maven.tmp.repository.source.offline" />
+      <serverHttpNotReachable url="@{sourceArtifactoryUrl}" property="maven.repository.source.offline" />
+      <varKeep name="maven.repository.source.url" value="@{sourceRepositoryUrl}" property="maven.tmp.repository.source.url" />
+      <varKeep name="maven.repository.source.username" value="@{sourceUser}" property="maven.tmp.repository.source.username" />
+      <varKeep name="maven.repository.source.password" value="@{sourceEncPassword}" property="maven.tmp.repository.source.password" />
+    
+      <!-- set the target and source files to be used for this operation -->
+      <generateUUID property="maven.tmp.subtmpfolder" />
+      <property name="maven.tmp.subtmpdir" location="${maven.tmpdir}/${maven.tmp.subtmpfolder}" />
+      <mkdir dir="${maven.tmp.subtmpdir}" />
+      <fileReplaceAllProperties file="${maven.library.resfile.settings.source}" destFile="${maven.tmp.subtmpdir}/final_settings_source.xml" />
+      <fileReplaceAllProperties file="${maven.library.resfile.settings.target}" destFile="${maven.tmp.subtmpdir}/final_settings_target.xml" />
+      <property name="maven.settings.source.file" location="${maven.tmp.subtmpdir}/final_settings_source.xml" />
+      <property name="maven.settings.target.file" location="${maven.tmp.subtmpdir}/final_settings_target.xml" />
+
+      <!-- get all the dependencies to be resolved -->
+      <mavenResolveDependencies fileset="maven.tmp.dependencies" pomfile="@{dependenciesToResolvePomFile}" />
+
+      <!-- check if the target is available, if so use it otherwise install -->
+      <if>
+        <equals arg1="${maven.repository.target.offline}" arg2="false" />
+        <then>
+          <var name="maven.tmp.action" value="deploy" />
+        </then>
+        <else>
+          <var name="maven.tmp.action" value="install" />
+        </else>
+      </if>
+      <fileCallMacroForEach macro="mavenRegisterResourceInTarget" parameters="action=[[${maven.tmp.action}]];attachments=[[@{attachmentsList}]]">
+        <fileset refid="maven.tmp.dependencies" />
+      </fileCallMacroForEach>
+      
+      <!-- reset the target and source files -->
+      <property name="maven.settings.source.file" location="${maven.tmpdir}/final_settings_source.xml" />
+      <property name="maven.settings.target.file" location="${maven.tmpdir}/final_settings_target.xml" />
+      
+      <!-- reset the properties -->
+      <var name="maven.repository.target.offline" value="${maven.tmp.repository.target.offline}" />
+      <var name="maven.repository.target.url" value="${maven.tmp.repository.target.url}" />
+      <var name="maven.repository.target.username" value="${maven.tmp.repository.target.username}" />
+      <var name="maven.repository.target.password" value="${maven.tmp.repository.target.password}" />
+      <var name="maven.repository.source.offline" value="${maven.tmp.repository.source.offline}" />
+      <var name="maven.repository.source.url" value="${maven.tmp.repository.source.url}" />
+      <var name="maven.repository.source.username" value="${maven.tmp.repository.source.username}" />
+      <var name="maven.repository.source.password" value="${maven.tmp.repository.source.password}" />
+      
+      <!-- cleanUp -->
+      <fileCleanUp dir="${maven.tmp.subtmpdir}" recreate="false" />
     </sequential>
   </macrodef>
   
@@ -548,7 +630,7 @@
   <!--
     The action attribute specifies if the resources should be deployed (i.e. action == "deploy") or installed (i.e. action == "install")
     -->
-  <macrodef name="mavenRegisterResourceFromSource">
+  <macrodef name="mavenRegisterResourceInTarget">
     <attribute name="resourcefolder" />
     <attribute name="resourcefilename" />
     <attribute name="resource" />
@@ -636,7 +718,7 @@
               <if>
                 <equals arg1="${maven.tmp.tasktype}" arg2="artifact" />
                 <then>
-                  <!-- deploy the artifact -->
+                  <!-- install the artifact -->
                   <mavenInstall file="@{resource}" pomid="maven.tmp.singleDependencyPomId" />
 
                   <!-- get each defined attachment -->

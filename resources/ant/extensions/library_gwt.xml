@@ -11,7 +11,6 @@
   <property name="gwt.library.version" value="1.6.2" description="The current version of the library" />
   <dirname property="library_gwt.basedir" file="${ant.file.library_gwt}"/>
 
-  <property name="gwt.library.resfile.maven.pomEmpty" location="${main.root}/maven/pomEmpty.xml" />
   <property name="gwt.library.resfile.maven.gwtMerge" location="${main.root}/maven/pomGwt_xmlMerge.properties" />
   <property name="gwt.library.resfile.maven.gwtWebAppMerge" location="${main.root}/maven/pomGwtWebAppRes_xmlMerge.properties" />
   <property name="gwt.library.resfile.maven.gwtPom" location="${main.root}/gwt/pomGWT.xml" />
@@ -212,7 +211,7 @@
             </then>
             <else>
               <!-- check if we have a pom to be merged and merge it -->
-              <fileMergeXml file1="${gwt.library.resfile.maven.pomEmpty}" 
+              <fileMergeXml file1="${maven.library.resfile.pom.empty}" 
                             file2="@{addPomFile}" 
                             dest="${build.tmpdir}/merged_pomGWT.xml" 
                             conf="${gwt.library.resfile.maven.gwtMerge}" />
@@ -324,7 +323,7 @@
         </then>
         <else>
           <!-- check if we have a pom to be merged and merge it -->
-          <fileMergeXml file1="${gwt.library.resfile.maven.pomEmpty}" 
+          <fileMergeXml file1="${maven.library.resfile.pom.empty}" 
                         file2="@{addPomFile}" 
                         dest="${build.tmpdir}/merged_pomAddGWTLibs.xml" 
                         conf="${gwt.library.resfile.maven.gwtMerge}" />

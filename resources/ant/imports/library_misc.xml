@@ -623,4 +623,16 @@
       </if>
     </sequential>
   </macrodef>
+  
+  <macrodef name="varKeep">
+    <attribute name="name" />
+    <attribute name="value" />
+    <attribute name="property" />
+    
+    <sequential>
+      <var name="@{property}" value="" unset="true" />
+      <propertycopy name="@{property}" from="@{name}" />
+      <var name="@{name}" value="@{value}" />
+    </sequential>
+  </macrodef>
 </project>

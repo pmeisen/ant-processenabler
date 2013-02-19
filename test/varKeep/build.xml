@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testVarKeep">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkKeeping">
+    <sequential>
+      <var name="testVarKeep.tmp.value" value="myValue" />
+           
+      <!-- do the test -->
+      <varKeep name="testVarKeep.tmp.value" value="newValue" property="testVarKeep.tmp.oldValue" />
+      <if>
+        <and>
+          <equals arg1="${testVarKeep.tmp.value}" arg2="newValue" />
+          <equals arg1="${testVarKeep.tmp.oldValue}" arg2="myValue" />
+        </and>
+        <then>
+          <echo level="info">checkKeeping was successful!</echo>
+        </then>
+        <else>
+          <fail>checkKeeping failed (${testVarKeep.tmp.value}, ${testVarKeep.tmp.oldValue})!</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkDoubleCall">
+    <sequential>
+      <var name="testVarKeep.tmp.value" value="myValue" />
+
+      <!-- do the test -->
+      <varKeep name="testVarKeep.tmp.value" value="newValue1" property="testVarKeep.tmp.oldValue" />
+      <varKeep name="testVarKeep.tmp.value" value="newValue2" property="testVarKeep.tmp.oldValue" />
+      <if>
+        <and>
+          <equals arg1="${testVarKeep.tmp.value}" arg2="newValue2" />
+          <equals arg1="${testVarKeep.tmp.oldValue}" arg2="newValue1" />
+        </and>
+        <then>
+          <echo level="info">checkDoubleCall was successful!</echo>
+        </then>
+        <else>
+          <fail>checkDoubleCall failed (${testVarKeep.tmp.value}, ${testVarKeep.tmp.oldValue})!</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <checkKeeping />
+    <checkDoubleCall />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>
