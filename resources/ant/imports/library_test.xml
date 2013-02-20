@@ -91,9 +91,9 @@
           <javac sourcepath="" srcdir="${test.srcdir}" destdir="${test.bindir}" includes="**/*.java" excludes="@{excludeSourcePattern}"
                  includeantruntime="false" source="${build.javac.source}" target="${build.javac.target}">
             <classpath>
+              <fileset dir="${ant.home}/lib" includes="junit-*.jar" />
               <fileset refid="@{classPathFileSetId}" />
               <pathelement location="${build.buildFile}" />
-              <pathelement location="${ant.home}/lib/junit.jar" />
             </classpath>
           </javac>
           
@@ -158,7 +158,10 @@
             <classpath>
               <!-- the dependencies -->
               <fileset refid="@{classPathFileSetId}" />
-
+              
+              <!-- add the junit library -->
+              <fileset dir="${ant.home}/lib" includes="junit-*.jar" />
+              
               <!-- the build test-file -->
               <pathelement location="${test.testFile}" />
               
@@ -167,10 +170,6 @@
 
               <!-- the build file to be tested -->
               <pathelement location="${build.buildFile}" />
-
-              <!-- the testing library - junit -->
-              <pathelement location="${ant.home}/lib/junit.jar" />
-              <pathelement location="${ant.home}/lib/junit_hamcrest.jar" />
 
               <!-- the additional resources -->
               <pathelement path="${build.resourcedir}" />
