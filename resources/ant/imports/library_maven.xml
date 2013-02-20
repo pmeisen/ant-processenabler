@@ -867,25 +867,21 @@
     
     <sequential>
       <!-- reset -->
-      <var name="@{snapshotProperty}" value="" unset="true" />
-      <var name="@{releaseProperty}" value="" unset="true" />
+      <var name="@{snapshotProperty}" value="0" />
+      <var name="@{releaseProperty}" value="0" />
       
       <!-- get all the dependencies -->
       <mavenResolveDependencies scope="@{scope}" scopes="@{scopes}" fileset="maven.tmp.dependencies" />
-      
+
       <if>
-        <resourcecount refid="maven.tmp.dependencies" when="equal" count="0" />
+        <resourcecount refid="maven.tmp.dependencies" when="greater" count="0" />
         <then>
-          <var name="@{snapshotProperty}" value="0" />
-          <var name="@{releaseProperty}" value="0" />
-        </then>
-        <else>
         
           <!-- count the values  -->
           <fileCallMacroForEach macro="mavenCountTypes" parameters="snapshotProperty=[[@{snapshotProperty}]];releaseProperty=[[@{releaseProperty}]]">
             <fileset refid="maven.tmp.dependencies" />
           </fileCallMacroForEach>
-        </else>
+        </then>
       </if>
     </sequential>
   </macrodef>
