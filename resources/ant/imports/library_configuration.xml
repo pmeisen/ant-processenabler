@@ -330,6 +330,22 @@
         setProperty.setValue(folderList);
         setProperty.execute();
       ]]></script>
+      
+      <!-- check if the alternative should be loaded -->
+      <if>
+        <or>
+          <equals arg1="@{alternative}" arg2="y" />
+          <equals arg1="@{alternative}" arg2="yes" />
+          <equals arg1="@{alternative}" arg2="true" />
+        </or>
+        <then>
+          <var name="configuration.alternative" value="true" />
+        </then>
+        <else>
+          <var name="configuration.alternative" value="false" />
+        </else>
+      </if>
+      
       <for list="${configuration.settings.includedCustomers}" param="configuration.tmp.includedCustomer" delimiter="|" trim="true">
         <sequential>
           <var name="configuration.tmp.customerFolder" value="${configuration.settings.root}/@{configuration.tmp.includedCustomer}" />
@@ -344,18 +360,13 @@
           
           <!-- load the customer properties, check if the alternative should be loaded -->
           <if>
-            <or>
-              <equals arg1="@{alternative}" arg2="y" />
-              <equals arg1="@{alternative}" arg2="yes" />
-              <equals arg1="@{alternative}" arg2="true" />
-            </or>
+            <and>
+              <equals arg1="${configuration.alternative}" arg2="true" />
+              <available file="${configuration.tmp.customerFolder}/${configuration.config.user.filename}" />
+            </and>
             <then>
-              <var name="configuration.alternative" value="true" />
               <var file="${configuration.tmp.customerFolder}/${configuration.config.user.filename}" />
             </then>
-            <else>
-              <var name="configuration.alternative" value="false" />
-            </else>
           </if>
         </sequential>
       </for>
