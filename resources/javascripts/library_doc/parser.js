@@ -269,7 +269,7 @@ var parsePropertyNode = function(node) {
   }
   
   // add an extra value to this element
-  element["value"] = value == null ? location : value;
+  element["value"] = node.hasAttribute("value") ? value : location;
   
   // validate the description
   if (description != null && element.comment.description != null) {

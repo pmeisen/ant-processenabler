@@ -11,13 +11,13 @@
   <property name="build.library.version" value="2.1.0" description="The current version of the library" />
   <dirname property="library_build.basedir" file="${ant.file.library_build}"/>
 
-  <property name="build.template.startBatch.generic" value="templateStart" description="The generic (cross-platform) name of the file to start an application" />  
-  <property name="build.template.startBatch.folder" location="${main.root}/app" description="Folder to look for the templates" />
+  <property name="build.template.startBatch.generic" value="templateStart" description="The generic (cross-platform) name of the template file to start an application; i.e. generic means that this file without any extension is a unix-script and with a bat-extension is the windows script" />  
+  <property name="build.template.startBatch.folder" location="${main.root}/app" description="The folder to look for the templates" />
   
-  <property name="build.library.resfile.template.launcher" location="${main.root}/app/templateLauncher.properties" />
-  <property name="build.library.resfile.template.startBatch.unix" location="${main.root}/app/templateStart" description="Script to be executed (Unix)" />
-  <property name="build.library.resfile.template.startBatch.windows" location="${main.root}/app/templateStart.bat" description="Batch file to be executed (Windows)" />
-  <property name="build.library.resfile.maven.pomLauncher" location="${main.root}/app/pomLauncher.xml" />
+  <property name="build.library.resfile.template.launcher" location="${main.root}/app/templateLauncher.properties" description="The file which defines the properties needed by the launcher to start; the file should use the placeholders defined in buildAssembly task" />
+  <property name="build.library.resfile.template.startBatch.unix" location="${build.template.startBatch.folder}/${build.template.startBatch.generic}" description="Start script file to be executed (Unix)" />
+  <property name="build.library.resfile.template.startBatch.windows" location="${build.template.startBatch.folder}/${build.template.startBatch.generic}.bat" description="Start batch file to be executed (Windows)" />
+  <property name="build.library.resfile.maven.pomLauncher" location="${main.root}/app/pomLauncher.xml" description="The maven dependencies which define the launcher" />
     
   <property name="build.javac.source" value="1.6" description="Provide source compatibility with specified release" />
   <property name="build.javac.target" value="1.6" description="Generate class files for specific VM version" />
@@ -106,9 +106,17 @@
     </then>
   </if>
   
+  
   <!--
-    buildRemovePreBuilds - clean up all the pre-builds
-    -->
+    This task is used to remove all pre-builds. It should be called prior to <a href="#task_build">build</a> to avoid
+    the creation of an incremental build, i.e. whenever a clean build should be created this task should be called.
+      
+    @fails 
+      if the created builds cannot be deleted, i.e an io-error occurs
+
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="buildRemovePreBuilds">
     <sequential>
       <delete dir="${build.dir}/${build.binary.dir}" />
@@ -116,9 +124,20 @@
   </macrodef>
   
   <!--
-    buildCleanUp - cleans up after the build process
-                   set attribute 'complete = true' to delete 'bin' as well
-    -->
+    This task cleans up after the build process. It is part of the main cleanUp-target, which should
+    be the last target of each call.
+    
+    @param complete
+      set to 'true' to also remove all builds used for incremental builds 
+      (i.e. the <a href="#task_buildRemovePreBuilds">buildRemovePreBuilds</a> is called),
+      otherwise set to 'false'
+    
+    @fails 
+      if one of the folders or files to be cleaned cannot be deleted
+
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="buildCleanUp">
     <attribute name="complete" default="false" />
 
@@ -146,12 +165,36 @@
       <var name="build.buildJavaDocFile" value="" />  
     </sequential>
   </macrodef>
-    
+
   <!--
-    buildBuild - builds the current project to dest, if not set to bin
-                 Note: 
-                 if dest is not set, the build will be the default build which can be packed and installed
-    -->
+    This task is used to build the current project, i.e. compile the source files using Java. The result of
+    the build, i.e. the '.class'-files are created in the passed <i>dest</i>-folder. If no <i>dest</i>-folder is
+    specified the build is to be a project build, which means that the property <i>build.binDir</i> will point
+    to the location the files are created it.<br/>
+    It is important to understand, that the property <i>build.binDir</i> will only be changed if no parameters 
+    are passed, otherwise the task compiles the files without any semantical context.
+    
+    @param addExcludes 
+      a comma-separated list of exclusion patterns, which specify additional sources to be 
+      excluded from the compilation
+    @param dest
+      if this parameter is not specified (i.e. not listed or set to "") the task will build the project's
+      sources and set the <i>build.binDir</i>, otherwise the sources will be build and the property won't 
+      be changed
+    @param cpfileset
+      this parameter specifies the id of a fileset to be used as classpath for the build; if not specified
+      the classpath will contain all the dependencies defined in the <i>pom</i>-file of the project (resolved
+      using the <i>compile</i>-scope, i.e. the scopes <i>compile</i>, <i>system</i> and <i>provided</i> are included,
+      further information can be retrieved at 
+      <a href="http://maven.apache.org/ant-tasks/examples/dependencies.html" target="_blank">Maven Ant Tasks - Dependencies</a>
+      under the section 'Filtering Dependencies by Scope')
+    
+    @fails 
+      if the build fails, e.g. missing dependency, invalid code, ...
+
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="buildBuild">
     <attribute name="addExcludes" default="" />
     <attribute name="dest" default="" />
@@ -195,20 +238,57 @@
       <!-- set the directory -->
       <mkdir dir="${build.tmp.binDir}" />
       
-      <!-- compile the project -->
-      <transformPackagesToPath property="build.tmp.srcExcludes" 
-                               packages="${build.package.excludes}" suffix="/**" packageSeparatore="/" separatore="," />
-      <javac sourcepath="" srcdir="${build.srcdir}" destdir="${build.tmp.binDir}" debug="${build.tmp.debug}" deprecation="true"
-             includes="**/*.java" excludes="${build.tmp.srcExcludes},@{addExcludes}"
-             includeantruntime="false" source="${build.javac.source}" target="${build.javac.target}">
-        <classpath>
-          <fileset refid="${build.tmp.refid}" />
-        </classpath>
-        <compilerarg value="-Xlint:unchecked"/>
-      </javac>
+      <!-- check if there are sources -->
+      <fileset dir="${build.srcdir}" id="build.tmp.sourceFileSet">
+        <include name="**/*.java"/> 
+      </fileset>
+      <var name="build.tmp.sourcesSize" value="" unset="true" />
+      <pathconvert refid="build.tmp.sourceFileSet" property="build.tmp.sourcesSize" setonempty="false"/>
+      
+      <if>
+        <isset property="build.tmp.sourcesSize" />
+        <then>
+
+          <!-- compile the project -->
+          <transformPackagesToPath property="build.tmp.srcExcludes" 
+                                   packages="${build.package.excludes}" suffix="/**" packageSeparatore="/" separatore="," />
+          <javac sourcepath="" srcdir="${build.srcdir}" destdir="${build.tmp.binDir}" debug="${build.tmp.debug}" deprecation="true"
+                 includes="**/*.java" excludes="${build.tmp.srcExcludes},@{addExcludes}"
+                 includeantruntime="false" source="${build.javac.source}" target="${build.javac.target}">
+            <classpath>
+              <fileset refid="${build.tmp.refid}" />
+            </classpath>
+            <compilerarg value="-Xlint:unchecked"/>
+          </javac>
+        </then>
+        <else>
+          <fileCleanUp dir="${build.tmp.binDir}" />
+        </else>
+      </if>
     </sequential>
   </macrodef>
   
+  <!--
+    The <i>buildJavaDoc</i> task is used to create the JavaDoc of the source-files of the 
+    project. The files are created in the javadoc-subdirectory (specified by the property 
+    <a href="#property_build.javadoc.dir">build.javadoc.dir</a>), which is created in the
+    build directory (specified by the property <a href="#property_build.dir">build.dir</a>).<br />
+    The final creation can be retrieved via the property <i>build.javadocDir</i>, which
+    is set by this task, i.e. if the property <i>build.javadocDir</i> is not set, this 
+    task wasn't called.
+
+    @param addClassPathFileSet 
+      an id of a fileset which contains additional files to be added to the classpath
+    @param addExcludes
+      a comma-separated list of exclusion patterns, which specify additional sources to be 
+      excluded from the documentation process
+
+    @fails 
+      if the creation of the JavaDoc fails
+
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <macrodef name="buildJavaDoc">
     <attribute name="addClassPathFileSet" default="" />
     <attribute name="addExcludes" default="" />
@@ -230,11 +310,12 @@
       <!-- set the directory -->
       <var name="build.javadocDir" value="${build.dir}/${build.javadoc.dir}" />
       <fileCleanUp dir="${build.javadocDir}" />
-            
+
       <!-- check if there are sources -->
       <fileset dir="${build.srcdir}" id="build.tmp.sourceFileSet">
         <include name="**/*.java"/> 
       </fileset>
+      <var name="build.tmp.sourcesSize" value="" unset="true" />
       <pathconvert refid="build.tmp.sourceFileSet" property="build.tmp.sourcesSize" setonempty="false"/>
       
       <if>
@@ -699,6 +780,7 @@
           <!-- copy the files -->
           <fileReplaceAllProperties file="@{templateLauncher}" destFile="${build.tmp.appFolder}/launcher/@{launcherPropertiesName}" force="true" />
           <fileReplaceAllProperties file="@{templateGenericStartBatch}" destFile="${build.tmp.appFolder}/@{startGenericStartBatchName}" force="true" />
+          <fileReplaceAllProperties file="@{templateGenericStartBatch}" destFile="${build.tmp.appFolder}/@{startGenericStartBatchName}.sh" force="true" />
           <fileReplaceAllProperties file="@{templateGenericStartBatch}.bat" destFile="${build.tmp.appFolder}/@{startGenericStartBatchName}.bat" force="true" />
         </then>
         
@@ -719,6 +801,7 @@
 
             <!-- copy the files -->
             <fileReplaceAllProperties file="@{templateGenericStartBatch}" destFile="${build.tmp.appFolder}/@{startGenericStartBatchName}" force="true" />
+            <fileReplaceAllProperties file="@{templateGenericStartBatch}" destFile="${build.tmp.appFolder}/@{startGenericStartBatchName}.sh" force="true" />
             <fileReplaceAllProperties file="@{templateGenericStartBatch}.bat" destFile="${build.tmp.appFolder}/@{startGenericStartBatchName}.bat" force="true" />
           </then>
         </elseif>

@@ -183,7 +183,8 @@
     The task will set the property <i>doc.packageFiles</i>, which will point to the folder which contains the created file.
     
     @param libraries 
-      a comma-separated list of the libraries' short-names to be parsed, e.g. doc,main
+      a comma-separated list of the libraries' short-names to be parsed, e.g. doc,main; to create a documentation for all
+      libraries just don't specify the attribute (use the default) or set it to "*"
       
     @fails 
       if one of the library's file (i.e. defined via the 'main.library.file.<i>[library]</i>' property) cannot be found
