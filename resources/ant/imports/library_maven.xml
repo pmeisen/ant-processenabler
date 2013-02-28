@@ -177,6 +177,8 @@
       <mkdir dir="${maven.tmp.subtmpdir}" />
       <fileReplaceAllProperties file="${maven.library.resfile.settings.source}" destFile="${maven.tmp.subtmpdir}/final_settings_source.xml" />
       <fileReplaceAllProperties file="${maven.library.resfile.settings.target}" destFile="${maven.tmp.subtmpdir}/final_settings_target.xml" />
+      <var name="maven.settings.source.file" unset="true" />
+      <var name="maven.settings.target.file" unset="true" />
       <property name="maven.settings.source.file" location="${maven.tmp.subtmpdir}/final_settings_source.xml" />
       <property name="maven.settings.target.file" location="${maven.tmp.subtmpdir}/final_settings_target.xml" />
 
@@ -198,6 +200,8 @@
       </fileCallMacroForEach>
       
       <!-- reset the target and source files -->
+      <var name="maven.settings.source.file" unset="true" />
+      <var name="maven.settings.target.file" unset="true" />
       <property name="maven.settings.source.file" location="${maven.tmpdir}/final_settings_source.xml" />
       <property name="maven.settings.target.file" location="${maven.tmpdir}/final_settings_target.xml" />
       
