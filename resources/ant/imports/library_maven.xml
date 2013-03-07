@@ -206,7 +206,6 @@
         </try>
         <catch>
           <var name="@{property}" value="false" />
-          <echo level="error">REASEON: ${maven.tmp.error}</echo>
         </catch>
         <finally />
       </trycatch>
@@ -803,7 +802,7 @@
       var baseFolder = new java.io.File(basedir);
       var file = new java.io.File(resourcefilename);
       var fileName = file.getName();
-      var resFolder = new java.io.File(".", resourcefolder);
+      var resFolder = new java.io.File(resourcefolder);
 
       // get the group identifier
       var groupid = resFolder.getCanonicalFile().getParentFile().getParent().replace(baseFolder.getCanonicalPath(), "");
@@ -1087,7 +1086,6 @@
           <popFromList listProperty="maven.tmp.parentResolvedList" modifyList="true" delimiter="|" property="maven.tmp.parentUniquePom" />
           
           <!-- now we should be able to resolve the modified pom -->
-          <echo level="error">+++++++++++++> ${maven.settings.target.file}</echo>
           <mavenSetPom pomid="maven.tmp.parentModifiedPomId" pomfile="${maven.tmp.parentUniquePom}" settingsFile="${maven.settings.target.file}" />
           
           <!-- now deploy or install depending on the action -->
@@ -1267,10 +1265,10 @@
           
           <!-- cleanUp -->
           <fileCleanUp dir="${maven.tmp.dependencyFolder}" recreate="false" />
-          <echo level="error">+++> NOT SKIPPING: ${maven.tmp.groupId}:${maven.tmp.artifactId}:${maven.tmp.version} (${maven.tmp.mappedGroupId}:${maven.tmp.mappedArtifactId}) ${maven.tmp.classifier} ${maven.tmp.type}</echo>
+          <echo level="warn">Reloading Artifact: ${maven.tmp.groupId}:${maven.tmp.artifactId}:${maven.tmp.version} (${maven.tmp.mappedGroupId}:${maven.tmp.mappedArtifactId})</echo>
         </then>
         <else>
-          <echo level="error">---> SKIPPING: ${maven.tmp.groupId}:${maven.tmp.artifactId}:${maven.tmp.version} (${maven.tmp.mappedGroupId}:${maven.tmp.mappedArtifactId}) ${maven.tmp.classifier} ${maven.tmp.type}</echo>
+          <echo level="warn">Skipping Artifact: ${maven.tmp.groupId}:${maven.tmp.artifactId}:${maven.tmp.version} (${maven.tmp.mappedGroupId}:${maven.tmp.mappedArtifactId})</echo>
         </else>
       </if>
     </sequential>

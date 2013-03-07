@@ -94,125 +94,86 @@ var MavenCaches = function () {
   // initialize the cache-holders
   this.rawCaches = new java.util.HashMap();
   this.processedCaches = new java.util.HashMap();
-}
-MavenCaches.prototype.setCurrentBuilder = function() {
-  var container = project.getReference("org.codehaus.plexus.PlexusContainer");
-  var projectBuilder = container == null ? null : container.lookup(org.apache.maven.project.MavenProjectBuilder.ROLE);
   
-  if (projectBuilder != null && projectBuilder instanceof org.apache.maven.project.DefaultMavenProjectBuilder) {
-    this.projectBuilder = projectBuilder;
-  } else {
-    this.projectBuilder = null;
-  }
+  this.disableCaching();
 }
 MavenCaches.prototype.hasBuilder = function() {
   
   // update if we don't have one yet
   if (this.projectBuilder == null) {
-  
-    // get the current builder if there is one
-    this.setCurrentBuilder();
+    var container = project.getReference("org.codehaus.plexus.PlexusContainer");
+    var projectBuilder = container == null ? null : container.lookup(org.apache.maven.project.MavenProjectBuilder.ROLE);
+    
+    if (projectBuilder != null && projectBuilder instanceof org.apache.maven.project.DefaultMavenProjectBuilder) {
+      this.projectBuilder = projectBuilder;
+    } else {
+      this.projectBuilder = null;
+    }
   }
 
   // still no builder, there is none so far
   return this.projectBuilder != null;
 }
-MavenCaches.prototype.resetCaches = function() {
-  if (!this.hasBuilder()) {
-    return;
-  }
-
-  var fields = this.projectBuilder.getClass().getDeclaredFields();
-  for (var i = 0; i < fields.length; i++) {
-    var field = fields[i];
-    var fieldName = field.getName();
-    
-    // empty the caches
-    field.setAccessible(true);
-    if (fieldName.equals("rawProjectCache")) {
-      field.get(this.projectBuilder).clear();
-    } else if (fieldName.equals("processedProjectCache")) {
-      field.get(this.projectBuilder).clear();
-    }
-    field.setAccessible(false);
-  }
-}
-MavenCaches.prototype.setCachesForSettings = function(settingsFile, oldSettingsFile) {
+MavenCaches.prototype.disableCaching = function() {
+  var hadBuilder = this.projectBuilder != null;
   
   // we need a builder
-  if (!this.hasBuilder()) {
+  if (!hadBuilder && !this.hasBuilder()) {
     return;
-  }
-
-  // check the passed files
-  var fileNew = checkFile(settingsFile, true);
-  var fileOld = checkFile(oldSettingsFile, true);
-  echo(settingsFile);
-  echo(oldSettingsFile);
-  // the unique settingsFile id
-  var uniqueId = fileNew.getCanonicalPath();
-  var oldUniqueId = fileOld == null ? null : fileOld.getCanonicalPath();
-  
-  // check if we have the same file
-  var reset = false;
-  if (uniqueId.equals(oldUniqueId)) {
-    if (fileNew.lastModified() == fileOld.lastModified()) {
-      // the file is the same we have nothing to do, 
-      // because the cache is already set
-      echo("No modification " + fileNew + " vs. " + fileOld, "debug");
-      return;
-    } else {
-      // the file was modified in it's content, we cannot
-      // keep the cache, we just reset it and done
-      reset = true;
-    }
-  }
-  
-  // get the caches
-  var rawCache = this.rawCaches.get(uniqueId);
-  var processedCache = this.processedCaches.get(uniqueId);
-  
-  // reset the chaches for the new settings
-  if (reset || (rawCache == null && processedCache == null)) {
-    rawCache = new java.util.HashMap();
-    processedCache = new java.util.HashMap();
-  }
-  
-  // now apply the found caches to the current builder
-  var fields = this.projectBuilder.getClass().getDeclaredFields();
-  
-  echo("----------" + fileNew + "------------", "error");
-  for (var i = 0; i < fields.length; i++) {
-    var field = fields[i];
-    var fieldName = field.getName();
+  } else if (hadBuilder) {
+    // the builder was already configured
+  } else {
     
-    // empty the caches
-    field.setAccessible(true);
-    if (fieldName.equals("rawProjectCache")) {
-      if (oldUniqueId != null) {
-        this.rawCaches.put(oldUniqueId, field.get(this.projectBuilder));
+    // set the new cache, i.e. the one that doesn't cache
+    var fields = this.projectBuilder.getClass().getDeclaredFields();
+
+    for (var i = 0; i < fields.length; i++) {
+      var field = fields[i];
+      var fieldName = field.getName();
+      
+      // empty the caches
+      field.setAccessible(true);
+      if (fieldName.equals("rawProjectCache")) {
+        field.set(this.projectBuilder, new java.util.Map(emptyMapCallBack));
+      } else if (fieldName.equals("processedProjectCache")) {
+        field.set(this.projectBuilder, new java.util.Map(emptyMapCallBack));
       }
-      field.set(this.projectBuilder, rawCache);
-      echo("----------- RAW -----------", "error");
-      echo("Using for raws " + uniqueId + ": " + rawCache, "error");
-      //field.get(this.projectBuilder).clear();
-    } else if (fieldName.equals("processedProjectCache")) {
-      if (oldUniqueId != null) {
-        this.processedCaches.put(oldUniqueId, field.get(this.projectBuilder));
-      }
-      field.set(this.projectBuilder, processedCache);
-      echo("----------- PROCESS -----------", "error");
-      echo("Using for processed " + uniqueId + ": " + processedCache, "error");
-      //field.get(this.projectBuilder).clear();
+      field.setAccessible(false);
     }
-    field.setAccessible(false);
   }
-  
-  echo("----------------------", "error");
 }
-MavenCaches.prototype.toString = function() {
-  var output = "Raw {" + this.rawCaches.toString() + "}";
-  output += ", Processed {" + this.processedCaches.toString() + "}";
-  
-  return output;
-}
+
+var emptyMapCallBack = {
+  put: function(key, value) {
+  },
+  get: function(key) {
+    return null;
+  },
+  clear: function() {
+  },
+  containsKey: function(key) {
+    return false;
+  },
+  containsValue: function(value) {
+    return false;
+  },
+  entrySet: function() {
+    return new java.util.Set();
+  },
+  isEmpty: function() {
+    return true;
+  },
+  keySet: function() {
+    return new java.util.Set();
+  },
+  putAll: function(map) {
+  },
+  remove: function(key) {
+  },
+  size: function() {
+    return 0;
+  },
+  values: function() {
+    return new java.util.ArrayList();
+  }
+};

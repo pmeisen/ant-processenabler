@@ -189,13 +189,6 @@ var loadPom = function(pomId, pomFile, settingsfile) {
   if (changes < 0) {
     fail("Invalid comparison of poms '" + curPomMeta + "' and '" + newPomMeta + "'");
   } else if (changes > 0) {
-
-    // a change of the settings indicates, that we may have a new repository
-    // therefore we have to clear any caching which is quit difficult because of
-    // the implementation of the DefaultMavenProjectBuilder
-    if (changes < 3) {
-      cache.setCachesForSettings(newPomMeta.settingsFile, curPomMeta == null ? null : curPomMeta.settingsFile);
-    }
     
     // create the new pom
     var pomTask = project.createTask("antlib:org.apache.maven.artifact.ant:pom");
@@ -207,6 +200,9 @@ var loadPom = function(pomId, pomFile, settingsfile) {
   
     // keep the new one
     poms.put(pomId, newPomMeta);
+    
+    // make sure that this stupid fucked up cache is disabled
+    cache.disableCaching();
   }
   
   return project.getReference(pomId);
