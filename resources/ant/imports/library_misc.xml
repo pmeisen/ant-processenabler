@@ -73,6 +73,13 @@
     <![CDATA[
     var loglevel = attributes.get("loglevel");
     
+    // create a stack of logLevel set
+    var logLevelStack = project.getReference("misc.setLogLevel.stack");
+    if (logLevelStack == null) {
+      logLevelStack = new java.util.Stack();
+      project.addReference("misc.setLogLevel.stack", logLevelStack);
+    }
+    
     // the default is 2 ==> warn
     var loglevelValue = 2;
     if (loglevel == "error") {
@@ -87,13 +94,47 @@
       loglevelValue = 4;
     }
     
+    // get the logger
+    var listener = project.getBuildListeners();
+    var firstListener = listener.get(0);
+
+    // keep the current logLevel
+    var fields = firstListener.getClass().getDeclaredFields();
+    for (var i = 0; i < fields.length; i++) {
+      var field = fields[i];
+      var fieldName = field.getName();
+      
+      // get the current logLevel
+      if (fieldName.equals("msgOutputLevel")) {
+        field.setAccessible(true);
+        logLevelStack.push(field.get(firstListener));        
+        field.setAccessible(false);
+        break;
+      }
+    }
+    
+    // set the logLevel
+    firstListener.setMessageOutputLevel(loglevelValue);
+    ]]>
+  </scriptdef>
+  
+  <scriptdef name="resetLogLevel" language="javascript">
+    <![CDATA[
+    var loglevelValue = 2;
+    
+    // create a stack of logLevel set
+    var logLevelStack = project.getReference("misc.setLogLevel.stack");
+    if (logLevelStack != null) {
+      loglevelValue = logLevelStack.pop();
+    }
+    
     // set the logLevel
     var listener = project.getBuildListeners();
     var firstListener = listener.get(0);
     firstListener.setMessageOutputLevel(loglevelValue);
-    
     ]]>
   </scriptdef>
+  
   
   <scriptdef name="checkTarget" language="javascript" description="">
     <attribute name="property" />
@@ -236,7 +277,7 @@
       if (csvlist == null || "".equals(csvlist)) {
         set = new java.util.LinkedHashSet();
       } else {
-        var listEntries = csvlist.split("\\s*" + separator + "\\s*");
+        var listEntries = csvlist.split("\\s*\\Q" + separator + "\\E\\s*");
         var list = java.util.Arrays.asList(listEntries);
         var set = new java.util.LinkedHashSet(list);
       }
@@ -396,6 +437,67 @@
     setProperty.setName(property);
     setProperty.setValue(finalList);
     setProperty.execute();
+    ]]>
+  </scriptdef>
+  
+  <scriptdef name="popFromList" language="javascript">
+    <attribute name="property" />
+    <attribute name="list" />           <!-- if listProperty is set the property will be read if this one isn't set -->
+    <attribute name="order" />          <!-- default="last" -->
+    <attribute name="delimiter" />      <!-- default=","  -->
+    <attribute name="modifyList" />     <!-- default="true"  -->
+    <attribute name="listProperty" />   <!-- default=""  -->
+    
+    <![CDATA[
+    var echo = project.createTask("echo");
+    var setProperty = project.createTask("var");
+    
+    var property = attributes.get("property");
+    var list = attributes.containsKey("list") ? attributes.get("list") : null;
+    var takeFromLast = attributes.containsKey("order") ? attributes.get("order").equals("last") : true;
+    var delimiter = attributes.containsKey("delimiter") ? attributes.get("delimiter") : ",";
+    var modifyList = attributes.containsKey("modifylist") ? attributes.get("modifylist").equals("true") : true;
+    var listProperty = attributes.containsKey("listproperty") ? attributes.get("listproperty") : "";
+    
+    // get the list
+    if (list == null) {
+      list = project.getProperty(listProperty);
+    } 
+    if (list == null || "".equals(list)) {
+      arrayList = new java.util.ArrayList();
+    } else {
+      var listEntries = list.split("\\s*\\Q" + delimiter + "\\E\\s*");
+      arrayList = new java.util.ArrayList(java.util.Arrays.asList(listEntries));
+    }
+    
+    // get the first or last value of the list
+    var pos = takeFromLast ? arrayList.size() - 1 : 0;
+    var val = pos > -1 && pos < arrayList.size() ? arrayList.get(pos) : null;
+    
+    // set the property of the taken value
+    setProperty.setName(property);
+    setProperty.setValue(val == null ? "" : val);
+    setProperty.execute();
+    
+    // modify the list if asked for
+    if (modifyList && val != null && listProperty != null && !"".equals(listProperty)) {
+      arrayList.remove(pos);
+      
+      // build the new list
+      var sb = new java.lang.StringBuilder();
+      var loopDelimiter = "";
+      var iterator = arrayList.iterator();
+      while(iterator.hasNext()) {
+        sb.append(loopDelimiter);
+        sb.append(iterator.next());            
+        loopDelimiter = delimiter;
+      }
+      
+      // set the new list
+      setProperty.setName(listProperty);
+      setProperty.setValue(sb.toString());
+      setProperty.execute();
+    }
     ]]>
   </scriptdef>
   

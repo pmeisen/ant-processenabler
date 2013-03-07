@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testPopFromList">
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkEmptyListLastPoping">
+    <sequential>
+      <var name="test.tmp.popFromList.list" value="" />
+      
+      <popFromList list="${test.tmp.popFromList.list}" property="test.tmp.popFromList.val" order="last" modifyList="false" listProperty="test.tmp.popFromList.list" />
+      <if>
+        <and>
+          <equals arg1="${test.tmp.popFromList.val}" arg2="" />
+          <equals arg1="${test.tmp.popFromList.list}" arg2="" />
+        </and>
+        <then><echo>CheckEmptyListLastPoping was successful!</echo></then>
+        <else><fail>CheckEmptyListLastPoping failed - '${test.tmp.popFromList.val}' instead of '' from list '${test.tmp.popFromList.list}'!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkEmptyListFirstPoping">
+    <sequential>
+      <var name="test.tmp.popFromList.list" value="" />
+      
+      <popFromList list="${test.tmp.popFromList.list}" property="test.tmp.popFromList.val" order="first" modifyList="false" listProperty="test.tmp.popFromList.list" />
+      <if>
+        <and>
+          <equals arg1="${test.tmp.popFromList.val}" arg2="" />
+          <equals arg1="${test.tmp.popFromList.list}" arg2="" />
+        </and>
+        <then><echo>CheckEmptyListFirstPoping was successful!</echo></then>
+        <else><fail>CheckEmptyListFirstPoping failed - '${test.tmp.popFromList.val}' instead of '' from list '${test.tmp.popFromList.list}'!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkLastPoping">
+    <sequential>
+      <var name="test.tmp.popFromList.list" value="a,b,c,d,e,f" />
+      
+      <popFromList list="${test.tmp.popFromList.list}" property="test.tmp.popFromList.val" order="last" modifyList="false" listProperty="test.tmp.popFromList.list" />
+      <if>
+        <and>
+          <equals arg1="${test.tmp.popFromList.val}" arg2="f" />
+          <equals arg1="${test.tmp.popFromList.list}" arg2="a,b,c,d,e,f" />
+        </and>
+        <then><echo>CheckLastPoping was successful!</echo></then>
+        <else><fail>CheckLastPoping failed - '${test.tmp.popFromList.val}' instead of 'f' from list '${test.tmp.popFromList.list}'!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkFirstPoping">
+    <sequential>
+      <var name="test.tmp.popFromList.list" value="a,b,c,d,e,f" />
+      
+      <popFromList list="${test.tmp.popFromList.list}" property="test.tmp.popFromList.val" order="first" modifyList="false" listProperty="test.tmp.popFromList.list" />
+      <if>
+        <and>
+          <equals arg1="${test.tmp.popFromList.val}" arg2="a" />
+          <equals arg1="${test.tmp.popFromList.list}" arg2="a,b,c,d,e,f" />
+        </and>
+        <then><echo>CheckFirstPoping was successful!</echo></then>
+        <else><fail>CheckFirstPoping failed - '${test.tmp.popFromList.val}' instead of 'a' from list '${test.tmp.popFromList.list}'!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkLastModifiedPoping">
+    <sequential>
+      <var name="test.tmp.popFromList.list" value="a,b,c,d,e,f" />
+      
+      <popFromList list="${test.tmp.popFromList.list}" property="test.tmp.popFromList.val" order="last" modifyList="true" listProperty="test.tmp.popFromList.list" />
+      <if>
+        <and>
+          <equals arg1="${test.tmp.popFromList.val}" arg2="f" />
+          <equals arg1="${test.tmp.popFromList.list}" arg2="a,b,c,d,e" />
+        </and>
+        <then><echo>CheckLastModifiedPoping was successful!</echo></then>
+        <else><fail>CheckLastModifiedPoping failed - '${test.tmp.popFromList.val}' instead of 'f' from list '${test.tmp.popFromList.list}'!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkFirstModifiedPoping">
+    <sequential>
+      <var name="test.tmp.popFromList.list" value="a,b|c|d,e|f" />
+      
+      <popFromList list="${test.tmp.popFromList.list}" property="test.tmp.popFromList.val" order="first" modifyList="true" delimiter="|" listProperty="test.tmp.popFromList.list" />
+      <if>
+        <and>
+          <equals arg1="${test.tmp.popFromList.val}" arg2="a,b" />
+          <equals arg1="${test.tmp.popFromList.list}" arg2="c|d,e|f" />
+        </and>
+        <then><echo>CheckFirstModifiedPoping was successful!</echo></then>
+        <else><fail>CheckFirstModifiedPoping failed - '${test.tmp.popFromList.val}' instead of 'a,b' from list '${test.tmp.popFromList.list}'!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkPropertyListPoping">
+    <sequential>
+      <var name="test.tmp.popFromList.list" value="a,b|c|d,e|f" />
+      
+      <popFromList property="test.tmp.popFromList.val" order="first" modifyList="false" delimiter="|" listProperty="test.tmp.popFromList.list" />
+      <if>
+        <and>
+          <equals arg1="${test.tmp.popFromList.val}" arg2="a,b" />
+          <equals arg1="${test.tmp.popFromList.list}" arg2="a,b|c|d,e|f" />
+        </and>
+        <then><echo>CheckPropertyListPoping was successful!</echo></then>
+        <else><fail>CheckPropertyListPoping failed - '${test.tmp.popFromList.val}' instead of 'a,b' from list '${test.tmp.popFromList.list}'!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkPropertyListModifiedPoping">
+    <sequential>
+      <var name="test.tmp.popFromList.list" value="a,b|c|d,e|f" />
+      
+      <popFromList property="test.tmp.popFromList.val" order="first" modifyList="true" delimiter="|" listProperty="test.tmp.popFromList.list" />
+      <if>
+        <and>
+          <equals arg1="${test.tmp.popFromList.val}" arg2="a,b" />
+          <equals arg1="${test.tmp.popFromList.list}" arg2="c|d,e|f" />
+        </and>
+        <then><echo>CheckPropertyListModifiedPoping was successful!</echo></then>
+        <else><fail>CheckPropertyListModifiedPoping failed - '${test.tmp.popFromList.val}' instead of 'a,b' from list '${test.tmp.popFromList.list}'!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <checkEmptyListLastPoping />
+    <checkEmptyListFirstPoping />
+    <checkLastPoping />
+    <checkFirstPoping />
+    <checkLastModifiedPoping />
+    <checkFirstModifiedPoping />
+    <checkPropertyListPoping />
+    <checkPropertyListModifiedPoping />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

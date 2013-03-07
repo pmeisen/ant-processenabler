@@ -243,7 +243,7 @@
         <include name="**/*.java"/> 
       </fileset>
       <var name="build.tmp.sourcesSize" value="" unset="true" />
-      <pathconvert refid="build.tmp.sourceFileSet" property="build.tmp.sourcesSize" setonempty="false"/>
+      <if><available file="${build.srcdir}"/><then><pathconvert refid="build.tmp.sourceFileSet" property="build.tmp.sourcesSize" setonempty="false"/></then></if>
       
       <if>
         <isset property="build.tmp.sourcesSize" />
@@ -316,7 +316,7 @@
         <include name="**/*.java"/> 
       </fileset>
       <var name="build.tmp.sourcesSize" value="" unset="true" />
-      <pathconvert refid="build.tmp.sourceFileSet" property="build.tmp.sourcesSize" setonempty="false"/>
+      <if><available file="${build.srcdir}"/><then><pathconvert refid="build.tmp.sourceFileSet" property="build.tmp.sourcesSize" setonempty="false"/></then></if>
       
       <if>
         <isset property="build.tmp.sourcesSize" />
@@ -465,24 +465,47 @@
       <!-- wrap the bin directory -->
       <transformPackagesToPath property="build.tmp.srcExcludes" 
                                packages="${build.package.excludes}" suffix="/**" packageSeparatore="/" separatore="," />
-      <jar destfile="${build.tmp.buildFile}" basedir="${build.tmp.src}">
-      
-        <!-- add the resources -->
-        <fileset dir="${build.srcdir}" excludes="**/*.java,${build.tmp.srcExcludes},@{addExcludes}" />
-        <fileset dir="${build.srcdir}" includes="${build.tmp.includeSources}" />
-        
-        <!-- write the manifest -->
-        <manifest>
-          <attribute name="Built-By" value="${user.name}" />
-          <attribute name="Built-Date" value="${NOW}" />
+
+      <!-- check if sources are available -->
+      <if>
+        <available file="${build.srcdir}" />
+        <then>
+          <jar destfile="${build.tmp.buildFile}" basedir="${build.tmp.src}">
           
-          <attribute name="Implementation-Vendor" value="${main.vendor}" />
-          <attribute name="Implementation-Title" value="${maven.pom.name}" />
-          <attribute name="Implementation-Version" value="${maven.pom.version}" />
-          
-          <attribute name="SVN-Revision" value="${svn.info.lastRev}" />          
-        </manifest>
-      </jar>
+            <!-- add the resources -->
+            <fileset dir="${build.srcdir}" excludes="**/*.java,${build.tmp.srcExcludes},@{addExcludes}" />
+            <fileset dir="${build.srcdir}" includes="${build.tmp.includeSources}" />
+            
+            <!-- write the manifest -->
+            <manifest>
+              <attribute name="Built-By" value="${user.name}" />
+              <attribute name="Built-Date" value="${NOW}" />
+              
+              <attribute name="Implementation-Vendor" value="${main.vendor}" />
+              <attribute name="Implementation-Title" value="${maven.pom.name}" />
+              <attribute name="Implementation-Version" value="${maven.pom.version}" />
+              
+              <attribute name="SVN-Revision" value="${svn.info.lastRev}" />          
+            </manifest>
+          </jar>
+        </then>
+        <else>
+          <jar destfile="${build.tmp.buildFile}" basedir="${build.tmp.src}">
+            
+            <!-- write the manifest -->
+            <manifest>
+              <attribute name="Built-By" value="${user.name}" />
+              <attribute name="Built-Date" value="${NOW}" />
+              
+              <attribute name="Implementation-Vendor" value="${main.vendor}" />
+              <attribute name="Implementation-Title" value="${maven.pom.name}" />
+              <attribute name="Implementation-Version" value="${maven.pom.version}" />
+              
+              <attribute name="SVN-Revision" value="${svn.info.lastRev}" />          
+            </manifest>
+          </jar>
+        </else>
+      </if>
     </sequential>
   </macrodef>
   
@@ -501,21 +524,41 @@
       <buildGetArtifactName property="build.buildSrcFile" type="src" />
       
       <!-- wrap the src directory -->
-      <jar destfile="${build.buildSrcFile}" basedir="${build.srcdir}">
+      <if>
+        <available file="${build.srcdir}" />
+        <then>
+          <jar destfile="${build.buildSrcFile}" basedir="${build.srcdir}">
 
-        <!-- write the manifest -->
-        <manifest>
-          <attribute name="Built-By" value="${user.name}" />
-          <attribute name="Built-Date" value="${NOW}" />
-          
-          <attribute name="Implementation-Vendor" value="${main.vendor}" />
-          <attribute name="Implementation-Title" value="${maven.pom.name} (${maven.attachment.sources})" />
-          <attribute name="Implementation-Version" value="${maven.pom.version}" />
-          
-          <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
-        </manifest>
-      </jar>
+            <!-- write the manifest -->
+            <manifest>
+              <attribute name="Built-By" value="${user.name}" />
+              <attribute name="Built-Date" value="${NOW}" />
+              
+              <attribute name="Implementation-Vendor" value="${main.vendor}" />
+              <attribute name="Implementation-Title" value="${maven.pom.name} (${maven.attachment.sources})" />
+              <attribute name="Implementation-Version" value="${maven.pom.version}" />
+              
+              <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
+            </manifest>
+          </jar>
+        </then>
+        <else>
+          <jar destfile="${build.buildSrcFile}" basedir="${basedir}" excludes="**/*">
 
+            <!-- write the manifest -->
+            <manifest>
+              <attribute name="Built-By" value="${user.name}" />
+              <attribute name="Built-Date" value="${NOW}" />
+              
+              <attribute name="Implementation-Vendor" value="${main.vendor}" />
+              <attribute name="Implementation-Title" value="${maven.pom.name} (${maven.attachment.sources})" />
+              <attribute name="Implementation-Version" value="${maven.pom.version}" />
+              
+              <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
+            </manifest>
+          </jar>
+        </else>
+      </if>
     </sequential>
   </macrodef>
   
@@ -1409,20 +1452,30 @@
     <buildCheckReleaseConditions />
     
     <!-- create the build -->
-    <buildBuild />
-    <buildPack />
-    <buildJavaDoc />
-    <buildPackJavaDoc />
-    <buildPackSource />
-
-    <!-- test the version -->
-    <testTest />
+    <if>
+      <available file="${basedir}/pom.xml" />
+      <then>
+        <buildBuild />
+        <buildPack />
+        <buildJavaDoc />
+        <buildPackJavaDoc />
+        <buildPackSource />
+        
+        <!-- test the version -->
+        <testTest />
+      </then>
+    </if>
     
     <!-- lets tag everything -->
     <svnTag message="Release of ${maven.pom.version}" />
     
     <!-- lets deploy the binaries -->
-    <buildDeployLatestBuild />
+    <if>
+      <available file="${basedir}/pom.xml" />
+      <then>
+        <buildDeployLatestBuild />
+      </then>
+    </if>
     
     <!-- create the assembly -->
     <if>
@@ -1435,8 +1488,11 @@
         <buildDeployLatestAssembly />
       </then>
     </if>
+    
+    <!-- deploy the parents -->
+    <mavenDeployParents />
 
-    <echo level="warn">Please modify the needed files now! Especially modify the version number in the pom.xml, so that a new generation of this artifact can be developed</echo>
+    <echo level="warn">Please modify the needed files now! Especially modify the version number in the pom.xml and/or your parent-poms, so that a new generation of this artifact can be developed</echo>
   </target>
   
   <target name="releaseAssembly" depends="deployAssembly">

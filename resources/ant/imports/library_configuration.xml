@@ -445,7 +445,10 @@
           <var name="configuration.version" value="@{version}" />   
         </then>
         <elseif>
-          <not><isset property="configuration.version.property" /></not>
+          <or>
+            <not><isset property="configuration.version.property" /></not>
+            <equals arg1="${configuration.version.property}" arg2="" />
+          </or>
           <then>
             <fail>The mandatory property 'version' cannot be determined.</fail>
           </then>

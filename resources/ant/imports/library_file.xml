@@ -48,6 +48,36 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="fileCheckFiles">
+    <attribute name="files" />
+    <attribute name="delimiter" default="|" />
+    <attribute name="property" default="file.tmp.fileexists" />
+    <attribute name="fail" default="false" />
+    
+    <sequential>
+      <for list="@{files}" param="file.tmp.checkFiles.file" delimiter="@{delimiter}" trim="true">
+        <sequential>
+        
+          <if>
+            <available file="@{file.tmp.checkFiles.file}" />
+            <then>
+              <var name="@{property}" value="true" />
+            </then>
+            <elseif>
+              <or><equals arg1="@{fail}" arg2="true" /><equals arg1="@{fail}" arg2="y" /><equals arg1="@{fail}" arg2="yes" /></or>
+              <then>
+                <fail>The file '@{file.tmp.checkFiles.file}' does not exist</fail>
+              </then>
+            </elseif>
+            <else>
+              <var name="@{property}" value="false" />
+            </else>
+          </if>
+        </sequential>
+      </for>
+    </sequential>
+  </macrodef>
+  
   <macrodef name="fileAppendLine">   
     <attribute name="file" />
     <attribute name="line" />
@@ -312,19 +342,21 @@
     <attribute name="conf" default="${file.library.resfile.default.merge}" />
 
     <sequential>
+    
       <!-- check if file2 really exists -->
       <if>
         <available file="@{file2}"/>
         <then>
-        
-          <!-- remove the old version -->
-          <delete file="@{dest}" />      
-
+          
           <!-- create the new merge -->
-          <xmlmerge dest="@{dest}" conf="@{conf}">
+          <xmlmerge dest="${main.tmpdir}/file.tmp" conf="@{conf}">
             <fileset file="@{file1}" />
             <fileset file="@{file2}" />
           </xmlmerge>
+          
+          <!-- get the new file -->
+          <delete file="@{dest}" />
+          <move file="${main.tmpdir}/file.tmp" tofile="@{dest}" overwrite="true" />
         </then>
         <else>
           <copy file="@{file1}" tofile="@{dest}" overwrite="true" />

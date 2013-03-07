@@ -30,3 +30,64 @@ var fail = function(message) {
 var checkEmpty = function(value) {
   return value == null || "".equals(value) ? null : value;
 }
+
+// function to set a variable
+var setVar = function(name, value) {
+  var setVarTask = project.createTask("var");
+  setVarTask.setName(name); 
+  setVarTask.setValue(value); 
+  setVarTask.execute();
+}
+
+// creates an XML document for the specified file
+var createXmlDocument = function(fileLocation) {
+  // get the file and the read the XML-Document
+  var xmlFile = new java.io.File(fileLocation);
+
+  if (xmlFile.isFile() && xmlFile.exists() && xmlFile.canRead()) {
+    var dbFactory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    var dBuilder = dbFactory.newDocumentBuilder();
+    var doc = dBuilder.parse(xmlFile);
+    
+    // normalize - http://stackoverflow.com/questions/13786607/normalization-in-dom-parsing-with-java-how-does-it-work
+    doc.getDocumentElement().normalize();
+    
+    return doc;
+  } else {
+    return null;
+  } 
+}
+
+// remove whitespaces in XML
+var removeWhiteSpacesInXml = function(node) {
+
+  var xpathFactory = javax.xml.xpath.XPathFactory.newInstance();
+  var xpathExp = xpathFactory.newXPath().compile("//text()[normalize-space(.) = '']");  
+  var emptyTextNodes = xpathExp.evaluate(node, javax.xml.xpath.XPathConstants.NODESET);
+  for (var i = 0; i < emptyTextNodes.getLength(); i++) {
+    var emptyTextNode = emptyTextNodes.item(i);
+    emptyTextNode.getParentNode().removeChild(emptyTextNode);
+  }
+}
+
+var isString = function(string) {
+  return typeof string == "string" || string instanceof java.lang.String;
+}
+
+var checkFile = function(file, mustExist) {
+  var retFile = null;
+  
+  // make sure we have a file as URI, String or File
+  if (isString(file) || file instanceof java.net.URI) {
+    retFile = java.io.File(file);
+  } else if (file instanceof java.io.File) {
+    retFile = new java.io.File(file);
+  }
+  
+  // make sure the file exists
+  if (mustExist && retFile != null && (!retFile.exists() || !retFile.isFile())) {
+    return null;
+  } else {
+    return retFile;
+  }
+}

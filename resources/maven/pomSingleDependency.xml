@@ -1,0 +1,28 @@
+<!-- 
+  This is an empty pom.xml which contains the necessary fields.
+  Those fields should never be used
+  -->
+<project>
+  <modelVersion>4.0.0</modelVersion>
+    
+  <!-- project settings -->
+  <groupId>ignore</groupId>
+  <artifactId>ignore</artifactId>
+  <version>ignore</version>
+  <name>ignore</name>
+  
+  <!-- the projects dependencies -->
+  <dependencies>
+    <dependency>
+      <groupId>${maven.tmp.single.groupId}</groupId>
+      <artifactId>${maven.tmp.single.artifactId}</artifactId>
+      <version>${maven.tmp.single.version}</version>
+      <type>${maven.tmp.single.type}</type>
+      <classifier>${maven.tmp.single.classifier}</classifier>
+      
+      <exclusions>
+${maven.tmp.single.exclusions}
+      </exclusions>
+    </dependency>
+  </dependencies>
+</project>

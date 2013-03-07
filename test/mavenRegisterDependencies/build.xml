@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testMavenRegisterDependencies">
+
+  <!-- use the default settings defined in override.properties -->
+  
+  <!-- overwrite some settings prior to this test -->
+  <property name="maven.artifactory.source.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.repository.source.local" value="_testRepoSource" />
+  <property name="maven.repository.target.local" value="_testRepoTarget" />
+  <property name="maven.mapped.net.meisen.test.mapping" value=" net.meisen.test.mapped" />
+  <property name="maven.mapped.net.meisen.test.mapping|mappingSingle" value=" net.meisen.test.mapped|mappedSingle" />
+  
+  <!-- now import the main-library -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <!-- used to initialize some artifacts needed -->
+  <target name="initTest">
+  
+    <!-- just make sure that the repositories are empty -->
+    <fileCleanUp dir="${maven.repository.source.local}" recreate="true" />
+    <fileCleanUp dir="${maven.repository.target.local}" recreate="true" />
+  
+    <!-- we have to make the source to be the target -->
+    <varKeep name="maven.repository.target.local" value="${maven.repository.source.local}" property="maven.tmpInit.repository.target.local" />
+    <fileReplaceAllProperties file="${maven.library.resfile.settings.target}" destFile="${maven.tmpdir}/initTest_target.xml" />
+    <varKeep name="maven.settings.target.file" value="${maven.tmpdir}/initTest_target.xml" property="maven.tmpInit.settings.target.file" />
+  
+    <!-- let's deploy some artifacts we need to the source (which is the target right now) -->
+    <mavenSetPom pomfile="testArtifacts/single/pom-single.xml" pomid="single" />
+    <mavenInstall file="testArtifacts/single/single-1.0.0.jar" pomid="single" />
+    
+    <mavenInstallParents pomfiles="testArtifacts/singleWithParent/singleParent-1.0.0.pom" />
+    <mavenSetPom pomfile="testArtifacts/singleWithParent/pom-singleWithParent.xml" pomid="singleWithParent" />
+    <mavenInstall file="testArtifacts/singleWithParent/singleWithParent-1.0.0.jar" pomid="singleWithParent" />
+
+    <mavenInstallParents pomfiles="testArtifacts/singleNestedParents/singleNestedParent_3-1.0.0.pom" />
+    <mavenInstallParents pomfiles="testArtifacts/singleNestedParents/singleNestedParent_2-1.0.0.pom" />
+    <mavenInstallParents pomfiles="testArtifacts/singleNestedParents/singleNestedParent_1-1.0.0.pom" />
+    <mavenSetPom pomfile="testArtifacts/singleNestedParents/pom-singleNestedParents.xml" pomid="singleNestedParents" />
+    <mavenInstall file="testArtifacts/singleNestedParents/singleNestedParents-1.0.0.jar" pomid="singleNestedParents" />
+
+    <mavenSetPom pomfile="testArtifacts/multiple/pom-multiple_dependency_1.xml" pomid="multiple_dependency_1" />
+    <mavenInstall file="testArtifacts/multiple/multiple_dependency_1-1.0.0.jar" pomid="multiple_dependency_1" />
+    <mavenSetPom pomfile="testArtifacts/multiple/pom-multiple_dependency_2.xml" pomid="multiple_dependency_2" />
+    <mavenInstall file="testArtifacts/multiple/multiple_dependency_2-1.0.0.jar" pomid="multiple_dependency_2" />
+    <mavenSetPom pomfile="testArtifacts/multiple/pom-multiple_dependency_3.xml" pomid="multiple_dependency_3" />
+    <mavenInstall file="testArtifacts/multiple/multiple_dependency_3-1.0.0.jar" pomid="multiple_dependency_3" />
+    <mavenSetPom pomfile="testArtifacts/multiple/pom-multiple_1.xml" pomid="multiple_1" />
+    <mavenInstall file="testArtifacts/multiple/multiple_1-1.0.0.jar" pomid="multiple_1" />
+    <mavenSetPom pomfile="testArtifacts/multiple/pom-multiple_2.xml" pomid="multiple_2" />
+    <mavenInstall file="testArtifacts/multiple/multiple_2-1.0.0.jar" pomid="multiple_2" />
+    
+    <mavenSetPom pomfile="testArtifacts/mappingGroupOfSingle/pom-mappingGroupOfSingle.xml" pomid="mappingGroupOfSingle" />
+    <mavenInstall file="testArtifacts/mappingGroupOfSingle/mappingGroupOfSingle-1.0.0.jar" pomid="mappingGroupOfSingle" />
+    
+    <mavenSetPom pomfile="testArtifacts/mappingSingle/pom-mappingSingle.xml" pomid="mappingSingle" />
+    <mavenInstall file="testArtifacts/mappingSingle/mappingSingle-1.0.0.jar" pomid="mappingSingle" />
+    
+    <!-- undo the source to target mapping -->
+    <var name="maven.repository.target.local" value="${maven.tmpInit.repository.target.local}" />
+    <var name="maven.settings.target.file" value="${maven.tmpInit.settings.target.file}" />
+  </target>
+  
+  <macrodef name="checkSimpleDependency">
+    <sequential>
+      
+      <!-- lets move the dependency to the target repository -->
+      <mavenRegisterDependencies dependenciesToResolvePomFile="pom-dependency-singleTest.xml" />
+            
+      <!-- check if everything was copied successfully -->
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/single/1.0.0/single-1.0.0.jar" list2="" property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <fileCheckFiles files="${test.mavenRegisterDependencies.fileToBe}" fail="true" />
+    </sequential>
+  </macrodef>
+
+  <macrodef name="checkSimpleWithParentDependency">
+    <sequential>
+      
+      <!-- lets move the dependency to the target repository -->
+      <mavenRegisterDependencies dependenciesToResolvePomFile="pom-dependency-singleTestWithParent.xml" />
+      
+      <!-- check if everything was copied successfully -->
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/singleWithParent/1.0.0/singleWithParent-1.0.0.jar" list2="" property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/singleParent/1.0.0/singleParent-1.0.0.pom" list2="${test.mavenRegisterDependencies.fileToBe}"  property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <fileCheckFiles files="${test.mavenRegisterDependencies.fileToBe}" fail="true" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkSimpleNestedParentDependency">
+    <sequential>
+      
+      <!-- lets move the dependency to the target repository -->
+      <mavenRegisterDependencies dependenciesToResolvePomFile="pom-dependency-singleTestNestedParents.xml" />
+      
+      <!-- check if everything was copied successfully -->
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/singleNestedParents/1.0.0/singleNestedParents-1.0.0.jar" list2="" property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/singleNestedParent_1/1.0.0/singleNestedParent_1-1.0.0.pom" list2="${test.mavenRegisterDependencies.fileToBe}"  property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/singleNestedParent_2/1.0.0/singleNestedParent_2-1.0.0.pom" list2="${test.mavenRegisterDependencies.fileToBe}"  property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/singleNestedParent_3/1.0.0/singleNestedParent_3-1.0.0.pom" list2="${test.mavenRegisterDependencies.fileToBe}"  property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <fileCheckFiles files="${test.mavenRegisterDependencies.fileToBe}" fail="true" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkMultipleDependencies">
+    <sequential>
+      
+      <!-- lets move the dependency to the target repository -->
+      <mavenRegisterDependencies dependenciesToResolvePomFile="pom-dependency-multipleTest.xml" />
+      
+      <!-- check if everything was copied successfully -->
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/multiple_1/1.0.0/multiple_1-1.0.0.jar" list2="" property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/multiple_2/1.0.0/multiple_2-1.0.0.pom" list2="${test.mavenRegisterDependencies.fileToBe}"  property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/multiple_dependency_1/1.0.0/multiple_dependency_1-1.0.0.pom" list2="${test.mavenRegisterDependencies.fileToBe}"  property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/multiple_dependency_2/1.0.0/multiple_dependency_2-1.0.0.pom" list2="${test.mavenRegisterDependencies.fileToBe}"  property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/multiple_dependency_3/1.0.0/multiple_dependency_3-1.0.0.pom" list2="${test.mavenRegisterDependencies.fileToBe}"  property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <fileCheckFiles files="${test.mavenRegisterDependencies.fileToBe}" fail="true" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkMappingGroupOfSingleDependency">
+    <sequential>
+      
+      <!-- lets move the dependency to the target repository -->
+      <mavenRegisterDependencies dependenciesToResolvePomFile="pom-dependency-mappingGroupOfSingleTest.xml" />
+            
+      <!-- check if everything was copied successfully -->
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/mapped/mappingGroupOfSingle/1.0.0/mappingGroupOfSingle-1.0.0.jar" list2="" property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <fileCheckFiles files="${test.mavenRegisterDependencies.fileToBe}" fail="true" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkMappingSingleDependency">
+    <sequential>
+      
+      <!-- lets move the dependency to the target repository -->
+      <mavenRegisterDependencies dependenciesToResolvePomFile="pom-dependency-mappingSingleTest.xml" />
+            
+      <!-- check if everything was copied successfully -->
+      <appendList list1="${maven.repository.target.local}/net/meisen/test/mapped/mappedSingle/1.0.0/mappedSingle-1.0.0.jar" list2="" property="test.mavenRegisterDependencies.fileToBe" separator="|" trimItems="true" />
+      <fileCheckFiles files="${test.mavenRegisterDependencies.fileToBe}" fail="true" />
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest" depends="initTest">
+    <!-- <checkSimpleDependency />
+    <checkSimpleWithParentDependency />
+    <checkSimpleNestedParentDependency />
+    <checkMultipleDependencies />-->
+    <checkMappingGroupOfSingleDependency />
+    <checkMappingSingleDependency />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${maven.repository.source.local}" recreate="false" />
+    <fileCleanUp dir="${maven.repository.target.local}" recreate="false" />
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

@@ -7,8 +7,8 @@
     01.03.2012
       - Creation of library
   -->
-<project name="library_maven" xmlns:artifact="antlib:org.apache.maven.artifact.ant" xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
-  <property name="maven.library.version" value="1.2.5" description="The current version of the library" />
+<project name="library_maven" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+  <property name="maven.library.version" value="1.2.6" description="The current version of the library" />
   <dirname property="library_maven.basedir" file="${ant.file.library_maven}"/>
   
   <property name="maven.library.resfile.pom.empty" location="${main.root}/maven/pomEmpty.xml" />
@@ -16,7 +16,13 @@
   <property name="maven.library.resfile.settings.target" location="${main.root}/maven/settings_target.xml" description="The master settings.xml for all projects (targets)" />
   <property name="maven.library.resfile.pom.snapshot" location="${main.root}/maven/pomSnapshot.xml" />
   <property name="maven.library.resfile.pomSnapshot.merge" location="${main.root}/maven/pomSnapShot_xmlMerge.properties" />
-
+  <property name="maven.library.resfile.pomInvalidElements" location="${main.root}/maven/pomInvalidElements.xml" />
+  <property name="maven.library.resfile.pomInvalidElements.merge" location="${main.root}/maven/pomInvalidElements_xmlMerge.properties" />
+  <property name="maven.library.resfile.pomSingleDependency" location="${main.root}/maven/pomSingleDependency.xml" />
+  <property name="maven.library.resfile.js.general" location="${main.root}/javascripts/library_maven/general.js" />
+  <property name="maven.library.resfile.js.datastructure" location="${main.root}/javascripts/library_maven/datastructure.js" />
+  <property name="maven.library.resfile.js.parser" location="${main.root}/javascripts/library_maven/parser.js" />
+  
   <property name="maven.dependencies.dir" value="_deps" description="Folder in which dependencies should be copied when using target copyDeps" />
   <property name="maven.depsdir" location="${maven.dependencies.dir}" description="Full path to the folder in which dependencies should be copied when using target copyDeps" />
   
@@ -24,14 +30,21 @@
   <property name="maven.artifactory.target.url" value="" description="URL to access the artifactory (for artifacts to be deployed)" />
   <property name="maven.repository.source.forceoffline" value="false" description="if set to true, the repository will be forced to be assumed offline" />
   <property name="maven.repository.target.forceoffline" value="false" description="if set to true, the repository will be forced to be assumed offline" />
-  <property name="maven.repository.local" location="${user.home}/.m2/repository" description="The local maven repository" />
+  <property name="maven.repository.source.local" location="${user.home}/.m2/repository" description="The local maven repository" />
+  <property name="maven.repository.target.local" location="${user.home}/.m2/repository" description="The local maven repository" />
   <property name="maven.repository.source.url" value="${maven.artifactory.source.url}/OVERALL" description="The source repository to be used (used in settings.xml)" />
   <property name="maven.repository.source.repositoryId" value="central" description="The id of the source repository (used in settings.xml)" />
   <property name="maven.repository.target.releaseUrl" value="${maven.artifactory.target.url}/RELEASES" description="The repository to be used for releases" />
   <property name="maven.repository.target.snapshotUrl" value="${maven.artifactory.target.url}/SNAPSHOTS" description="The repository to be used for snapshots" />
   <property name="maven.repository.target.repositoryId" value="centralTarget" description="The id of the target repository" />
+  <property name="maven.repository.source.username" value="" description="The name of the user to authenticate on source side" />
+  <property name="maven.repository.source.password" value="" description="The password of the user to authenticate on source side" />
+  <property name="maven.repository.target.username" value="" description="The name of the user to authenticate on target side" />
+  <property name="maven.repository.target.password" value="" description="The password of the user to authenticate on target side" />
+  
   
   <property name="maven.pom.property" value="maven.pom" description="For internal usage only, the default name for the property which contains pom information" />
+  <property name="maven.parent.poms" value="" description="A | separated list of pom-files which should be uploaded (i.e. deployed or installed) with the project's artifact" />
   <property name="maven.init" value="false" description="For internal usage only, please do not modify this property by a file" />
   
   <property name="maven.attachment.sources" value="sources" description="attachment classifer for sources" />
@@ -57,7 +70,8 @@
     <then>
 
       <!-- create the repository directory -->
-      <mkdir dir="${maven.repository.local}" />
+      <mkdir dir="${maven.repository.source.local}" />
+      <mkdir dir="${maven.repository.target.local}" />
       
       <!-- generate a unique temp-directory -->
       <generateUUID property="maven.tmpfolder" />
@@ -102,18 +116,26 @@
           <equals arg1="${build.type}" arg2="release" />
           <then>
             <copy file="${basedir}/pom.xml" tofile="${maven.tmpdir}/merged_pom.xml" overwrite="true" />
-            
-            <!-- set the release repository as repository -->
-            <property name="maven.repository.target.url" value="${maven.repository.target.releaseUrl}" />
           </then>
         </elseif>
         <else>
-
           <!-- apply the snapshot-settings -->
           <fileMergeXml file1="${basedir}/pom.xml" 
                         file2="${maven.library.resfile.pom.snapshot}" 
                         dest="${maven.tmpdir}/merged_pom.xml" 
                         conf="${maven.library.resfile.pomSnapshot.merge}" />
+        </else>
+      </if>
+      
+      <!-- get the right target repository -->
+      <if>
+        <equals arg1="${build.type}" arg2="release" />
+        <then>
+
+          <!-- set the release repository as repository -->
+          <property name="maven.repository.target.url" value="${maven.repository.target.releaseUrl}" />
+        </then>
+        <else>
                         
           <!-- set the snapshot repository as repository -->
           <property name="maven.repository.target.url" value="${maven.repository.target.snapshotUrl}" />
@@ -141,7 +163,70 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="mavenHasDependency">
+    <attribute name="groupid" />
+    <attribute name="artifactid" />
+    <attribute name="version" />
+    <attribute name="type" default="jar" />
+    <attribute name="classifier" default="" />
+    <attribute name="property" default="maven.tmp.hasDependency" />
+    
+    <!-- the repository to check against -->
+    <attribute name="artifactoryUrl" default="${maven.artifactory.source.url}" />
+    <attribute name="repositoryUrl" default="${maven.repository.source.url}" />
+    <attribute name="repositoryUser" default="${maven.repository.source.username}" />
+    <attribute name="repositoryEncPassword" default="${maven.repository.source.password}" />
+    
+    <sequential>
+      
+      <!-- generate a directory to store the new settings file and the local repo -->
+      <generateUUID property="maven.tmp.subtmpfolder" />
+      <var name="maven.tmp.mhd.subtmpdir" value="${maven.tmpdir}/${maven.tmp.subtmpfolder}" />
+      <mkdir dir="${maven.tmp.mhd.subtmpdir}" />
+    
+      <!-- set the properties -->
+      <varKeep name="maven.repository.source.local" value="${maven.tmp.mhd.subtmpdir}/repository" property="maven.tmp.mhd.repository.local" />          
+      <varKeep name="maven.repository.source.offline" value="" property="maven.tmp.mhd.repository.source.offline" />
+      <serverHttpNotReachable url="@{artifactoryUrl}" property="maven.repository.source.offline" />
+      <varKeep name="maven.repository.source.url" value="@{repositoryUrl}" property="maven.tmp.mhd.repository.source.url" />
+      <varKeep name="maven.repository.source.username" value="@{repositoryUser}" property="maven.tmp.mhd.repository.source.username" />
+      <varKeep name="maven.repository.source.password" value="@{repositoryEncPassword}" property="maven.tmp.mhd.repository.source.password" />
+
+      <!-- create the new source file to be used -->
+      <fileReplaceAllProperties file="${maven.library.resfile.settings.source}" destFile="${maven.tmp.mhd.subtmpdir}/hasDependency_source.xml" />
+      <varKeep name="maven.settings.source.file" value="${maven.tmp.mhd.subtmpdir}/hasDependency_source.xml" property="maven.tmp.mhd.settings.source.file" />
+
+      <!-- try to resolve the specified dependency, this also resolves all depndencies of this dependency -->
+      <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
+        <try>
+          <setLogLevel logLevel="error" />
+          <mavenResolveSingleDependency groupId="@{groupid}" artifactId="@{artifactid}" version="@{version}" type="@{type}" classifier="@{classifier}" />
+          <resetLogLevel />
+          <var name="@{property}" value="true" />
+        </try>
+        <catch>
+          <var name="@{property}" value="false" />
+          <echo level="error">REASEON: ${maven.tmp.error}</echo>
+        </catch>
+        <finally />
+      </trycatch>
+
+      <!-- reset the properties -->
+      <var name="maven.repository.source.local" value="${maven.tmp.mhd.repository.local}" />
+      <var name="maven.repository.source.offline" value="${maven.tmp.mhd.repository.source.offline}" />
+      <var name="maven.repository.source.url" value="${maven.tmp.mhd.repository.source.url}" />
+      <var name="maven.repository.source.username" value="${maven.tmp.mhd.repository.source.username}" />
+      <var name="maven.repository.source.password" value="${maven.tmp.mhd.repository.source.password}" />
+      
+      <!-- reset the file -->
+      <var name="maven.settings.source.file" value="${maven.tmp.mhd.settings.source.file}" />
+      <fileCleanUp dir="${maven.tmp.mhd.subtmpdir}" recreate="false" />
+    </sequential>
+  </macrodef>
+  
   <macrodef name="mavenRegisterDependencies">
+    <attribute name="sourceSettingsFile" default="${maven.library.resfile.settings.source}" />
+    <attribute name="targetSettingsFile" default="${maven.library.resfile.settings.target}" />
     <attribute name="dependenciesToResolvePomFile" default="${basedir}/pom.xml" />
     <attribute name="attachmentsList" default="${maven.attachment.sources},${maven.attachment.javadoc}" />
     
@@ -156,31 +241,36 @@
     <attribute name="sourceRepositoryUrl" default="${maven.repository.source.url}" />
     <attribute name="sourceUser" default="${maven.repository.source.username}" />
     <attribute name="sourceEncPassword" default="${maven.repository.source.password}" />
-
+    
+    <!-- the repository to check resources against, only important if checkOnlyNew is set to true -->
+    <attribute name="checkOnlyNew" default="true" />
+    <attribute name="checkArtifactoryUrl" default="@{targetArtifactoryUrl}" />
+    <attribute name="checkRepositoryUrl" default="@{targetRepositoryUrl}" />
+    <attribute name="checkUser" default="@{targetUser}" />
+    <attribute name="checkEncPassword" default="@{targetEncPassword}" />
+    
     <sequential>
       
       <!-- set all the properties to be used for this operation -->
-      <varKeep name="maven.repository.target.offline" value="" property="maven.tmp.repository.target.offline" />
+      <varKeep name="maven.repository.target.offline" value="" property="maven.tmp.mrd.repository.target.offline" />
       <serverHttpNotReachable url="@{targetArtifactoryUrl}" property="maven.repository.target.offline" />
-      <varKeep name="maven.repository.target.url" value="@{targetRepositoryUrl}" property="maven.tmp.repository.target.url" />
-      <varKeep name="maven.repository.target.username" value="@{targetUser}" property="maven.tmp.repository.target.username" />
-      <varKeep name="maven.repository.target.password" value="@{targetEncPassword}" property="maven.tmp.repository.target.password" />
-      <varKeep name="maven.repository.source.offline" value="" property="maven.tmp.repository.source.offline" />
+      <varKeep name="maven.repository.target.url" value="@{targetRepositoryUrl}" property="maven.tmp.mrd.repository.target.url" />
+      <varKeep name="maven.repository.target.username" value="@{targetUser}" property="maven.tmp.mrd.repository.target.username" />
+      <varKeep name="maven.repository.target.password" value="@{targetEncPassword}" property="maven.tmp.mrd.repository.target.password" />
+      <varKeep name="maven.repository.source.offline" value="" property="maven.tmp.mrd.repository.source.offline" />
       <serverHttpNotReachable url="@{sourceArtifactoryUrl}" property="maven.repository.source.offline" />
-      <varKeep name="maven.repository.source.url" value="@{sourceRepositoryUrl}" property="maven.tmp.repository.source.url" />
-      <varKeep name="maven.repository.source.username" value="@{sourceUser}" property="maven.tmp.repository.source.username" />
-      <varKeep name="maven.repository.source.password" value="@{sourceEncPassword}" property="maven.tmp.repository.source.password" />
+      <varKeep name="maven.repository.source.url" value="@{sourceRepositoryUrl}" property="maven.tmp.mrd.repository.source.url" />
+      <varKeep name="maven.repository.source.username" value="@{sourceUser}" property="maven.tmp.mrd.repository.source.username" />
+      <varKeep name="maven.repository.source.password" value="@{sourceEncPassword}" property="maven.tmp.mrd.repository.source.password" />
     
       <!-- set the target and source files to be used for this operation -->
       <generateUUID property="maven.tmp.subtmpfolder" />
-      <property name="maven.tmp.subtmpdir" location="${maven.tmpdir}/${maven.tmp.subtmpfolder}" />
-      <mkdir dir="${maven.tmp.subtmpdir}" />
-      <fileReplaceAllProperties file="${maven.library.resfile.settings.source}" destFile="${maven.tmp.subtmpdir}/final_settings_source.xml" />
-      <fileReplaceAllProperties file="${maven.library.resfile.settings.target}" destFile="${maven.tmp.subtmpdir}/final_settings_target.xml" />
-      <var name="maven.settings.source.file" unset="true" />
-      <var name="maven.settings.target.file" unset="true" />
-      <property name="maven.settings.source.file" location="${maven.tmp.subtmpdir}/final_settings_source.xml" />
-      <property name="maven.settings.target.file" location="${maven.tmp.subtmpdir}/final_settings_target.xml" />
+      <var name="maven.tmp.mrd.subtmpdir" value="${maven.tmpdir}/${maven.tmp.subtmpfolder}" />
+      <mkdir dir="${maven.tmp.mrd.subtmpdir}" />
+      <fileReplaceAllProperties file="@{sourceSettingsFile}" destFile="${maven.tmp.mrd.subtmpdir}/registerDependencies_source.xml" />
+      <fileReplaceAllProperties file="@{targetSettingsFile}" destFile="${maven.tmp.mrd.subtmpdir}/registerDependencies_target.xml" />
+      <varKeep name="maven.settings.source.file" value="${maven.tmp.mrd.subtmpdir}/registerDependencies_source.xml" property="maven.tmp.mrd.settings.source.file" />
+      <varKeep name="maven.settings.target.file" value="${maven.tmp.mrd.subtmpdir}/registerDependencies_target.xml" property="maven.tmp.mrd.settings.target.file" />
 
       <!-- get all the dependencies to be resolved -->
       <mavenResolveDependencies fileset="maven.tmp.dependencies" pomfile="@{dependenciesToResolvePomFile}" />
@@ -195,28 +285,100 @@
           <var name="maven.tmp.action" value="install" />
         </else>
       </if>
-      <fileCallMacroForEach macro="mavenRegisterResourceInTarget" parameters="action=[[${maven.tmp.action}]];attachments=[[@{attachmentsList}]]">
+      
+      <fileCallMacroForEach macro="mavenRegisterResourceInTarget" parameters="action=[[${maven.tmp.action}]];attachments=[[@{attachmentsList}]];onlyNew=[[@{checkOnlyNew}]];artifactoryUrl=[[@{checkArtifactoryUrl}]];repositoryUrl=[[@{checkRepositoryUrl}]];repositoryUser=[[@{checkUser}]];repositoryEncPassword=[[@{checkEncPassword}]];">
         <fileset refid="maven.tmp.dependencies" />
       </fileCallMacroForEach>
-      
-      <!-- reset the target and source files -->
-      <var name="maven.settings.source.file" unset="true" />
-      <var name="maven.settings.target.file" unset="true" />
-      <property name="maven.settings.source.file" location="${maven.tmpdir}/final_settings_source.xml" />
-      <property name="maven.settings.target.file" location="${maven.tmpdir}/final_settings_target.xml" />
-      
+
       <!-- reset the properties -->
-      <var name="maven.repository.target.offline" value="${maven.tmp.repository.target.offline}" />
-      <var name="maven.repository.target.url" value="${maven.tmp.repository.target.url}" />
-      <var name="maven.repository.target.username" value="${maven.tmp.repository.target.username}" />
-      <var name="maven.repository.target.password" value="${maven.tmp.repository.target.password}" />
-      <var name="maven.repository.source.offline" value="${maven.tmp.repository.source.offline}" />
-      <var name="maven.repository.source.url" value="${maven.tmp.repository.source.url}" />
-      <var name="maven.repository.source.username" value="${maven.tmp.repository.source.username}" />
-      <var name="maven.repository.source.password" value="${maven.tmp.repository.source.password}" />
+      <var name="maven.repository.target.offline" value="${maven.tmp.mrd.repository.target.offline}" />
+      <var name="maven.repository.target.url" value="${maven.tmp.mrd.repository.target.url}" />
+      <var name="maven.repository.target.username" value="${maven.tmp.mrd.repository.target.username}" />
+      <var name="maven.repository.target.password" value="${maven.tmp.mrd.repository.target.password}" />
+      <var name="maven.repository.source.offline" value="${maven.tmp.mrd.repository.source.offline}" />
+      <var name="maven.repository.source.url" value="${maven.tmp.mrd.repository.source.url}" />
+      <var name="maven.repository.source.username" value="${maven.tmp.mrd.repository.source.username}" />
+      <var name="maven.repository.source.password" value="${maven.tmp.mrd.repository.source.password}" />
+      <var name="maven.settings.source.file" value="${maven.tmp.mrd.settings.source.file}" />
+      <var name="maven.settings.target.file" value="${maven.tmp.mrd.settings.target.file}" />
       
       <!-- cleanUp -->
-      <fileCleanUp dir="${maven.tmp.subtmpdir}" recreate="false" />
+      <fileCleanUp dir="${maven.tmp.mrd.subtmpdir}" recreate="false" />
+    </sequential>
+  </macrodef>
+  
+  <!-- since 1.2.6 -->
+  <macrodef name="mavenInstallParents">
+    <attribute name="pomfiles" default="${maven.parent.poms}" />
+    
+    <sequential>
+      <mavenUploadParents pomfiles="@{pomfiles}" action="install" />
+    </sequential>
+  </macrodef>
+  
+  <!-- since 1.2.6 -->
+  <macrodef name="mavenDeployParents">
+    <attribute name="pomfiles" default="${maven.parent.poms}" />
+    
+    <sequential>
+      <mavenUploadParents pomfiles="@{pomfiles}" action="deploy" />
+    </sequential>
+  </macrodef>
+  
+  <!-- since 1.2.6 -->
+  <macrodef name="mavenUploadParents">
+    <attribute name="pomfiles" default="${maven.parent.poms}" />
+    <attribute name="action" default="" />
+    
+    <sequential>
+      <for list="@{pomfiles}" param="maven.tmp.pomFile" delimiter="|" trim="true">
+        <sequential>
+        
+          <!-- get the right pom.xml -->
+          <if>
+            <not><available file="@{maven.tmp.pomFile}" /></not>
+            <then>
+              <fail>The file @{maven.tmp.pomFile} is not available</fail>
+            </then>
+            <elseif>
+              <or>
+                <equals arg1="${build.type}" arg2="release" />
+                <not><matches pattern="(.*,@{pomfiles}$)|(^@{pomfiles},.*)|(^@{pomfiles}$)|(.*,@{pomfiles},.*)" string="${maven.parent.poms}" /></not>
+              </or>
+              <then>
+                <copy file="@{maven.tmp.pomFile}" tofile="${maven.tmpdir}/parent_pom.xml" overwrite="true" />
+              </then>
+            </elseif>
+            <else>
+              <!-- apply the snapshot-settings -->
+              <fileMergeXml file1="@{maven.tmp.pomFile}" 
+                            file2="${maven.library.resfile.pom.snapshot}" 
+                            dest="${maven.tmpdir}/parent_pom.xml" 
+                            conf="${maven.library.resfile.pomSnapshot.merge}" />
+            </else>
+          </if>
+          
+          <!-- set the pom to have it's id -->
+          <mavenSetPom pomid="maven.tmp.parentPomId" pomfile="${maven.tmpdir}/parent_pom.xml" />
+
+          <!-- now deploy or install depending on the action -->
+          <if>
+            <or>
+              <and>
+                <equals arg1="@{action}" arg2="" />
+                <equals arg1="${maven.repository.target.offline}" arg2="false" />
+              </and>
+              <equals arg1="@{action}" arg2="deploy" />
+            </or>
+            <then>
+              <mavenDeploy file="${maven.tmpdir}/parent_pom.xml" pomid="maven.tmp.parentPomId" />
+            </then>
+            <else>
+              <mavenInstall file="${maven.tmpdir}/parent_pom.xml" pomid="maven.tmp.parentPomId" />
+            </else>
+          </if>
+        </sequential>
+      </for>
     </sequential>
   </macrodef>
   
@@ -226,11 +388,44 @@
   <macrodef name="mavenSetPom">
     <attribute name="pomid" default="${maven.pom.property}" />
     <attribute name="pomfile" default="${maven.pom.file}" />
+    <attribute name="settingsfile" default="" />
     
     <sequential>
-    
-      <!-- resolve the needed dependencies -->
-      <artifact:pom id="@{pomid}" file="@{pomfile}" inheritAllProperties="false" settingsFile="${maven.settings.source.file}" />
+      <if>
+        <equals arg1="@{settingsfile}" arg2="" />
+        <then>
+          <var name="maven.tmp.mavenSetPom.settingsFile" value="${maven.settings.source.file}" />
+        </then>
+        <else>
+          <var name="maven.tmp.mavenSetPom.settingsFile" value="@{settingsfile}" />
+        </else>
+      </if>
+      
+      <!-- depending on the settingsFile we have to create a different project because of caching -->
+      <var name="maven.tmp.mavenSetPom.pomId" value="@{pomid}" />
+      <var name="maven.tmp.mavenSetPom.pomFile" value="@{pomFile}" />
+      <script language="javascript"><![CDATA[
+        // helper method to load js files
+        // thanks to http://stackoverflow.com/questions/650377/javascript-rhino-use-library-or-include-other-scripts
+        var l = function(property) {
+          var jsFile = project.getProperty(property);
+          var fileReader = new java.io.FileReader(jsFile);
+          var fullRead = org.apache.tools.ant.util.FileUtils.readFully(fileReader);
+          
+          return "" + new java.lang.String(fullRead);
+        }
+        
+        // load the libraries
+        eval(l("maven.library.resfile.js.general"));
+        eval(l("maven.library.resfile.js.datastructure"));
+        
+        // get the id of the pom
+        var pomId = project.getProperty("maven.tmp.mavenSetPom.pomId");
+        var pomFile = project.getProperty("maven.tmp.mavenSetPom.pomFile");
+        var settingsFile = project.getProperty("maven.tmp.mavenSetPom.settingsFile");
+        
+        loadPom(pomId, pomFile, settingsFile);
+      ]]></script>
     </sequential>
   </macrodef>
     
@@ -252,7 +447,9 @@
       <!-- try to load the default for project properties - for replacing -->
       <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
         <try>
+          <setLogLevel logLevel="error" />
           <mavenSetPom />
+          <resetLogLevel />
         </try>
         <catch />
         <finally />
@@ -354,7 +551,6 @@
     <attribute name="version" />
     <attribute name="type" default="jar" />
     <attribute name="classifier" default="" />
-    <attribute name="scope" default="compile" />
     <attribute name="fileset" default="maven.dependencies" />
 
     <sequential>
@@ -362,15 +558,95 @@
       <!-- make sure we have the properties of the pom -->
       <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
         <try>
+          <setLogLevel logLevel="error" />
           <mavenSetPom />
+          <resetLogLevel />
         </try>
         <catch />
         <finally />
       </trycatch>
       
-      <artifact:dependencies filesetId="@{fileset}" settingsFile="${maven.settings.source.file}">
-        <dependency groupId="@{groupid}" artifactId="@{artifactid}" version="@{version}" scope="@{scope}" type="@{type}" classifier="@{classifier}" />
+      <!-- now we have to create a single pom which excludes all dependencies -->
+      <mavenCreateSingleArtifactPom destFile="${maven.tmpdir}/singlePom.xml"
+                                    groupId="@{groupid}" artifactId="@{artifactid}" version="@{version}" type="@{type}" classifier="@{classifier}" />
+
+      <!-- resolve this one dependency -->
+      <mavenSetPom pomid="maven.tmp.singlePomId" pomfile="${maven.tmpdir}/singlePom.xml" />
+      <artifact:dependencies filesetId="@{fileset}" scopes="compile" pomRefId="maven.tmp.singlePomId" settingsFile="${maven.settings.source.file}" />      
+      <delete file="${maven.tmpdir}/singlePom.xml" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="mavenCreateSingleArtifactPom">
+    <attribute name="groupid" />
+    <attribute name="artifactid" />
+    <attribute name="version" />
+    <attribute name="type" default="jar" />
+    <attribute name="classifier" default="" />
+    <attribute name="destFile" default="${maven.tmpdir}/singlePom.xml" />
+    
+    <sequential>
+       <artifact:dependencies filesetId="maven.tmp.pomFileSet" settingsFile="${maven.settings.source.file}" type="pom">
+        <dependency groupId="@{groupid}" artifactId="@{artifactid}" version="@{version}" type="pom" />
       </artifact:dependencies>
+      
+      <!-- make sure we only have one pom -->
+      <if>
+        <resourcecount refid="maven.tmp.pomFileSet" when="ne" count="1" />
+        <then>
+          <filePrintFileset filesetid="maven.tmp.pomFileSet" />
+          <fail>There was more than one or none pom-file found for the artifact: @{groupid}:@{artifactid}:@{version}</fail>
+        </then>
+      </if>
+      
+      <!-- now read the properties of the pom and create a new pom which excludes all dependencies -->
+      <script language="javascript"><![CDATA[
+        // helper method to load js files
+        // thanks to http://stackoverflow.com/questions/650377/javascript-rhino-use-library-or-include-other-scripts
+        var l = function(property) {
+          var jsFile = project.getProperty(property);
+          var fileReader = new java.io.FileReader(jsFile);
+          var fullRead = org.apache.tools.ant.util.FileUtils.readFully(fileReader);
+          
+          return "" + new java.lang.String(fullRead);
+        }
+        
+        // load the libraries
+        eval(l("maven.library.resfile.js.general"));
+        eval(l("maven.library.resfile.js.datastructure"));
+        eval(l("maven.library.resfile.js.parser"));
+        
+        // get the pom file and parse it
+        var fs = project.getReference("maven.tmp.pomFileSet");
+        var fsBaseDir = fs.getDir(project);
+        var ds = fs.getDirectoryScanner(project);
+        var includes = ds.getIncludedFiles();
+        var pomFile = new java.io.File(fsBaseDir, includes[0]);
+        
+        // get all the dependencies defined
+        var dependencies = parseDependencies(pomFile);
+        
+        // get through the dependencies and write the exclusions
+        var exclusions = "";
+        for (var i = 0; i < dependencies.size(); i++) {
+          var dependency = dependencies.get(i);
+        
+          exclusions += "<exclusion>\n";
+          exclusions += "  <groupId>" + dependency.groupId + "</groupId>\n";
+          exclusions += "  <artifactId>" + dependency.artifactId + "</artifactId>\n";
+          exclusions += "</exclusion>\n";
+        }
+        setVar("maven.tmp.single.exclusions", exclusions);
+      ]]></script>
+      
+      <!-- now set all the properties and replace the file -->
+      <var name="maven.tmp.single.groupId" value="@{groupid}" />
+      <var name="maven.tmp.single.artifactId" value="@{artifactid}" />
+      <var name="maven.tmp.single.version" value="@{version}" />
+      <var name="maven.tmp.single.type" value="@{type}" />
+      <var name="maven.tmp.single.classifier" value="@{classifier}" />
+      <delete file="@{destFile}" />
+      <fileReplaceAllProperties file="${maven.library.resfile.pomSingleDependency}" destFile="@{destFile}" />
     </sequential>
   </macrodef>
     
@@ -527,10 +803,10 @@
       var baseFolder = new java.io.File(basedir);
       var file = new java.io.File(resourcefilename);
       var fileName = file.getName();
-      var resFolder = new java.io.File(resourcefolder);
+      var resFolder = new java.io.File(".", resourcefolder);
 
       // get the group identifier
-      var groupid = resFolder.getParentFile().getParent().replace(baseFolder.getAbsolutePath(), "");
+      var groupid = resFolder.getCanonicalFile().getParentFile().getParent().replace(baseFolder.getCanonicalPath(), "");
       groupid = groupid.replace("\\", ".").replace("/", ".");
       groupid = groupid.startsWith(".") ? groupid.substring(1) : groupid;
       
@@ -543,9 +819,8 @@
       
       // get the classifier
       var classifier = posLastDot == -1 ? fileName : fileName.substring(0, posLastDot);
-      var posLastSlash = classifier.lastIndexOf("-");
-      classifier = posLastSlash == -1 ? "" : classifier.substring(posLastSlash + 1);
-      classifier = classifier == "SNAPSHOT" || classifier == version ? "" : classifier;
+      var posLastSlash = classifier.lastIndexOf(version);
+      classifier = posLastSlash == -1 ? "" : classifier.substring(version.length() + posLastSlash);
       
       // get the artifact
       var artifactid = fileName.substring(0, fileName.lastIndexOf(version) - 1);
@@ -557,8 +832,7 @@
       setVar.setName(versionProp); setVar.setValue(version); setVar.execute();
       setVar.setName(classifierProp); setVar.setValue(classifier); setVar.execute();
       setVar.setName(typeProp); setVar.setValue(type); setVar.execute();
-      ]]></script>
-    
+      ]]></script>    
     </sequential>
   </macrodef>
   
@@ -590,10 +864,7 @@
                                         type="@{type}" classifier="@{classifier}" fileset="maven.tmp.dependencies" />
                                         
           <copy todir="@{dir}">
-            <restrict>
-              <fileset refid="maven.tmp.dependencies" />
-              <rsel:name regex=".*[\\/]\Q@{artifactid}-@{version}\E(?:(?:\Q-@{classifier}\E)|)\Q.@{type}\E" />
-            </restrict>
+            <fileset refid="maven.tmp.dependencies" />
             <mapper type="flatten" />
           </copy>
         </then>
@@ -601,14 +872,13 @@
           <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
             <try>
               <!-- resolve the dependency -->
+              <setLogLevel logLevel="error" />
               <mavenResolveSingleDependency groupid="@{groupid}" artifactid="@{artifactid}" version="@{version}" 
                                             type="@{type}" classifier="@{classifier}" fileset="maven.tmp.dependencies" />
+              <resetLogLevel />
                                             
               <copy todir="@{dir}">
-                <restrict>
-                  <fileset refid="maven.tmp.dependencies" />
-                  <rsel:name regex=".*[\\/]\Q@{artifactid}-@{version}\E(?:(?:\Q-@{classifier}\E)|)\Q.@{type}\E" />
-                </restrict>
+                <fileset refid="maven.tmp.dependencies" />
                 <mapper type="flatten" />
               </copy>
             </try>
@@ -617,20 +887,235 @@
           </trycatch>
         </else>
       </if>
-      
+
       <!-- set the property with the value -->
       <if>
         <equals arg1="${maven.tmp.wasError}" arg2="true" />
-        <then><var name="@{property}" unset="true" /></then>
+        <then>
+          <var name="@{property}" unset="true" />
+        </then>
         <elseif>
           <equals arg1="@{classifier}" arg2="" />
-          <then><var name="@{property}" value="@{dir}/@{artifactid}-@{version}.@{type}" /></then>
+          <then>
+            <var name="@{property}" value="@{dir}/@{artifactid}-@{version}.@{type}" />
+          </then>
         </elseif>
-        <else><var name="@{property}" value="@{dir}/@{artifactid}-@{version}-@{classifier}.@{type}" /></else>
+        <else>
+          <var name="@{property}" value="@{dir}/@{artifactid}-@{version}-@{classifier}.@{type}" />
+        </else>
       </if>
     </sequential>
   </macrodef>
   
+  <macrodef name="mavenRemoveInvalidsFromPom">
+    <attribute name="pomfile" />
+    <attribute name="dest" default="@{pomfile}" />
+    
+    <sequential>
+      <fileMergeXml file1="@{pomfile}" 
+                    file2="${maven.library.resfile.pomInvalidElements}" 
+                    dest="@{dest}" 
+                    conf="${maven.library.resfile.pomInvalidElements.merge}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="mavenMapArtifact">
+    <attribute name="groupid" />
+    <attribute name="artifactid" />
+    
+    <!-- the properties to be set with the mapped value -->
+    <attribute name="propertyGroupId" default="maven.tmp.mappedGroupId" />
+    <attribute name="propertyArtifactId" default="maven.tmp.mappedArtifactId" />
+    
+    <sequential>
+      <var name="maven.tmp.group" value="@{groupid}" />
+      <var name="maven.tmp.artifact" value="@{artifactid}" />
+      <var name="maven.tmp.propertyGroupId" value="@{propertyGroupId}" />
+      <var name="maven.tmp.propertyArtifactId" value="@{propertyArtifactId}" />
+
+      <script language="javascript"><![CDATA[
+        // helper method to load js files
+        // thanks to http://stackoverflow.com/questions/650377/javascript-rhino-use-library-or-include-other-scripts
+        var l = function(property) {
+          var jsFile = project.getProperty(property);
+          var fileReader = new java.io.FileReader(jsFile);
+          var fullRead = org.apache.tools.ant.util.FileUtils.readFully(fileReader);
+          
+          return "" + new java.lang.String(fullRead);
+        }
+        
+        // load the libraries
+        eval(l("maven.library.resfile.js.general"));
+      
+        // get the properties needed
+        var group            = project.getProperty("maven.tmp.group");
+        var artifact         = project.getProperty("maven.tmp.artifact");
+        var groupProperty    = project.getProperty("maven.tmp.propertyGroupId");
+        var artifactProperty = project.getProperty("maven.tmp.propertyArtifactId");
+        
+        // get the mapping
+        var mapping = mapArtifact(group, artifact);
+        
+        // set the properties
+        var setVar = project.createTask("var");
+        setVar.setName(groupProperty); setVar.setValue(mapping[0]); setVar.execute();
+        setVar.setName(artifactProperty); setVar.setValue(mapping[1]); setVar.execute();
+      ]]></script>
+    </sequential>
+  </macrodef>
+  
+  
+  <macrodef name="mavenMapArtifactsInPom">
+    <attribute name="pomfile" />
+    <attribute name="dest" default="@{pomfile}" />
+    <attribute name="fallbackGroupId" default="" />
+    <attribute name="fallbackArtifactId" default="" />
+    
+    <sequential>
+      <var name="maven.tmp.pomFile" value="@{pomfile}" />
+      <var name="maven.tmp.outputFile" value="@{dest}" />
+      <var name="maven.tmp.fallbackGroupId" value="@{fallbackGroupId}" />
+      <var name="maven.tmp.fallbackArtifactId" value="@{fallbackArtifactId}" />
+    
+      <script language="javascript"><![CDATA[
+        // helper method to load js files
+        // thanks to http://stackoverflow.com/questions/650377/javascript-rhino-use-library-or-include-other-scripts
+        var l = function(property) {
+          var jsFile = project.getProperty(property);
+          var fileReader = new java.io.FileReader(jsFile);
+          var fullRead = org.apache.tools.ant.util.FileUtils.readFully(fileReader);
+          
+          return "" + new java.lang.String(fullRead);
+        }
+        
+        // load the libraries
+        eval(l("maven.library.resfile.js.general"));
+        eval(l("maven.library.resfile.js.datastructure"));
+        eval(l("maven.library.resfile.js.parser"));
+        
+        // get the pom file and parse it
+        var pomFile = new java.io.File(project.getProperty("maven.tmp.pomFile"));
+        var outputFile = new java.io.File(project.getProperty("maven.tmp.outputFile"));
+        var fallbackGroupId = project.getProperty("maven.tmp.fallbackGroupId");
+        var fallbackArtifactId = project.getProperty("maven.tmp.fallbackArtifactId");
+        
+        // get all the dependencies defined
+        mapPom(pomFile, outputFile, fallbackGroupId, fallbackArtifactId);
+      ]]></script>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="mavenRegisterPomsParents">
+    <attribute name="resource" />
+    <attribute name="action" default="deploy" />
+    <attribute name="innerCall" default="false" />
+    
+    <sequential>
+      <!-- check if it's an inner call if so we don't have to reset the list -->
+      <if>
+        <not><equals arg1="@{innerCall}" arg2="true" /></not>
+        <then>
+          <var name="maven.tmp.parentResolvedList" value="" />
+        </then>
+      </if>
+      
+      <!-- resolve the parent to be registered -->
+      <mavenSetPom pomid="maven.tmp.registerParents" pomfile="@{resource}" />
+      
+      <!-- 
+        the problem is that the parent property cannot be reset, it's a hook which uses
+        the delegates mechanism of ant... delegates cannot be deregistered... a pom is
+        therefore not overwritten and the pom-properties of a parent return null, which
+        is than delegated to the next delegate (i.e. the old parent).
+        Generally this implementation could be considered as a bug, because instead of 
+        null the upper POMPropertyEvaluator should reutrn a 
+        org.apache.tools.ant.property.NullReturn.
+        -->      
+      <script language="javascript"><![CDATA[
+        var hasParent = "false";
+      
+        if (project.hasReference("maven.tmp.registerParents")) {
+          var ref = project.getReference("maven.tmp.registerParents");
+          
+          // check if it's a POM and has a parent
+          if (ref instanceof org.apache.maven.artifact.ant.Pom && 
+              ref.getModel().getParent() != null) {
+            hasParent = "true";
+          }
+        }
+        
+        // set a variable
+        var setVar = project.createTask("var");
+        setVar.setName("maven.tmp.hasParent"); setVar.setValue(hasParent); setVar.execute();
+      ]]></script>
+
+      <if>
+        <and>
+          <equals arg1="${maven.tmp.hasParent}" arg2="true" />
+          <isset property="maven.tmp.registerParents.parent.groupId" />
+          <isset property="maven.tmp.registerParents.parent.artifactId" />
+          <isset property="maven.tmp.registerParents.parent.version" />
+        </and>
+        <then>
+          
+          <!-- get the parent and register is -->
+          <mavenResolveSingleDependency groupid="${maven.tmp.registerParents.parent.groupId}" artifactid="${maven.tmp.registerParents.parent.artifactId}" 
+                                        version="${maven.tmp.registerParents.parent.version}" type="pom" fileset="maven.tmp.parentDependency" />
+          <var name="maven.tmp.parentDependencyFile" value="" unset="true" />
+          <pathconvert pathsep="," property="maven.tmp.parentDependencyFile" refid="maven.tmp.parentDependency" />
+
+          <!-- set the pom to have it's id -->
+          <mavenRemoveInvalidsFromPom pomfile="${maven.tmp.parentDependencyFile}" />
+
+          <!-- 
+            map the parent file against the mappings, this is critical because afterwards the pom 'modifiedParent.pom' 
+            can only be resolved against the target
+            -->
+          <generateUUID property="maven.tmp.parentUniqueId" />
+          <var name="maven.tmp.parentUniquePom" value="${maven.tmpdir}/${maven.tmp.parentUniqueId}.pom" />
+          <mavenMapArtifactsInPom pomfile="${maven.tmp.parentDependencyFile}" dest="${maven.tmp.parentUniquePom}"
+                                  fallbackGroupId="${maven.tmp.registerParents.parent.groupId}" fallbackArtifactId="${maven.tmp.registerParents.parent.artifactId}" />
+          
+          <!-- 
+            call the parent again for parents of the parent, after this call all properties, would be overwritten, 
+            therefore we need some list to keep track of the last parentUniquePom
+            -->
+          <appendList list1="${maven.tmp.parentResolvedList}" list2="${maven.tmp.parentUniquePom}" property="maven.tmp.parentResolvedList" separator="|" trimItems="true" />
+          <mavenRegisterPomsParents resource="${maven.tmp.parentDependencyFile}" action="@{action}" innerCall="true" />
+          
+          <!-- now we have to push the last one from the list -->
+          <popFromList listProperty="maven.tmp.parentResolvedList" modifyList="true" delimiter="|" property="maven.tmp.parentUniquePom" />
+          
+          <!-- now we should be able to resolve the modified pom -->
+          <echo level="error">+++++++++++++> ${maven.settings.target.file}</echo>
+          <mavenSetPom pomid="maven.tmp.parentModifiedPomId" pomfile="${maven.tmp.parentUniquePom}" settingsFile="${maven.settings.target.file}" />
+          
+          <!-- now deploy or install depending on the action -->
+          <if>
+            <equals arg1="@{action}" arg2="deploy" />
+            <then>
+              <mavenDeploy file="${maven.tmpdir}/modifiedParent.pom" pomid="maven.tmp.parentModifiedPomId" />
+            </then>
+            <else>
+              <mavenInstall file="${maven.tmpdir}/modifiedParent.pom" pomid="maven.tmp.parentModifiedPomId" />
+            </else>
+          </if>
+        </then>
+        <elseif>
+          <equals arg1="${maven.tmp.hasParent}" arg2="false" />
+          <then>
+            <!-- no parent everything is fine -->
+            <echo level="debug">The resource '@{resource}' has no parents</echo>
+          </then>
+        </elseif>
+        <else>
+          <echo level="warn">The parent of the resource '@{resource}' could only be determined partly: ${maven.tmp.registerParents.parent.groupId}:${maven.tmp.registerParents.parent.artifactId}:${maven.tmp.registerParents.parent.version}</echo>
+        </else>
+      </if>
+          
+    </sequential>
+  </macrodef>
+
   <!--
     The action attribute specifies if the resources should be deployed (i.e. action == "deploy") or installed (i.e. action == "install")
     -->
@@ -641,12 +1126,23 @@
     <attribute name="basedir" />
     <attribute name="action" default="deploy" />
     <attribute name="attachments" default="" />
+    <attribute name="onlyNew" default="false" />
+    
+    <!-- the repository to check against if onlyNew = true -->
+    <attribute name="artifactoryUrl" default="${maven.artifactory.source.url}" />
+    <attribute name="repositoryUrl" default="${maven.repository.source.url}" />
+    <attribute name="repositoryUser" default="${maven.repository.source.username}" />
+    <attribute name="repositoryEncPassword" default="${maven.repository.source.password}" />
     
     <sequential>
-            
+
       <!-- get the information -->
       <mavenDetermineArtifactInformation resourcefolder="@{resourcefolder}" resourcefilename="@{resourcefilename}" resource="@{resource}" basedir="@{basedir}" />
-    
+
+      <!-- map the information -->
+      <mavenMapArtifact groupid="${maven.tmp.groupId}" artifactid="${maven.tmp.artifactId}" 
+                        propertyGroupId="maven.tmp.mappedGroupId" propertyArtifactId="maven.tmp.mappedArtifactId" />
+
       <!-- do type and classifier specific stuff -->
       <if>
         <equals arg1="${maven.tmp.type}" arg2="pom" />
@@ -665,10 +1161,34 @@
           <var name="maven.tmp.tasktype" value="attachment" />
         </else>
       </if>
-
-      <!-- do nothing if it's a pom -->
+      
+      <!-- check if the file is relevant -->
       <if>
-        <not><equals arg1="${maven.tmp.tasktype}" arg2="pom" /></not>
+        <equals arg1="${maven.tmp.tasktype}" arg2="pom" />
+        <then>
+          <mavenRegisterPomsParents resource="@{resource}" action="@{action}" />
+          <var name="maven.tmp.skipResource" value="true" />
+        </then>
+        <elseif>
+          <and>
+            <not><equals arg1="@{onlyNew}" arg2="false" /></not>
+            <not><contains string="${maven.tmp.version}" substring="SNAPSHOT" /></not>
+            <equals arg1="${maven.tmp.tasktype}" arg2="artifact" />
+          </and>
+          <then>
+            <mavenHasDependency property="maven.tmp.skipResource" 
+                                artifactoryUrl="@{artifactoryUrl}" repositoryUrl="@{repositoryUrl}" repositoryUser="@{repositoryUser}" repositoryEncPassword="@{repositoryEncPassword}"
+                                groupId="${maven.tmp.mappedGroupId}" artifactId="${maven.tmp.mappedArtifactId}" version="${maven.tmp.version}" type="${maven.tmp.type}" classifier="${maven.tmp.classifier}" />
+          </then>
+        </elseif>
+        <else>
+          <var name="maven.tmp.skipResource" value="false" />
+        </else>
+      </if>
+      
+      <!-- do nothing if it has to be skipped -->
+      <if>
+        <equals arg1="${maven.tmp.skipResource}" arg2="false" />
         <then>
           
           <!-- generate a folder to store the files -->
@@ -679,8 +1199,15 @@
           <!-- resolve the pom dependency -->
           <mavenCopySingleDependency groupid="${maven.tmp.groupId}" artifactid="${maven.tmp.artifactId}" version="${maven.tmp.version}" 
                                      type="pom" classifier="" dir="${maven.tmp.dependencyFolder}" property="maven.tmp.singleDependencyPomFile" />
-          <mavenSetPom pomid="maven.tmp.singleDependencyPomId" pomfile="${maven.tmp.singleDependencyPomFile}" />
-        
+          <mavenRemoveInvalidsFromPom pomfile="${maven.tmp.singleDependencyPomFile}" />
+
+          <!-- check for parents -->
+          <mavenRegisterPomsParents resource="${maven.tmp.singleDependencyPomFile}" action="@{action}" />
+          
+          <!-- now map the stuff and set the pom -->
+          <mavenMapArtifactsInPom pomfile="${maven.tmp.singleDependencyPomFile}" dest="${maven.tmpdir}/modifiedParent.pom" fallbackGroupId="${maven.tmp.groupId}" fallbackArtifactId="${maven.tmp.artifactId}" />
+          <mavenSetPom pomid="maven.tmp.singleDependencyPomId" pomfile="${maven.tmpdir}/modifiedParent.pom" settingsfile="${maven.settings.target.file}" />
+
           <!-- finally check the action and do a deploy or an install -->
           <if>
             <equals arg1="@{action}" arg2="deploy" />
@@ -689,7 +1216,8 @@
               <!-- it could be that a RELEASE cannot be overwritten, therefore wrap it and check for SNAPSHOT errors -->
               <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
                 <try>
-
+                  <setLogLevel logLevel="error" />
+                  
                   <!-- get attachments -->
                   <if>
                     <equals arg1="${maven.tmp.tasktype}" arg2="artifact" />
@@ -705,11 +1233,12 @@
                       <mavenDeployAttachment file="@{resource}" classifier="${maven.tmp.classifier}" type="${maven.tmp.type}" pomid="maven.tmp.singleDependencyPomId" />
                     </else>
                   </if>
+                  <resetLogLevel />
                 </try>
                 <catch>
                   <if>
                     <contains string="${maven.tmp.version}" substring="SNAPSHOT" />
-                    <then><fail>The ${maven.tmp.artifactId}-${maven.tmp.version} could not be uploaded</fail></then>
+                    <then><fail>The ${maven.tmp.artifactId}-${maven.tmp.version} could not be uploaded, reason: ${maven.tmp.error}</fail></then>
                     <else><echo level="debug">The ${maven.tmp.artifactId}-${maven.tmp.version} could not be uploaded</echo></else>
                   </if>
                 </catch>
@@ -738,7 +1267,11 @@
           
           <!-- cleanUp -->
           <fileCleanUp dir="${maven.tmp.dependencyFolder}" recreate="false" />
+          <echo level="error">+++> NOT SKIPPING: ${maven.tmp.groupId}:${maven.tmp.artifactId}:${maven.tmp.version} (${maven.tmp.mappedGroupId}:${maven.tmp.mappedArtifactId}) ${maven.tmp.classifier} ${maven.tmp.type}</echo>
         </then>
+        <else>
+          <echo level="error">---> SKIPPING: ${maven.tmp.groupId}:${maven.tmp.artifactId}:${maven.tmp.version} (${maven.tmp.mappedGroupId}:${maven.tmp.mappedArtifactId}) ${maven.tmp.classifier} ${maven.tmp.type}</echo>
+        </else>
       </if>
     </sequential>
   </macrodef>
@@ -815,7 +1348,7 @@
     <attribute name="action" default="deploy" />
     
     <sequential>
-    
+
       <!-- get each defined attachment -->
       <mavenCopySingleDependency groupid="@{groupid}" artifactid="@{artifactid}" version="@{version}" failonerror="@{failonerror}"
                                  type="@{type}" classifier="@{classifier}" dir="@{dir}" property="maven.tmp.singleDependencyAttachmentFile" />
@@ -829,12 +1362,14 @@
             
               <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
                 <try>
+                  <setLogLevel logLevel="error" />
                   <mavenDeployAttachment file="${maven.tmp.singleDependencyAttachmentFile}" classifier="@{classifier}" type="@{type}" pomid="@{pomid}" />
+                  <resetLogLevel />
                 </try>
                 <catch>
                   <if>
                     <contains string="@{version}" substring="SNAPSHOT" />
-                    <then><fail>The attachment @{artifactid}-@{version}-@{classifier} could not be uploaded</fail></then>
+                    <then><fail>The attachment @{artifactid}-@{version}-@{classifier} could not be uploaded, reason: ${maven.tmp.error}</fail></then>
                     <else><echo level="debug">The attachment @{artifactid}-@{version}-@{classifier} could not be uploaded</echo></else>
                   </if>
                 </catch>
@@ -915,5 +1450,17 @@
   <target name="copyDeps">
     <fileCleanUp dir="${maven.depsdir}" recreate="true" />
     <mavenCopyDependecies dir="${maven.depsdir}" />
+  </target>
+  
+  <target name="deployParents">
+    <mavenDeployParents />
+  </target>
+  
+  <target name="installParents">
+    <mavenInstallParents />
+  </target>
+  
+  <target name="uploadParents">
+    <mavenUploadParents />
   </target>
 </project>

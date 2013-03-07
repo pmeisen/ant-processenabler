@@ -27,24 +27,6 @@ var parseLibraries = function(libraryFiles) {
   return libraries;
 }
 
-var createXmlDocument = function(fileLocation) {
-  // get the file and the read the XML-Document
-  var xmlFile = new java.io.File(fileLocation);
-
-  if (xmlFile.isFile() && xmlFile.exists() && xmlFile.canRead()) {
-    var dbFactory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-    var dBuilder = dbFactory.newDocumentBuilder();
-    var doc = dBuilder.parse(xmlFile);
-    
-    // normalize - http://stackoverflow.com/questions/13786607/normalization-in-dom-parsing-with-java-how-does-it-work
-    doc.getDocumentElement().normalize();
-    
-    return doc;
-  } else {
-    return null;
-  } 
-}
-
 // function to parse a library
 var parseLibrary = function(fileLocation) {
   var targetNode   = "target";
@@ -78,7 +60,7 @@ var parseLibrary = function(fileLocation) {
       echo("The library '" + library.name + "' has parameters defined which is invalid for libraries.", "warn");
     }
     
-    // get the direct childrens
+    // get the direct children
     var attributeNodes = rootNode.getChildNodes();
     for (var temp = 0; temp < attributeNodes.getLength(); temp++) {
       var attributeNode = attributeNodes.item(temp);
@@ -176,13 +158,7 @@ var parseParameter = function(textParameter) {
 var parseNodeContent = function(node) {
 
   // remove all the whitespaces to ensure nice indent
-  var xpathFactory = javax.xml.xpath.XPathFactory.newInstance();
-  var xpathExp = xpathFactory.newXPath().compile("//text()[normalize-space(.) = '']");  
-  var emptyTextNodes = xpathExp.evaluate(node, javax.xml.xpath.XPathConstants.NODESET);
-  for (var i = 0; i < emptyTextNodes.getLength(); i++) {
-    var emptyTextNode = emptyTextNodes.item(i);
-    emptyTextNode.getParentNode().removeChild(emptyTextNode);
-  }
+  removeWhiteSpacesInXml(node);
   
   // now use the transformer to format
   var transformer = javax.xml.transform.TransformerFactory.newInstance().newTransformer();

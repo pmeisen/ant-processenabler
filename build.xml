@@ -42,4 +42,22 @@
       </if>
     </sequential>
   </macrodef>
+  
+  <target name="t">
+
+    <mavenSetPom pomfile="result.xml" pomid="lala" settingsFile="test.xml" />
+    <mavenSetPom pomfile="result2.xml" pomid="lulu" settingsFile="test2.xml" />
+    
+    <mavenSetPom pomfile="result.xml" pomid="lulu" settingsFile="test.xml" />
+    <mavenSetPom pomfile="result2.xml" pomid="lala" settingsFile="test2.xml" />
+    
+    <mavenSetPom pomfile="pom.xml" />
+    
+    <mavenSetPom pomfile="pom.xml" pomid="lala" />
+    
+    <mavenSetPom pomfile="pom.xml" pomid="lala" settingsFile="source.xml" />
+    <mavenSetPom pomfile="pom2.xml" pomid="lala" settingsFile="source.xml" />
+    
+    <mavenSetPom pomfile="pom.xml" pomid="lala" />
+  </target>
 </project>

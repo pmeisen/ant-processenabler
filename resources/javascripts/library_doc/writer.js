@@ -219,7 +219,7 @@ var replaceProperties = function(prefix, object, input, nullReplacement) {
     echo("DA");
       newLine = replaceProperties(prefix, object[i], newLine, nullReplacement);
     }
-  } else if (typeof object == "string" || object instanceof java.lang.String) {
+  } else if (isString(object)) {
       newLine = newLine.replace("${" + prefix + "}", object);
   } else {
     for (property in object) {
@@ -237,12 +237,12 @@ var replaceProperties = function(prefix, object, input, nullReplacement) {
           
           // get the value of the array and make sure we have a string
           var value = propertyValue[key];
-          if (typeof value != "string" && value instanceof java.lang.String == false) continue;
+          if (!isString(value)) continue;
 
           // replace
           newLine = newLine.replace("${" + prefix + "." + property + "." + key + "}", value);
         }
-      } else if (typeof propertyValue == "string" || propertyValue instanceof java.lang.String) {
+      } else if (isString(propertyValue) {
         newLine = newLine.replace("${" + prefix + "." + property + "}", propertyValue);
       } else if (propertyValue instanceof java.lang.Object) {
         // an Object of the Java world is nothing from the internal datastructure, therefore we just parse it to a String
@@ -398,7 +398,7 @@ var HtmlLoopData = function(parent, objectName, property, selectorProperty, sele
 HtmlLoopData.prototype.append = function(content) {
   if (content == null) {
     fail("The content of a loop cannot be null!");
-  } else if (typeof content == "string" || content instanceof java.lang.String) {
+  } else if (isString(content)) {
     this.content.push(content);
     return this;
   } else if (content.constructor === HtmlLoopData) {
@@ -422,7 +422,7 @@ HtmlLoopData.prototype.finalize = function(output, objects, settings) {
   for (var i = 0; i < this.content.length; i++) {
     var content = this.content[i];
 
-    if (typeof content == "string" || content instanceof java.lang.String) {
+    if (isString(content)) {
       output.append(replaceObjectsProperties(objects, content, settings.nullReplacement));
     } else if (content.constructor === HtmlLoopData) {
     
