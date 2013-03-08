@@ -242,7 +242,7 @@ var replaceProperties = function(prefix, object, input, nullReplacement) {
           // replace
           newLine = newLine.replace("${" + prefix + "." + property + "." + key + "}", value);
         }
-      } else if (isString(propertyValue) {
+      } else if (isString(propertyValue)) {
         newLine = newLine.replace("${" + prefix + "." + property + "}", propertyValue);
       } else if (propertyValue instanceof java.lang.Object) {
         // an Object of the Java world is nothing from the internal datastructure, therefore we just parse it to a String
