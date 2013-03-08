@@ -371,6 +371,7 @@
     <attribute name="parameters" default="" />
     <attribute name="dirPattern" default=".*" />
     <attribute name="subDirectories" default="trunk" />
+    <attribute name="failOnError" default="true" />
   
     <sequential>
       <var name="dirname" value="" unset="true" />
@@ -388,9 +389,25 @@
         </and>
         <then>
           <echo level="info">Running targets @{targets} for ${dirname}</echo>
-          <exec dir="${buildDir}" executable="cmd.exe">
+          <var name="file.tmp.runAntError" unset="true" />
+          <var name="file.tmp.runAntResult" unset="true" />
+          <exec dir="${buildDir}" executable="cmd.exe" resultproperty="file.tmp.runAntResult" errorproperty="file.tmp.runAntError">
             <arg line="/c &quot;${ant.home}/bin/ant&quot; @{targets} @{parameters}"/>
           </exec>
+          
+          <if>
+            <and>
+              <isset property="file.tmp.runAntResult" />
+              <not><equals arg1="${file.tmp.runAntResult}" arg2="0" /></not>
+              <or><equals arg1="@{failOnError}" arg2="true" /><equals arg1="@{failOnError}" arg2="yes" /><equals arg1="@{failOnError}" arg2="y" /></or>
+            </and>
+            <then>            
+              <fail>${file.tmp.runAntError}</fail>
+            </then>
+            <else>
+              <echo level="debug">Executed ant at ${dirname} with @{targets} [Return-Code: ${file.tmp.runAntResult} (${file.tmp.runAntError})]</echo>
+            </else>
+          </if>
         </then>
       </if>
     </sequential>
@@ -404,12 +421,14 @@
     <attribute name="dirPattern" default=".*" />
     <attribute name="projectSubDirectories" default="trunk" />
     <attribute name="rootDirectories" default="." />
+    <attribute name="failOnError" default="true" />
     
     <sequential>
       <var name="file.tmp.wrapperTargets" value="@{targets}" />
       <var name="file.tmp.wrapperParameters" value="@{parameters}" />
       <var name="file.tmp.wrapperDirPattern" value="@{dirPattern}" />
       <var name="file.tmp.projectSubDirectories" value="@{projectSubDirectories}" />
+      <var name="file.tmp.failOnError" value="@{failOnError}" />
 
       <for param="directory">
         <path>
@@ -417,7 +436,8 @@
         </path>
         <sequential>
           <runAnt directory="@{directory}" targets="${file.tmp.wrapperTargets}" parameters="${file.tmp.wrapperParameters}" 
-                  dirPattern="${file.tmp.wrapperDirPattern}" subDirectories="${file.tmp.projectSubDirectories}"/>
+                  dirPattern="${file.tmp.wrapperDirPattern}" subDirectories="${file.tmp.projectSubDirectories}" 
+                  failOnError="${file.tmp.failOnError}" />
         </sequential>
       </for>
     </sequential>

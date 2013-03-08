@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testRunAnt">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+  
+  <macrodef name="checkNoFailureRunAnt">
+    <sequential>
+      
+      <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
+        <try>
+          <runAnt targets="failOrNot" parameters="-Dmain.logLevel=&quot;${main.logLevel}&quot; -Dfail=&quot;false&quot;" subDirectories="" />
+        </try>
+        <catch>
+          <fail>checkNoFailureRunAnt failed: An error occurred while calling runAnt, which shouldn't fail</fail>
+        </catch>
+        <finally />
+      </trycatch>
+      
+      <echo level="info">checkNoFailureRunAnt was successful!</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkFailureRunAnt">
+    <sequential>
+      <var name="test.runAnt.wasError" value="false" />
+    
+      <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
+        <try>
+          <runAnt targets="failOrNot" parameters="-Dmain.logLevel=&quot;${main.logLevel}&quot; -Dfail=&quot;true&quot;" subDirectories="" />
+        </try>
+        <catch>
+          <var name="test.runAnt.wasError" value="true" />
+        </catch>
+        <finally />
+      </trycatch>
+      
+      <if>
+        <equals arg1="${test.runAnt.wasError}" arg2="true" />
+        <then>
+          <echo level="info">checkFailureRunAnt was successful!</echo>
+        </then>
+        <else>
+          <fail>checkFailureRunAnt failed: No error occurred while calling runAnt, which should fail</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkFailureSurpressingRunAnt">
+    <sequential>
+      <var name="test.runAnt.wasError" value="false" />
+    
+      <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
+        <try>
+          <runAnt targets="failOrNot" failOnError="false" parameters="-Dmain.logLevel=&quot;${main.logLevel}&quot; -Dfail=&quot;true&quot;" subDirectories="" />
+        </try>
+        <catch>
+          <var name="test.runAnt.wasError" value="true" />
+        </catch>
+        <finally />
+      </trycatch>
+      
+      <if>
+        <equals arg1="${test.runAnt.wasError}" arg2="false" />
+        <then>
+          <echo level="info">checkFailureSurpressingRunAnt was successful!</echo>
+        </then>
+        <else>
+          <fail>checkFailureSurpressingRunAnt failed: An error occurred while calling runAnt, which should fail - but should have surpressed the failure</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+    
+  <target name="failOrNot">
+    <if>
+      <and>
+        <isset property="fail" />
+        <equals arg1="${fail}" arg2="true" />
+      </and>
+      <then>
+        <fail>I failed because you wanted me to...</fail>
+      </then>
+      <else>
+        <echo>I can live... I am free...</echo>
+      </else>
+    </if>
+  </target>
+    
+  <target name="antTest">
+    <checkNoFailureRunAnt />
+    <checkFailureRunAnt />
+    <checkFailureSurpressingRunAnt />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

@@ -6,7 +6,7 @@
   
   <!-- 
     runs all files like:
-      -> ant -Dparameters="-Dmain.logLevel=INFO" -DdirPattern=replace.*
+      -> ant -DdirPattern=replace.*
          to check all replace tests
       -> ant 
          to do a full test
