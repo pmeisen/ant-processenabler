@@ -1265,10 +1265,10 @@
           
           <!-- cleanUp -->
           <fileCleanUp dir="${maven.tmp.dependencyFolder}" recreate="false" />
-          <echo level="warn">Reloading Artifact: ${maven.tmp.groupId}:${maven.tmp.artifactId}:${maven.tmp.version} (${maven.tmp.mappedGroupId}:${maven.tmp.mappedArtifactId})</echo>
+          <echo level="error">Reloading Artifact: ${maven.tmp.groupId}:${maven.tmp.artifactId}:${maven.tmp.version} (${maven.tmp.mappedGroupId}:${maven.tmp.mappedArtifactId})</echo>
         </then>
         <else>
-          <echo level="warn">Skipping Artifact: ${maven.tmp.groupId}:${maven.tmp.artifactId}:${maven.tmp.version} (${maven.tmp.mappedGroupId}:${maven.tmp.mappedArtifactId})</echo>
+          <echo level="error">Skipping Artifact: ${maven.tmp.groupId}:${maven.tmp.artifactId}:${maven.tmp.version} (${maven.tmp.mappedGroupId}:${maven.tmp.mappedArtifactId})</echo>
         </else>
       </if>
     </sequential>
