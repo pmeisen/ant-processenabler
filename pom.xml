@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project>
+  <!-- 
+    This is the process-enabler project.
+    The project can be found under:
+    - https://github.com/pmeisen/ant-processenabler
+    - git://github.com/pmeisen/ant-processenabler.git
+    The fully packed 'application' is available here;
+    - http://ant-processenabler.meisen.net/downloads/ant-processenabler-1.0.0-SNAPSHOT.zip
+    -->
   <modelVersion>4.0.0</modelVersion>
   
   <!-- project settings -->
