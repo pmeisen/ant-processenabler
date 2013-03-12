@@ -40,7 +40,7 @@
     <attribute name="javadocFileset" default="eclipse.tmp.javaDocDependencies" />
     
     <sequential>
-      <var name="eclipse.tmp.pomFile" value="${build.tmpdir}/merged_pomEclipse.xml" />
+      <var name="eclipse.tmp.pomFile" value="${main.tmpdir}/merged_pomEclipse.xml" />
       <eclipseCreatePomFile pomFile="${eclipse.tmp.pomFile}" />
       
       <mavenResolveDependencies scope="test" pomfile="${eclipse.tmp.pomFile}" fileset="@{fileset}" 
@@ -53,7 +53,7 @@
     eclipseCreatePomFile - creates the pom-file which contains all dependencies of Eclipse
     -->
   <macrodef name="eclipseCreatePomFile">
-    <attribute name="pomFile" default="${build.tmpdir}/merged_pomEclipse.xml" />
+    <attribute name="pomFile" default="${main.tmpdir}/merged_pomEclipse.xml" />
 
     <sequential>
       <if>
@@ -80,7 +80,7 @@
   <macrodef name="eclipseCopyDependencies">   
 
     <sequential>
-      <var name="eclipse.tmp.pomFile" value="${build.tmpdir}/merged_pomEclipse.xml" />
+      <var name="eclipse.tmp.pomFile" value="${main.tmpdir}/merged_pomEclipse.xml" />
       <eclipseCreatePomFile pomFile="${eclipse.tmp.pomFile}" />
 
       <!-- clean the folders -->
