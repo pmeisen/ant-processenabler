@@ -11,7 +11,7 @@
       
       <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
         <try>
-          <runAnt targets="failOrNot" parameters="-Dmain.logLevel=&quot;${main.logLevel}&quot; -Dfail=&quot;false&quot;" subDirectories="" />
+          <runAnt targets="cleanUp,failOrNot" parameters="-Dmain.logLevel=&quot;${main.logLevel}&quot; -Dfail=&quot;false&quot;" subDirectories="" />
         </try>
         <catch>
           <fail>checkNoFailureRunAnt failed: An error occurred while calling runAnt, which shouldn't fail</fail>
@@ -29,7 +29,7 @@
     
       <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
         <try>
-          <runAnt targets="failOrNot" parameters="-Dmain.logLevel=&quot;${main.logLevel}&quot; -Dfail=&quot;true&quot;" subDirectories="" />
+          <runAnt targets="cleanUp,failOrNot" parameters="-Dmain.logLevel=&quot;${main.logLevel}&quot; -Dfail=&quot;true&quot;" subDirectories="" />
         </try>
         <catch>
           <var name="test.runAnt.wasError" value="true" />
@@ -55,7 +55,7 @@
     
       <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
         <try>
-          <runAnt targets="failOrNot" failOnError="false" parameters="-Dmain.logLevel=&quot;${main.logLevel}&quot; -Dfail=&quot;true&quot;" subDirectories="" />
+          <runAnt targets="cleanUp,failOrNot" failOnError="false" parameters="-Dmain.logLevel=&quot;${main.logLevel}&quot; -Dfail=&quot;true&quot;" subDirectories="" />
         </try>
         <catch>
           <var name="test.runAnt.wasError" value="true" />

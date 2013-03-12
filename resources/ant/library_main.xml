@@ -58,7 +58,10 @@
     -->
   <property name="main.markedProperties.prefix" value="" description="A prefix can be defined which marks a property to be loaded without the prefix, e.g. myPrefix.sample.property=5 should be known by the system with sample.property=5" />
   <property name="main.vendor" value="" description="The vendor used for compiled/build versions" />
-  <property name="main.tmpdir" location="${java.io.tmpdir}" description="The temporary folder which should be used by all libraries when generating temporary content" />
+  <property name="main.tmpIndicatorFile" value="created.tmp" description="File which is created in the temporary directory for this ant-call" />
+  <property name="main.tmplocation" location="${java.io.tmpdir}/ant-processenabler" description="The temporary folder which contains all session, use 'main.tmpdir'-property for all temporary data of a session" />
+  <property name="main.tmpdir" value="" description="The temporary folder which should be used by all libraries when generating temporary content" />
+  <property name="main.timeoutCreationInDays" value="1" description="Defines when a creation process should be assumed as timed-out, i.e. when the process should be cleanup" />
   <property name="main.logLevel" value="error" description="The logging level to be used can be error, warn, info, verbose, debug" />
   <property name="main.addExtensionsByDefault" value="false" description="Adds all defined extension automatically if set to true, otherwise extensions have to be explicitly added" />
 
@@ -81,7 +84,10 @@
       </tstamp>
     
       <!-- make sure we have the temporary folder -->
-      <mkdir dir="${main.tmpdir}" />
+      <mkdir dir="${main.tmplocation}" />
+      
+      <!-- core libraries may need some temporary data to, but we don't have more right now -->
+      <var name="main.tmpdir" value="${main.tmplocation}" />
             
       <!-- core must be added here before any other functionality can be used -->
       <for list="${main.import.order.core}" param="main.core.library">
@@ -94,6 +100,27 @@
           <import file="${main.core.library.file}" />
         </sequential>
       </for>
+      
+      <!-- cleanup all the old temp-directories -->
+      <tstamp>
+        <format property="main.tmp.backUpTime" pattern="MM/dd/yyyy hh:mm aa" locale="en,UK" offset="-${main.timeoutCreationInDays}" unit="day"/>
+      </tstamp>
+      <delete includeemptydirs="true" failonerror="false">
+        <fileset dir="${main.tmplocation}" id="main.filesetid">
+          <and>
+            <date datetime="${main.tmp.backUpTime}" when="before" />
+            <present present="both" targetdir="${main.tmplocation}">
+              <regexpmapper from="^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})($$|[/\\].*$$)" to="\1/${main.tmpIndicatorFile}"/>
+            </present>
+          </and>
+        </fileset>
+      </delete>
+      
+      <!-- generate a unique temp-directory -->
+      <generateUUID property="main.tmpfolder" />
+      <var name="main.tmpdir" value="${main.tmplocation}/${main.tmpfolder}" />
+      <mkdir dir="${main.tmpdir}" />
+      <touch file="${main.tmpdir}/${main.tmpIndicatorFile}" />
             
       <!-- there is a chance to pass properties to the system which are marked via a prefix which has to be removed now -->
       <if>
@@ -173,6 +200,9 @@
     <if><typefound name="mavenCleanUp"/><then><mavenCleanUp /></then></if>
     <if><typefound name="buildCleanUp"/><then><buildCleanUp /></then></if>
     <if><typefound name="updateCleanUp"/><then><updateCleanUp /></then></if>
+    
+    <!-- delete the session temporary folder -->
+    <delete dir="${main.tmpdir}" failonerror="false" />
   </target>
   
   <target name="wrapUp">
