@@ -94,7 +94,7 @@
           <import file="${main.core.library.file}" />
         </sequential>
       </for>
-      
+            
       <!-- there is a chance to pass properties to the system which are marked via a prefix which has to be removed now -->
       <if>
         <and>
@@ -106,6 +106,12 @@
                             setPropertiesWithoutPrefix="true" unsetProperties="true" skipPattern="^main\." />
         </then>
       </if>
+      
+      <!-- replace the loaded properties, e.g. if nested properties are used somewhere -->
+      <propertyset id="main.tmp.propertiesSet">
+        <propertyref regex=".*"/>
+      </propertyset>
+      <replacePropertiesInProperties propertySetId="main.tmp.propertiesSet" />
                 
       <!-- define the loglevel -->
       <setLogLevel logLevel="${main.logLevel}" />
