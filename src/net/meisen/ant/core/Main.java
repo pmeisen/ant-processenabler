@@ -14,9 +14,8 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *  
- *  Modified by Inform GmbH, to add a specific property to read the real
+ *  Modified by Philipp Meisen, to add a specific property to read the real
  *  invoked targets (from cmd)
- *
  */
 package net.meisen.ant.core;
 
