@@ -159,7 +159,7 @@
   
   <macrodef name="mavenCleanUp">
     <sequential>
-      <delete dir="${maven.tmpdir}" />
+      <fileCleanUp dir="${maven.tmpdir}" recreate="false" />
     </sequential>
   </macrodef>
   
@@ -572,7 +572,8 @@
       <!-- resolve this one dependency -->
       <mavenSetPom pomid="maven.tmp.singlePomId" pomfile="${maven.tmpdir}/singlePom.xml" />
       <artifact:dependencies filesetId="@{fileset}" scopes="compile" pomRefId="maven.tmp.singlePomId" settingsFile="${maven.settings.source.file}" />      
-      <delete file="${maven.tmpdir}/singlePom.xml" />
+      
+      <fileCleanUp file="${maven.tmpdir}/singlePom.xml" />
     </sequential>
   </macrodef>
   
@@ -644,7 +645,8 @@
       <var name="maven.tmp.single.version" value="@{version}" />
       <var name="maven.tmp.single.type" value="@{type}" />
       <var name="maven.tmp.single.classifier" value="@{classifier}" />
-      <delete file="@{destFile}" />
+
+      <fileCleanUp file="@{destFile}" />
       <fileReplaceAllProperties file="${maven.library.resfile.pomSingleDependency}" destFile="@{destFile}" />
     </sequential>
   </macrodef>

@@ -431,7 +431,8 @@
               <var name="configuration.tmp.files.location" value="${java.io.tmpdir}/files.xml" />
               <fileReplaceAllProperties file="${configuration.tmp.customerFolder}/${configuration.version.property}/files.xml" destFile="${configuration.tmp.files.location}" />
               <xmlproperty file="${configuration.tmp.files.location}" prefix="@{configuration.tmp.includedCustomer}" />
-              <delete file="${configuration.tmp.files.location}" />
+              
+              <fileCleanUp file="${configuration.tmp.files.location}" />
             </then>
           </if>
         </sequential>
@@ -665,11 +666,11 @@
       
       <!-- finally set the configuration property to point to the location -->
       <var name="configuration.zippedFile" value="@{location}/${configuration.tmp.zipFileName}" />
-      <delete file="${configuration.zippedFile}" />
+      <fileCleanUp file="${configuration.zippedFile}" />
       <zip destfile="${configuration.zippedFile}" basedir="${configuration.tmp.location}" />
       
       <!-- cleanUp -->
-      <delete dir="${configuration.tmp.location}" />
+      <fileCleanUp dir="${configuration.tmp.location}" recreate="false" />
     </sequential>
   </macrodef>
 

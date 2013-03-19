@@ -102,12 +102,13 @@
         <format property="update.tmp.backUpTime" pattern="MM/dd/yyyy hh:mm aa" locale="en,UK" offset="-@{backUpOffset}" unit="day"/>
       </tstamp>
       <echo level="debug">Deleting backups before ${last.week}</echo>
-      <delete>
+
+      <fileCleanUp>
         <fileset dir="@{backUpLocation}">
           <include name="@{backUpFilePattern}" />
           <date datetime="${update.tmp.backUpTime}" when="before"/>
         </fileset>
-      </delete>
+      </fileCleanUp>
     </sequential>
   </macrodef>
   
@@ -131,7 +132,7 @@
       <var name="@{property}" value="${update.tmp.batchfile.file}" />
       
       <!-- create the new file -->
-      <delete file="${update.tmp.batchfile.file}" />
+      <fileCleanUp file="${update.tmp.batchfile.file}" />
       <if>
         <os family="windows" />
         <then>

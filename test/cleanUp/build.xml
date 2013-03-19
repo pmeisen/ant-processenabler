@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testCleanUp">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkCleaningNonExisting">
+    <sequential>
+      
+      <trycatch property="test.tmp.error" reference="test.tmp.errReference">
+        <try>
+          <fileCleanUp file="thisfileshouldnevereverexisthere.file" />
+          <fileCleanUp dir="thisdirectoryshouldnevereverexisthere" recreate="false" />
+          <fileCleanUp>
+            <fileset dir="thisdirectoryshouldnevereverexisthere" />
+          </fileCleanUp>
+        </try>
+        <catch>
+          <fail>CleaningNonExisting failed: ${test.tmp.error}!</fail>
+        </catch>
+        <finally />
+      </trycatch>
+      
+      <echo>CleaningNonExisting was successful!</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkCleaningOfFile">
+    <sequential>
+      
+      <!-- create a file -->
+      <copy file="resources/TestFile.txt" todir="${main.tmpdir}" />
+      
+      <!-- check pre-condition -->
+      <if>
+        <not><available file="${main.tmpdir}/TestFile.txt" /></not>
+        <then>
+          <fail>Pre-condition of file-existence '${main.tmpdir}/TestFile.txt' not given!</fail>
+        </then>
+      </if>
+      
+      <!-- clean the file -->
+      <fileCleanUp file="${main.tmpdir}/TestFile.txt" />
+      
+      <!-- make sure it's gone -->
+      <if>
+        <available file="${main.tmpdir}/TestFile.txt" />
+        <then><fail>CleaningOfFile failed!</fail></then>
+        <else><echo>CleaningOfFile was successful!</echo></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkCleaningOfDirectory">
+    <sequential>
+      
+      <!-- create a file -->
+      <copy todir="${main.tmpdir}/TestDir">
+        <fileset dir="resources/TestDir"/>
+      </copy>
+
+      <!-- check pre-condition -->
+      <if>
+        <not><available file="${main.tmpdir}/TestDir" /></not>
+        <then>
+          <fail>Pre-condition of dir-existence '${main.tmpdir}/TestDir' not given!</fail>
+        </then>
+      </if>
+      
+      <!-- clean the file -->
+      <fileCleanUp dir="${main.tmpdir}/TestDir" recreate="false" />
+      
+      <!-- make sure it's gone -->
+      <if>
+        <available file="${main.tmpdir}/TestDir" />
+        <then><fail>CleaningOfDirectory failed!</fail></then>
+        <else><echo>CleaningOfDirectory was successful!</echo></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkCleaningOfFileset">
+    <sequential>
+      
+      <!-- create a file -->
+      <copy todir="${main.tmpdir}/TestFileset">
+        <fileset dir="resources/TestFileset"/>
+      </copy>
+
+      <!-- check pre-condition -->
+      <if>
+        <not><available file="${main.tmpdir}/TestFileset" /></not>
+        <then>
+          <fail>Pre-condition of dir-existence '${main.tmpdir}/TestFileset' not given!</fail>
+        </then>
+      </if>
+      
+      <!-- clean the file -->
+      <fileCleanUp>
+        <fileset dir="${main.tmpdir}/TestFileset">
+          <include name="TestFilesetContentFile*.txt" />
+        </fileset>
+      </fileCleanUp>
+      
+      <!-- make sure it's gone -->
+      <if>
+        <or>
+          <available file="${main.tmpdir}/TestFileset/TestFilesetContentFile1.txt" />
+          <available file="${main.tmpdir}/TestFileset/TestFilesetContentFile2.txt" />
+          <not><available file="${main.tmpdir}/TestFileset/TestFilesetContentStayFile.txt" /></not>
+        </or>
+        <then>
+          <fileset id="test.tmp.output" dir="${main.tmpdir}/TestFileset" />
+          <echo level="error">The following files are still available in ${main.tmpdir}/TestFileset:</echo>
+          <filePrintFileset filesetid="test.tmp.output" />
+          <fileCleanUp dir="${main.tmpdir}/TestFileset" recreate="false" />
+          <fail>CleaningOfFileset failed!</fail>
+        </then>
+        <else>
+          <fileCleanUp dir="${main.tmpdir}/TestFileset" recreate="false" />
+          <echo>CleaningOfFileset was successful!</echo>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <checkCleaningNonExisting />
+    <checkCleaningOfFile />
+    <checkCleaningOfDirectory />
+    <checkCleaningOfFileset />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

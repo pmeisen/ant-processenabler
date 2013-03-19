@@ -268,9 +268,9 @@
       <if>
         <or><equals arg1="@{deletePackageFiles}" arg2="true" /><equals arg1="@{deletePackageFiles}" arg2="yes" /><equals arg1="@{deletePackageFiles}" arg2="y" /></or>
         <then>
-          <delete includeEmptyDirs="true">
+          <fileCleanUp includeEmptyDirs="true">
             <fileset dir="${doc.packageFiles}" excludes="@{filename}.zip" />
-          </delete>
+          </fileCleanUp>
         </then>
       </if>
     </sequential>

@@ -30,17 +30,78 @@
   <!--
     fileCleanUp - should be called to clean a directory (i.e. deletes all files and directories)
     -->
-  <macrodef name="fileCleanUp">   
-    <attribute name="dir" />
-    <attribute name="recreate" default="true" />
+  <macrodef name="fileCleanUp">
+    <attribute name="file" default="" />
+    <attribute name="dir" default="" />
+    <element name="files" implicit="true" optional="true" />
+    
     <attribute name="failonerror" default="true" />
+    <attribute name="includeEmptyDirs" default="true" />
+    <attribute name="recreate" default="true" />
 
     <sequential>
-      <echo level="info">Cleaning folder '@{dir}'</echo>
-      <delete dir="@{dir}" failonerror="@{failonerror}" />
-      
+    
+      <!-- check if we have a file to be deleted -->
       <if>
-        <or><equals arg1="@{recreate}" arg2="y" /><equals arg1="@{recreate}" arg2="yes" /><equals arg1="@{recreate}" arg2="true" /></or>
+        <not><equals arg1="@{file}" arg2="" /></not>
+        <then>
+          <echo level="info">Cleaning file '@{file}'</echo>
+          
+          <!-- sometimes the OS blocks deleting so we wait a little and retry a couple of times -->
+          <retry retrycount="10" retrydelay="500">
+            <delete file="@{file}" failonerror="@{failonerror}" />
+          </retry>
+        </then>
+      </if>
+      
+      <!-- check if a folder is specified as well -->
+      <if>
+        <not><equals arg1="@{dir}" arg2="" /></not>
+        <then>
+          <echo level="info">Cleaning folder '@{dir}'</echo>
+          
+          <!-- sometimes the OS blocks deleting so we wait a little and retry a couple of times -->
+          <retry retrycount="10" retrydelay="500">
+            <delete dir="@{dir}" includeEmptyDirs="@{includeEmptyDirs}" failonerror="@{failonerror}" />
+          </retry>
+        </then>
+      </if>
+      
+      <!-- check if a fileset is specified -->
+      <trycatch property="maven.tmp.error" reference="maven.tmp.errReference">
+        <try>
+          
+          <!-- we just do some task which fails if no fileset was specified -->
+          <resourcecount property="file.tmp.foundFileSetCount">
+            <files />
+          </resourcecount>
+          <var name="file.tmp.foundFileSet" value="true" />
+        </try>
+        <catch>
+          <var name="file.tmp.foundFileSet" value="false" />
+        </catch>
+        <finally />
+      </trycatch>
+      <if>
+        <equals arg1="${file.tmp.foundFileSet}" arg2="true" />
+        <then>
+          <echo level="info">Cleaning fileset</echo>
+          
+          <!-- sometimes the OS blocks deleting so we wait a little and retry a couple of times -->
+          <retry retrycount="10" retrydelay="500">
+            <delete includeEmptyDirs="@{includeEmptyDirs}" failonerror="@{failonerror}">
+              <files />
+            </delete>
+          </retry>
+        </then>
+      </if>
+      
+      <!-- check if recreation has to be done, only valid for a directory -->
+      <if>
+        <and>
+          <not><equals arg1="@{dir}" arg2="" /></not>
+          <or><equals arg1="@{recreate}" arg2="y" /><equals arg1="@{recreate}" arg2="yes" /><equals arg1="@{recreate}" arg2="true" /></or>
+        </and>
         <then>
             <mkdir dir="@{dir}" />
         </then>
@@ -355,7 +416,7 @@
           </xmlmerge>
           
           <!-- get the new file -->
-          <delete file="@{dest}" />
+          <fileCleanUp file="@{dest}" />
           <move file="${main.tmpdir}/file.tmp" tofile="@{dest}" overwrite="true" />
         </then>
         <else>

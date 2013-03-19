@@ -119,7 +119,7 @@
   -->
   <macrodef name="buildRemovePreBuilds">
     <sequential>
-      <delete dir="${build.dir}/${build.binary.dir}" />
+      <fileCleanUp dir="${build.dir}/${build.binary.dir}" recreate="false" />
     </sequential>
   </macrodef>
   
@@ -152,8 +152,9 @@
           <buildRemovePreBuilds />
         </then>
       </if>
-      
-      <delete dir="${build.tmpdir}" />
+
+      <!-- cleanup a little -->
+      <fileCleanUp dir="${build.tmpdir}" recreate="false" />
       
       <!-- reset the latest builds -->
       <var name="build.buildFile" value="" />
@@ -1058,9 +1059,10 @@
         </and>
         <then>
           <echo level="info">Mapper cleans '@{rootFolder}/${resMapper.location}' prior to mapping using pattern '${resMapper.removeAfter}'</echo>
-          <delete includeEmptyDirs="true">
+
+          <fileCleanUp includeEmptyDirs="true">
             <fileset dir="@{rootFolder}/${resMapper.location}" includes="${resMapper.removePrior}"/>
-          </delete>
+          </fileCleanUp>
         </then>
       </if>
             
@@ -1256,7 +1258,8 @@
                       <not><equals arg1="${build.tmp.modFilePath}" arg2="${toString:build.tmp.modifiedJar}" /></not>
                       <then>
                         <echo level="debug">Removing the unmodified version ${toString:build.tmp.modifiedJar} of the modified jar</echo>
-                        <delete file="${toString:build.tmp.modifiedJar}" />
+                        
+                        <fileCleanUp file="${toString:build.tmp.modifiedJar}" />
                       </then>
                     </if>
                   </then>
@@ -1276,9 +1279,10 @@
         </and>
         <then>
           <echo level="info">Mapper cleans '@{rootFolder}/${resMapper.location}' afterwards using pattern '${resMapper.removeAfter}'</echo>
-          <delete includeEmptyDirs="true">
+          
+          <fileCleanUp>
             <fileset dir="@{rootFolder}/${resMapper.location}" includes="${resMapper.removeAfter}"/>
-          </delete>
+          </fileCleanUp>
         </then>
       </if>
     </sequential>
