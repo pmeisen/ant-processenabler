@@ -91,3 +91,32 @@ var checkFile = function(file, mustExist) {
     return retFile;
   }
 }
+
+var replaceProperties = function(string, properties) {
+  if (properties == null || properties instanceof java.util.Properties == false) {
+    return string;
+  } else {
+    var propertyRegEx = "\\$\\{([^\\}]+)\\}";
+    var propertyPattern = java.util.regex.Pattern.compile(propertyRegEx);
+    var propertyMatcher = propertyPattern.matcher(string);
+
+    var offset = 0;
+    while (propertyMatcher.find(offset)) {
+      var propName = propertyMatcher.group(1);
+      var propValue = properties.getProperty(propName);
+      var start = propertyMatcher.start();
+      var end = propertyMatcher.end();
+      
+      if (propValue == null) {
+        offset = end;
+      } else {
+        string = new java.lang.String(string.substring(0, start) + propValue + string.substring(end));
+      }
+     
+      // let's examine th new string
+      propertyMatcher = propertyPattern.matcher(string);
+    }
+    
+    return string;
+  }
+}

@@ -181,6 +181,7 @@
   <dirname property="library_configuration.basedir" file="${ant.file.library_configuration}"/>
 
   <property name="configuration.library.resfile.pomConfiguration.merge" location="${main.root}/maven/pomConfiguration_xmlMerge.properties" description="A mandatory resource-file of the library, defines how to merge pom-files" />
+  <property name="configuration.library.resfile.js.general" location="${main.root}/javascripts/library_configuration/general.js" description="JavaScript which holds the general implementations and includes all other libraries" />
   
   <property name="configuration.version.property" value="" description="The name of the property to read to determine the version to be build." />
   <property name="configuration.properties.location" value="" description="The absolute location to load the customer's settings from, should be defined in the scriptconfig.properties" />
@@ -278,18 +279,53 @@
       
       <!-- resolve possible imports -->
       <script language="javascript"><![CDATA[
+        // helper method to load js files
+        // thanks to http://stackoverflow.com/questions/650377/javascript-rhino-use-library-or-include-other-scripts
+        var l = function(property) {
+          var jsFile = project.getProperty(property);
+          var fileReader = new java.io.FileReader(jsFile);
+          var fullRead = org.apache.tools.ant.util.FileUtils.readFully(fileReader);
+          
+          return "" + new java.lang.String(fullRead);
+        }
+        
+        // load the libraries
+        eval(l("configuration.library.resfile.js.general"));
+      
         var rootCustomerFolder = project.getProperty("configuration.settings.root");
         var importFilename = project.getProperty("configuration.config.import.filename");
+        var propertyFilename = project.getProperty("configuration.config.filename");
         var imports = new java.util.Stack();
+        var importProps = new java.util.Properties();
         imports.push(project.getProperty("configuration.customer"));
         
         // check all the imports
         var folders = new java.util.ArrayList();
         while (!imports.empty()) {
-          var nextImport = imports.pop();
-          folders.add(nextImport);          
+        
+          // get the next import
+          var nextImport = replaceProperties(imports.pop(), importProps);
+          folders.add(nextImport);
+          
+          // load the properties of the import
+          var propertyFile = new java.io.File(rootCustomerFolder + "/" + nextImport + "/" + propertyFilename);
+          if (propertyFile.exists() && propertyFile.isFile()) {
+            var prop = new java.util.Properties();
+            var inStream = new java.io.FileInputStream(propertyFile);
+            
+            // get the properties and add those
+            prop.load(inStream);
+            importProps.putAll(prop);
+            
+            // close the input again
+            try {
+              inStream.close();
+            } catch (e) {
+            }
+          }
+          
+          // now get the import file
           var importFile = new java.io.File(rootCustomerFolder + "/" + nextImport + "/" + importFilename);
-                    
           if (importFile.exists() && importFile.isFile()) {
             var prop = new java.util.Properties();
             var inStream = new java.io.FileInputStream(importFile);
@@ -303,14 +339,14 @@
             } catch (e) {
             }
             
-            // check the properties
+            // check the imports
             var newImportsList = prop.getProperty("configuration.imports");
             var newImports = newImportsList.split("\\|");
             
-            for (var i = 0; i < newImports.length; i++) {
+            // replace the properties of the newImports
+            for (var i = newImports.length - 1; i >= 0; i--) {
               var newImport = newImports[i].trim();
-              
-              if (newImport != null && !"".equals(newImport)) {
+              if (newImport != null && !"".equals(newImport)) {              
                 imports.push(newImport);
               }
             }
@@ -349,7 +385,7 @@
       <for list="${configuration.settings.includedCustomers}" param="configuration.tmp.includedCustomer" delimiter="|" trim="true">
         <sequential>
           <var name="configuration.tmp.customerFolder" value="${configuration.settings.root}/@{configuration.tmp.includedCustomer}" />
-
+          
           <!-- get the properties for the customer -->
           <if>
             <available file="${configuration.tmp.customerFolder}/${configuration.config.filename}" />
@@ -424,7 +460,7 @@
       <!-- load the files of the files.xml of the different customers -->
       <for list="${configuration.settings.includedCustomers}" param="configuration.tmp.includedCustomer" delimiter="|" trim="true">
         <sequential>
-          <var name="configuration.tmp.customerFolder" value="${configuration.settings.root}/@{configuration.tmp.includedCustomer}" />
+          <var name="configuration.tmp.customerFolder" value="${configuration.settings.root}/@{configuration.tmp.includedCustomer}" />         
           <if>
             <available file="${configuration.tmp.customerFolder}/${configuration.version.property}/files.xml" />
             <then>
@@ -466,7 +502,7 @@
       <var name="configuration.settings.pom" value="${configuration.settings.pomfolder}/pom-${configuration.version}.xml" />
       <var name="configuration.settings.finalpom" value="${maven.tmpdir}/configuration_pom.xml" />
       <var name="configuration.settings.tmp.pom" value="${maven.tmpdir}/configuration_tmp_pom.xml" />
-      
+
       <if>
         <available file="${configuration.settings.pom}" />
         <then>
@@ -476,6 +512,7 @@
             <sequential>
               <var name="configuration.tmp.customerFolder" value="${configuration.settings.root}/@{configuration.tmp.includedCustomer}" />
               <var name="configuration.settings.additionalpom" value="${configuration.tmp.customerFolder}/${configuration.version.property}/pom.xml" />
+
               <if>
                 <available file="${configuration.settings.additionalpom}" />
                 <then>
