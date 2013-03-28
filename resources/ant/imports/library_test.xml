@@ -49,6 +49,7 @@
   <macrodef name="testTest">
     <attribute name="test" default="${test.suite.class}" />
     <attribute name="classPathFileSetId" default="test.classpath" />
+    <attribute name="failOnError" default="true" />
     <attribute name="includeSources" default="false" />
     <attribute name="excludeSourcePattern" default="" />
     <attribute name="excludeCompilePattern" default="" />
@@ -175,8 +176,22 @@
               <pathelement path="${build.resourcedir}" />
             </classpath>
             
-            <test name="@{test}" todir="${test.dir}" outfile="${test.report.file}" />
+            <test name="@{test}" todir="${test.dir}" outfile="${test.report.file}" failureproperty="test.tmp.failure" />
           </junit>
+          
+          <if>
+            <and>
+              <equals arg1="${test.tmp.failure}" arg2="true" />
+              <or>
+                <equals arg1="@{failOnError}" arg2="y" />
+                <equals arg1="@{failOnError}" arg2="yes" />
+                <equals arg1="@{failOnError}" arg2="true" />
+              </or>
+            </and>
+            <then>
+              <fail message="Test failure detected, check test results." if="test.tmp.failure" />
+            </then>
+          </if>
         </else>
       </if>
     </sequential>
