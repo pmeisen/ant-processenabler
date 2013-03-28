@@ -23,6 +23,9 @@ REM only runs on WinNT.
 
 REM set the new main to be used
 set ANT_ARGS=-main net.meisen.ant.core.Main
+REM do not use any environment settings concerning the classpath
+REM this will just interfere tests, builds, ...
+set CLASSPATH=
 
 REM Default ant.bat starts here
 if "%HOME%"=="" goto homeDrivePathPre
