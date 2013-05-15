@@ -43,6 +43,87 @@
     </then>
   </if>
   
+  <macrodef name="testBuild">
+    <attribute name="classPathFileSetId" default="test.classpath" />
+    <attribute name="excludeSourcePattern" default="" />
+  
+    <sequential>
+
+      <!-- set the classpath to be used -->
+      <if>
+        <equals arg1="@{classPathFileSetId}" arg2="test.classpath" />
+        <then>
+        
+          <!-- get the default dependencies for this test -->
+          <mavenResolveDependencies fileset="@{classPathFileSetId}" scope="test" pomid="test.tmp.pomBuild" />
+        </then>
+        <else>
+        
+          <!-- make sure the information of the build are available -->
+          <mavenSetPom pomid="test.tmp.pomBuild" />
+        </else>
+      </if>
+
+      <!-- lets build the test-files -->
+      <javac sourcepath="" srcdir="${test.srcdir}" destdir="${test.bindir}" includes="**/*.java" excludes="@{excludeSourcePattern}"
+             includeantruntime="false" source="${build.javac.source}" target="${build.javac.target}">
+        <classpath>
+          <fileset dir="${ant.home}/lib" includes="junit-*.jar" />
+          <fileset refid="@{classPathFileSetId}" />
+          <pathelement location="${build.buildFile}" />
+        </classpath>
+      </javac>
+
+      <!-- set the jar files -->
+      <var name="test.testFile" value="${test.dir}/${test.tmp.pomBuild.artifactId}-${test.tmp.pomBuild.version}-${maven.attachment.test}.jar" />
+
+      <!-- wrap it all to a jar -->
+      <jar destfile="${test.testFile}" basedir="${test.bindir}">
+
+        <!-- write the manifest -->
+        <manifest>
+          <attribute name="Built-By" value="${user.name}" />
+          <attribute name="Built-Date" value="${NOW}" />
+          
+          <attribute name="Implementation-Vendor" value="${main.vendor}" />
+          <attribute name="Implementation-Title" value="${test.tmp.pomBuild.name} (${maven.attachment.test})" />
+          <attribute name="Implementation-Version" value="${test.tmp.pomBuild.version}" />
+          
+          <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
+        </manifest>
+
+        <!-- add the resources -->
+        <fileset dir="${test.srcdir}" excludes="**/*.java" />
+      </jar>
+    
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testPackSource">
+    <attribute name="excludeSourcePattern" default="" />
+    
+    <sequential>
+      <mavenSetPom pomid="test.tmp.pomBuild" />
+      
+      <jar destfile="${test.dir}/${test.tmp.pomBuild.artifactId}-${test.tmp.pomBuild.version}-${maven.attachment.testsources}.jar" basedir="${test.srcdir}" 
+           includes="**/*.java" excludes="@{excludeSourcePattern}">
+
+        <!-- write the manifest -->
+        <manifest>
+          <attribute name="Built-By" value="${user.name}" />
+          <attribute name="Built-Date" value="${NOW}" />
+          
+          <attribute name="Implementation-Vendor" value="${main.vendor}" />
+          <attribute name="Implementation-Title" value="${test.tmp.pomBuild.name} (${maven.attachment.testsources})" />
+          <attribute name="Implementation-Version" value="${test.tmp.pomBuild.version}" />
+          
+          <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
+        </manifest>
+      </jar>
+      <var name="test.testSourceFile" value="${test.dir}/${test.tmp.pomBuild.artifactId}-${test.tmp.pomBuild.version}-${maven.attachment.testsources}.jar" />
+    </sequential>
+  </macrodef>
+  
   <!--
     buildRemovePreBuilds - clean up all the pre-builds
     -->
@@ -52,7 +133,6 @@
     <attribute name="failOnError" default="true" />
     <attribute name="includeSources" default="false" />
     <attribute name="excludeSourcePattern" default="" />
-    <attribute name="excludeCompilePattern" default="" />
   
     <sequential>
     
@@ -72,53 +152,7 @@
           </then>
         </elseif>
         <else>
-          
-          <!-- set the classpath to be used -->
-          <if>
-            <equals arg1="@{classPathFileSetId}" arg2="test.classpath" />
-            <then>
-            
-              <!-- get the default dependencies for this test -->
-              <mavenResolveDependencies fileset="@{classPathFileSetId}" scope="test" pomid="test.tmp.pomBuild" />
-            </then>
-            <else>
-            
-              <!-- make sure the information of the build are available -->
-              <mavenSetPom pomid="test.tmp.pomBuild" />
-            </else>
-          </if>
-          
-          <!-- lets build the test-files -->
-          <javac sourcepath="" srcdir="${test.srcdir}" destdir="${test.bindir}" includes="**/*.java" excludes="@{excludeSourcePattern}"
-                 includeantruntime="false" source="${build.javac.source}" target="${build.javac.target}">
-            <classpath>
-              <fileset dir="${ant.home}/lib" includes="junit-*.jar" />
-              <fileset refid="@{classPathFileSetId}" />
-              <pathelement location="${build.buildFile}" />
-            </classpath>
-          </javac>
-          
-          <!-- set the jar files -->
-          <var name="test.testFile" value="${test.dir}/${test.tmp.pomBuild.artifactId}-${test.tmp.pomBuild.version}-${maven.attachment.test}.jar" />
-          
-          <!-- wrap it all to a jar -->
-          <jar destfile="${test.testFile}" basedir="${test.bindir}">
-          
-            <!-- write the manifest -->
-            <manifest>
-              <attribute name="Built-By" value="${user.name}" />
-              <attribute name="Built-Date" value="${NOW}" />
-              
-              <attribute name="Implementation-Vendor" value="${main.vendor}" />
-              <attribute name="Implementation-Title" value="${test.tmp.pomBuild.name} (${maven.attachment.test})" />
-              <attribute name="Implementation-Version" value="${test.tmp.pomBuild.version}" />
-              
-              <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
-            </manifest>
-          
-            <!-- add the resources -->
-            <fileset dir="${test.srcdir}" excludes="**/*.java" />
-          </jar>
+          <testBuild classPathFileSetId="@{classPathFileSetId}" excludeSourcePattern="@{excludeSourcePattern}" />
           
           <!-- check if the sources should be on the class-path -->
           <if>
@@ -128,25 +162,11 @@
               <equals arg1="@{includeSources}" arg2="true" />
             </or>
             <then>
-              <jar destfile="${test.dir}/${test.tmp.pomBuild.artifactId}-${test.tmp.pomBuild.version}-${maven.attachment.testsources}.jar" basedir="${test.srcdir}" 
-                   includes="**/*.java" excludes="@{excludeSourcePattern}">
-
-                <!-- write the manifest -->
-                <manifest>
-                  <attribute name="Built-By" value="${user.name}" />
-                  <attribute name="Built-Date" value="${NOW}" />
-                  
-                  <attribute name="Implementation-Vendor" value="${main.vendor}" />
-                  <attribute name="Implementation-Title" value="${test.tmp.pomBuild.name} (${maven.attachment.testsources})" />
-                  <attribute name="Implementation-Version" value="${test.tmp.pomBuild.version}" />
-                  
-                  <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
-                </manifest>
-              </jar>
-              <var name="test.testSourceFile" value="${test.dir}/${test.tmp.pomBuild.artifactId}-${test.tmp.pomBuild.version}-${maven.attachment.testsources}.jar" />
+              <testPackSource excludeSourcePattern="@{excludeSourcePattern}" />
+              <var name="test.tmp.testSourceFile" value="${test.testSourceFile}" />
             </then>
             <else>
-              <var name="test.testSourceFile" value="${test.testFile}" />
+              <var name="test.tmp.testSourceFile" value="${test.testFile}" />
             </else>
           </if>
 
@@ -167,7 +187,7 @@
               <pathelement location="${test.testFile}" />
               
               <!-- the source only set if those are available -->
-              <pathelement location="${test.testSourceFile}" />
+              <pathelement location="${test.tmp.testSourceFile}" />
 
               <!-- the build file to be tested -->
               <pathelement location="${build.buildFile}" />
@@ -197,6 +217,26 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="testDeployLatestBuild">
+    <sequential>
+      <if>
+        <or>
+          <not><isset property="test.testFile"/></not>
+          <equals arg1="${test.testFile}" arg2="" />
+          <not><isset property="test.testSourceFile"/></not>
+          <equals arg1="${test.testSourceFile}" arg2="" />
+        </or>
+        <then>
+          <fail>No latest test build found, nothing is deployed</fail>
+        </then>
+        <else>
+          <mavenDeployAttachment file="${test.testFile}" classifier="${maven.attachment.test}" />
+          <mavenDeployAttachment file="${test.testSourceFile}" classifier="${maven.attachment.testsources}" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
   <!--
     testRemovePreBuilds - clean up all the pre-builds
     -->
@@ -206,8 +246,48 @@
     </sequential>
   </macrodef>
     
+  <macrodef name="testCleanUp">
+    <attribute name="complete" default="false" />
+
+    <sequential>
+      <if>
+        <or>
+          <equals arg1="@{complete}" arg2="y" />
+          <equals arg1="@{complete}" arg2="yes" />
+          <equals arg1="@{complete}" arg2="true" />
+        </or>
+        <then>
+          <testRemovePreBuilds />
+        </then>
+      </if>
+
+      <!-- cleanup a little -->
+      <fileCleanUp dir="${test.tmpdir}" recreate="false" />
+      
+      <!-- reset the latest builds -->
+      <var name="test.testFile" value="" />
+      <var name="test.testSourceFile" value="" />
+    </sequential>
+  </macrodef>
+    
   <!-- targets defined by this build -->
   <target name="test" depends="build">
     <testTest />
+  </target>
+  
+  <target name="testBuild" depends="build">
+    <testBuild />
+  </target>
+  
+  <target name="testSources">
+    <testPackSource />
+  </target>
+  
+  <target name="testRemovePreBuilds">
+    <testRemovePreBuilds />
+  </target>
+  
+  <target name="testDeploy" depends="testBuild,testSources">
+    <testDeployLatestBuild />
   </target>
 </project>

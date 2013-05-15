@@ -737,4 +737,18 @@
       <var name="@{name}" value="@{value}" />
     </sequential>
   </macrodef>
+  
+  <macrodef name="varNvl">
+    <attribute name="property" />
+    <attribute name="value" />
+    
+    <sequential>
+      <if>
+        <not><isset property="@{property}" /></not>
+        <then>
+          <var name="@{property}" value="@{value}" />
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
 </project>

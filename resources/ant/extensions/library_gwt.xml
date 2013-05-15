@@ -11,15 +11,15 @@
   <property name="gwt.library.version" value="1.6.2" description="The current version of the library" />
   <dirname property="library_gwt.basedir" file="${ant.file.library_gwt}"/>
 
-  <property name="gwt.library.resfile.maven.gwtMerge" location="${main.root}/maven/pomGwt_xmlMerge.properties" />
-  <property name="gwt.library.resfile.maven.gwtWebAppMerge" location="${main.root}/maven/pomGwtWebAppRes_xmlMerge.properties" />
-  <property name="gwt.library.resfile.maven.gwtPom" location="${main.root}/gwt/pomGWT.xml" />
-  <property name="gwt.library.resfile.maven.gwtPlugInPom" location="${main.root}/gwt/pomGWTPlugIn.xml" />
-  <property name="gwt.library.resfile.template.webXml" location="${library_gwt.basedir}/web.xml.template" />
-  <property name="gwt.library.resfile.template.plugin" location="${library_gwt.basedir}/com.google.gdt.eclipse.core.prefs.gwt.settings.template" />
-  <property name="gwt.library.resfile.template.index" location="${library_gwt.basedir}/index.html.template" />
-  <property name="gwt.library.resfile.template.project" location="${library_gwt.basedir}/library_eclipse_project.template" description="The name of the project template" />
-  <property name="gwt.library.resfile.template.classpath" location="${library_gwt.basedir}/library_eclipse_classpath.template" description="The name of the classpath template" />
+  <property name="gwt.library.resfile.maven.gwtMerge" value="${main.root}/maven/pomGwt_xmlMerge.properties" />
+  <property name="gwt.library.resfile.maven.gwtWebAppMerge" value="${main.root}/maven/pomGwtWebAppRes_xmlMerge.properties" />
+  <property name="gwt.library.resfile.maven.gwtPom" value="${main.root}/gwt/pomGWT.xml" />
+  <property name="gwt.library.resfile.maven.gwtPlugInPom" value="${main.root}/gwt/pomGWTPlugIn.xml" />
+  <property name="gwt.library.resfile.template.webXml" value="${library_gwt.basedir}/web.xml.template" />
+  <property name="gwt.library.resfile.template.plugin" value="${library_gwt.basedir}/com.google.gdt.eclipse.core.prefs.gwt.settings.template" />
+  <property name="gwt.library.resfile.template.index" value="${library_gwt.basedir}/index.html.template" />
+  <property name="gwt.library.resfile.template.project" value="${library_gwt.basedir}/library_eclipse_project.template" description="The name of the project template" />
+  <property name="gwt.library.resfile.template.classpath" value="${library_gwt.basedir}/library_eclipse_classpath.template" description="The name of the classpath template" />
   
   <!--
     add the antcontrib library
@@ -287,31 +287,67 @@
   <macrodef name="gwtFullTestDependency">
     <attribute name="addPomFile" default="" />
     <attribute name="filesetid" default="gwt.dependencies.fullTest" />
-    <attribute name="addBuilds" default="true" />
+    <attribute name="addAnyBuilds" default="true" />
+    <attribute name="addBuild" default="true" />
+    <attribute name="addDistributeBuild" default="true" />
+    <attribute name="addFullBuild" default="false" />
     
     <sequential>
-    
+      <var name="gwt.tmp.posFile" value="" />
+
+      <!-- check that the build is there -->
       <if>
         <and>
-          <or>
-            <equals arg1="@{addBuilds}" arg2="y" />
-            <equals arg1="@{addBuilds}" arg2="yes" />
-            <equals arg1="@{addBuilds}" arg2="true" />
-          </or>
-          <or>
-            <not><isset property="build.buildFile"/></not>
-            <equals arg1="${build.buildFile}" arg2="" />
-          </or>
-          <or>
-            <not><isset property="gwt.addDistribute"/></not>
-            <equals arg1="${gwt.addDistribute}" arg2="" />
-          </or>
+          <or><equals arg1="@{addAnyBuilds}" arg2="y" /><equals arg1="@{addAnyBuilds}" arg2="yes" /><equals arg1="@{addAnyBuilds}" arg2="true" /></or>
+          <or><equals arg1="@{addBuild}" arg2="y" /><equals arg1="@{addBuild}" arg2="yes" /><equals arg1="@{addBuild}" arg2="true" /></or>
+          <or><not><isset property="build.buildFile"/></not><equals arg1="${build.buildFile}" arg2="" /></or>
         </and>
-        <then>
-          <fail>The dependencies for the latest build cannot be resolved, please ensure that the buildServer and buildAdditionals target is executed prior to this.</fail>
-        </then>
+        <then><fail>The dependencies for the latest build cannot be resolved, please ensure that the buildServer target is executed prior to this.</fail></then>
+        <else>
+          <var name="addAnyBuilds" value="true" />
+          <var name="addBuild" value="true" />
+          <var name="gwt.tmp.buildFile" value="${build.buildFile}" />
+          <var name="gwt.tmp.posFile" value="${gwt.tmp.buildFile}" />
+        </else>
       </if>
-    
+
+      <!-- check that the distributed build is there -->
+      <if>
+        <and>
+          <or><equals arg1="@{addAnyBuilds}" arg2="y" /><equals arg1="@{addAnyBuilds}" arg2="yes" /><equals arg1="@{addAnyBuilds}" arg2="true" /></or>
+          <or><equals arg1="@{addDistributeBuild}" arg2="y" /><equals arg1="@{addDistributeBuild}" arg2="yes" /><equals arg1="@{addDistributeBuild}" arg2="true" /></or>
+          <or><not><isset property="gwt.addDistribute"/></not><equals arg1="${gwt.addDistribute}" arg2="" /></or>
+        </and>
+        <then><fail>The dependencies for the latest build cannot be resolved, please ensure that the buildAdditionals (distributed) target is executed prior to this.</fail></then>
+        <else>
+          <var name="addAnyBuilds" value="true" />
+          <var name="addDistributeBuild" value="true" />
+          <var name="gwt.tmp.addDistribute" value="${gwt.addDistribute}" />
+          <var name="gwt.tmp.posFile" value="${gwt.tmp.addDistribute}" />
+        </else>
+      </if>
+      
+      <!-- check that the full build is there -->
+      <if>
+        <and>
+          <or><equals arg1="@{addAnyBuilds}" arg2="y" /><equals arg1="@{addAnyBuilds}" arg2="yes" /><equals arg1="@{addAnyBuilds}" arg2="true" /></or>
+          <or><equals arg1="@{addFullBuild}" arg2="y" /><equals arg1="@{addFullBuild}" arg2="yes" /><equals arg1="@{addFullBuild}" arg2="true" /></or>
+          <or><not><isset property="gwt.addFullCompiled"/></not><equals arg1="${gwt.addFullCompiled}" arg2="" /></or>
+        </and>
+        <then><fail>The dependencies for the latest build cannot be resolved, please ensure that the buildAdditionals (full) target is executed prior to this.</fail></then>
+        <else>
+          <var name="addAnyBuilds" value="true" />
+          <var name="addFullBuild" value="true" />
+          <var name="gwt.tmp.addFullCompiled" value="${gwt.addFullCompiled}" />
+          <var name="gwt.tmp.posFile" value="${gwt.tmp.addFullCompiled}" />
+        </else>
+      </if>
+      
+      <!-- we need some value for the files otherwise the pathelement will fail -->
+      <varNvl property="gwt.tmp.buildFile" value="${gwt.tmp.posFile}" />
+      <varNvl property="gwt.tmp.addDistribute" value="${gwt.tmp.posFile}" />
+      <varNvl property="gwt.tmp.addFullCompiled" value="${gwt.tmp.posFile}" />
+          
       <!-- get the additional classes -->
       <if>
         <equals arg1="@{addPomFile}" arg2="" />
@@ -340,13 +376,7 @@
       <mavenResolveDependencies fileset="gwt.tmp.projectLibs" pomid="gwt.tmp.pomGWTProjectLibs" scope="test" />
 
       <if>
-        <and>
-          <or>
-            <equals arg1="@{addBuilds}" arg2="y" />
-            <equals arg1="@{addBuilds}" arg2="yes" />
-            <equals arg1="@{addBuilds}" arg2="true" />
-          </or>
-        </and>
+        <equals arg1="@{addAnyBuilds}" arg2="true" />
         <then>
           <path id="gwt.tmp.pathTestDependencies">
             <fileset refid="gwt.tmp.addLibs" />
@@ -354,8 +384,9 @@
             <fileset refid="gwt.tmp.projectLibs" />
              
             <!-- add the packs -->
-            <pathelement location="${gwt.addDistribute}" />
-            <pathelement location="${build.buildFile}" />
+            <pathelement location="${gwt.tmp.addFullCompiled}" />
+            <pathelement location="${gwt.tmp.addDistribute}" />
+            <pathelement location="${gwt.tmp.buildFile}" />
           </path>
           
           <!-- create a temporary directory which contains all the needed files -->
@@ -755,11 +786,18 @@
 
   <target name="test" depends="buildServer, buildAdditionals">
     <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" />
+        
+    <!-- we cannot exclude the excludeSourcePattern="${gwt.client.excludedFiles}", because 
+         otherwise the AllTest could not be compiled -->
+    <testTest classPathFileSetId="gwt.tmp.fullTestDependencies" includeSources="true" />
+  </target>
+  
+  <target name="testBuild" depends="buildServer, buildAdditionals">
+    <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" />
     
     <!-- we cannot exclude the excludeSourcePattern="${gwt.client.excludedFiles}", because 
          otherwise the AllTest could not be compiled -->
-    <testTest classPathFileSetId="gwt.tmp.fullTestDependencies" includeSources="true" 
-              excludeCompilePattern="${gwt.server.excludedFiles}" />
+    <testBuild classPathFileSetId="gwt.tmp.fullTestDependencies" />
   </target>
   
   <target name="createDevEnv" depends="setupEclipseEnv,copyGwtPlugInLibs,copyGwtPlugInSettings,setupGwtWarPlugInDirectory" />
@@ -773,7 +811,7 @@
     <eclipseCreateProject template="${gwt.library.resfile.template.project}" />
     
     <!-- get the full test dependencies -->
-    <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" addBuilds="false" />
+    <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" addAnyBuilds="false" />
     <eclipseCreateClassPath addDependenciesFilesetId="gwt.tmp.fullTestDependencies" template="${gwt.library.resfile.template.classpath}" />
   </target>
   

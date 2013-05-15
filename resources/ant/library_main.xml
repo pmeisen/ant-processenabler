@@ -88,7 +88,7 @@
       
       <!-- core libraries may need some temporary data to, but we don't have more right now -->
       <var name="main.tmpdir" value="${main.tmplocation}" />
-            
+
       <!-- core must be added here before any other functionality can be used -->
       <for list="${main.import.order.core}" param="main.core.library">
         <sequential>
@@ -199,6 +199,7 @@
   <target name="cleanUp">
     <if><typefound name="mavenCleanUp"/><then><mavenCleanUp /></then></if>
     <if><typefound name="buildCleanUp"/><then><buildCleanUp /></then></if>
+    <if><typefound name="testCleanUp"/><then><testCleanUp /></then></if>
     <if><typefound name="updateCleanUp"/><then><updateCleanUp /></then></if>
     
     <!-- delete the session temporary folder -->

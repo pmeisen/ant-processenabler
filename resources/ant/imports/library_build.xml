@@ -60,6 +60,10 @@
   <property name="build.resource.dependency" value="build.dependency" description="The resource type of a dependency" />
   <property name="build.resource.resource" value="build.resource" description="The resource type of a resource" />
             
+            
+  <echo>B: ${main.root}</echo>
+  <echo>B: ${build.library.resfile.template.launcher}</echo>
+            
   <!--
     add the antcontrib library
     -->
@@ -1445,12 +1449,14 @@
   <target name="deploy" depends="build, javadoc, sources">
     <buildDeployLatestBuild />
   </target>
+  
+  <target name="fullDeploy" depends="build, javadoc, sources, deploy, testDeploy" />
     
   <target name="removePreBuilds">
     <buildRemovePreBuilds />
   </target>
   
-  <target name="release" depends="removePreBuilds">
+  <target name="release" depends="removePreBuilds, testRemovePreBuilds">
   
     <!-- check the availability of SVN and Maven -->
     <buildCheckReleaseConditions />
@@ -1459,6 +1465,7 @@
     <if>
       <available file="${basedir}/pom.xml" />
       <then>
+        <buildRemovePreBuilds />
         <buildBuild />
         <buildPack />
         <buildJavaDoc />
@@ -1466,6 +1473,7 @@
         <buildPackSource />
         
         <!-- test the version -->
+        <testRemovePreBuilds />
         <testTest />
       </then>
     </if>
@@ -1473,11 +1481,12 @@
     <!-- lets tag everything -->
     <svnTag message="Release of ${maven.pom.version}" />
     
-    <!-- lets deploy the binaries -->
+    <!-- lets deploy the binaries, source and javadoc -->
     <if>
       <available file="${basedir}/pom.xml" />
       <then>
         <buildDeployLatestBuild />
+        <testDeployLatestBuild />
       </then>
     </if>
     

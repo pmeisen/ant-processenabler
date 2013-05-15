@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testFilterFilesetByRegEx">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkSimpleFilter">
+    <sequential>
+
+      <fileFilterFilesetByRegEx filteredSetId="test.resultFileSet" regEx="(?:F|M)[^\\/]+$">
+        <fileset dir="${build.resourcedir}" />
+      </fileFilterFilesetByRegEx>
+ 
+      <!-- get the amount of resources -->
+      <if>
+        <not>
+          <resourcecount when="eq" count="4">
+            <fileset refid="test.resultFileSet" />
+          </resourcecount>
+        </not>
+        <then>
+          <resourcecount property="test.checkDefault.tmp.count">
+            <fileset refid="test.resultFileSet" />
+          </resourcecount>
+        
+          <fail>The fileset does not contain 4 files, it contains ${test.checkDefault.tmp.count}!</fail>
+        </then>
+        <elseif>
+          <not>
+            <resourcecount when="eq" count="1">
+              <intersect>
+                <fileset refid="test.resultFileSet" />
+                <fileset dir="${build.resourcedir}" includes="TestFolder1/File1.txt" />
+              </intersect>
+            </resourcecount>
+          </not>
+          <then>
+            <fail>The fileset does not contain the file 'TestFolder1/File1.txt'!</fail>
+          </then>
+        </elseif>
+        <elseif>
+          <not>
+            <resourcecount when="eq" count="1">
+              <intersect>
+                <fileset refid="test.resultFileSet" />
+                <fileset dir="${build.resourcedir}" includes="TestFolder1/File2.txt" />
+              </intersect>
+            </resourcecount>
+          </not>
+          <then>
+            <fail>The fileset does not contain the file 'TestFolder1/File2.txt'!</fail>
+          </then>
+        </elseif>
+        <elseif>
+          <not>
+            <resourcecount when="eq" count="1">
+              <intersect>
+                <fileset refid="test.resultFileSet" />
+                <fileset dir="${build.resourcedir}" includes="Main1.txt" />
+              </intersect>
+            </resourcecount>
+          </not>
+          <then>
+            <fail>The fileset does not contain the file 'Main1.txt'!</fail>
+          </then>
+        </elseif>
+        <elseif>
+          <not>
+            <resourcecount when="eq" count="1">
+              <intersect>
+                <fileset refid="test.resultFileSet" />
+                <fileset dir="${build.resourcedir}" includes="Main2.txt" />
+              </intersect>
+            </resourcecount>
+          </not>
+          <then>
+            <fail>The fileset does not contain the file 'Main2.txt'!</fail>
+          </then>
+        </elseif>
+        <else>
+          <echo>checkSimpleFilter was successful!</echo>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkEmptyFilter">
+    <sequential>
+
+      <fileFilterFilesetByRegEx filteredSetId="test.resultFileSet" regEx="idontexist\.txt">
+        <fileset dir="${build.resourcedir}" />
+      </fileFilterFilesetByRegEx>
+ 
+      <!-- get the amount of resources -->
+      <if>
+        <not>
+          <resourcecount when="eq" count="0">
+            <fileset refid="test.resultFileSet" />
+          </resourcecount>
+        </not>
+        <then>
+          <filePrintFileset filesetid="test.resultFileSet" />
+          <fail>The fileset isn't empty!</fail>
+        </then>
+        <else>
+          <echo>checkEmptyFilter was successful!</echo>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+    
+  <target name="antTest">
+    <checkSimpleFilter />
+    <checkEmptyFilter />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>
