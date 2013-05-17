@@ -12,6 +12,7 @@
   <dirname property="library_maven.basedir" file="${ant.file.library_maven}"/>
   
   <property name="maven.library.resfile.pom.empty" location="${main.root}/maven/pomEmpty.xml" />
+  <property name="maven.library.resfile.settings.folderstructure" location="${main.root}/maven/mavenfolders.properties" />
   <property name="maven.library.resfile.settings.source" location="${main.root}/maven/settings_source.xml" description="The master settings.xml for all projects (sources)" />
   <property name="maven.library.resfile.settings.target" location="${main.root}/maven/settings_target.xml" description="The master settings.xml for all projects (targets)" />
   <property name="maven.library.resfile.pom.snapshot" location="${main.root}/maven/pomSnapshot.xml" />
@@ -42,9 +43,9 @@
   <property name="maven.repository.target.username" value="" description="The name of the user to authenticate on target side" />
   <property name="maven.repository.target.password" value="" description="The password of the user to authenticate on target side" />
   
-  
   <property name="maven.pom.property" value="maven.pom" description="For internal usage only, the default name for the property which contains pom information" />
   <property name="maven.parent.poms" value="" description="A | separated list of pom-files which should be uploaded (i.e. deployed or installed) with the project's artifact" />
+  
   <property name="maven.init" value="false" description="For internal usage only, please do not modify this property by a file" />
   
   <property name="maven.attachment.sources" value="sources" description="attachment classifer for sources" />

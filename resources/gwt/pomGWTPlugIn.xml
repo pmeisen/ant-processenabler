@@ -2,10 +2,10 @@
   <modelVersion>4.0.0</modelVersion>
     
   <!-- project settings -->
-  <groupId>com.google.gwt</groupId>
-  <artifactId>compiler</artifactId>
+  <groupId>net.meisen.tools</groupId>
+  <artifactId>net-meisen-tools-ant-processenabler-gwt-plugin</artifactId>
   <version>${gwt.version}</version>
-  <name>Standard GWT compiler dependencies</name>
+  <name>Standard GWT plugin dependencies</name>
   
   <dependencies>
     <!-- the GWT compiler -->

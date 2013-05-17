@@ -65,14 +65,13 @@
       </if>
 
       <!-- lets build the test-files -->
-      <javac sourcepath="" srcdir="${test.srcdir}" destdir="${test.bindir}" includes="**/*.java" excludes="@{excludeSourcePattern}"
-             includeantruntime="false" source="${build.javac.source}" target="${build.javac.target}">
+      <compile srcdir="${test.srcdir}" destdir="${test.bindir}" debug="${build.tmp.debug}" excludes="@{excludeSourcePattern}">
         <classpath>
           <fileset dir="${ant.home}/lib" includes="junit-*.jar" />
           <fileset refid="@{classPathFileSetId}" />
           <pathelement location="${build.buildFile}" />
         </classpath>
-      </javac>
+      </compile>
 
       <!-- set the jar files -->
       <var name="test.testFile" value="${test.dir}/${test.tmp.pomBuild.artifactId}-${test.tmp.pomBuild.version}-${maven.attachment.test}.jar" />

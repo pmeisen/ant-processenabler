@@ -1,0 +1,19 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+    
+  <!-- project settings -->
+  <groupId>net.meisen.tools</groupId>
+  <artifactId>net-meisen-tools-ant-processenabler-aspectj</artifactId>
+  <version>${aspectj.version}</version>
+  <name>Standard aspectJ Tools dependencies</name>
+  
+  <dependencies>
+
+    <!-- the aspectJ task -->
+    <dependency>
+      <groupId>org.aspectj</groupId>
+      <artifactId>aspectjtools</artifactId>
+      <version>${aspectj.version}</version>
+    </dependency>
+  </dependencies>
+</project>

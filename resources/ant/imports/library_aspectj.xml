@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- xmlns:aspectj="antlib:org.aspectj" -->
+<project name="library_aspectj" >
+  <property name="aspectj.library.version" value="1.0.0" description="The current version of the library" />
+  <dirname property="library_aspectj.basedir" file="${ant.file.library_aspectj}" />
+  
+  <property name="aspectj.library.resfile.toolsPom" location="${main.root}/aspectj/pomAspectJ.xml" />
+  
+  <property name="aspectj.version" value="" description="The version to be used with aspectj" />
+  <property name="aspectj.path.tools" value="${ant.home}/lib/aspectj" description="The path to look for the aspectj tool version" />
+  <property name="aspectj.pack.default.excludes" value="**/*.aj" description="Defines whatever has to be excluded from a jar by default" />
+  
+  <property name="aspectj.init" value="false" description="For internal usage only, please do not modify this property by a file" />
+
+  <!-- add the antcontrib library -->
+  <taskdef resource="net/sf/antcontrib/antlib.xml" />
+  
+  <!--
+    initialize - do some things that have to be done
+    -->
+  <if>
+    <equals arg1="${aspectj.init}" arg2="false" />
+    <then>
+    
+      <!-- 
+        we have to add something to the files that should be excluded when building the jar,
+        because aspectj uses .aj files as source files for weaving 
+        -->
+      <if>
+        <and>
+          <isset property="build.pack.default.excludes"/>
+          <not><equals arg1="${build.pack.default.excludes}" arg2="" /></not>
+        </and>
+        <then>
+          <var name="build.pack.default.excludes" value="${build.pack.default.excludes},${aspectj.pack.default.excludes}" />
+        </then>
+        <else>
+          <var name="build.pack.default.excludes" value="${aspectj.pack.default.excludes}" />
+        </else>
+      </if>
+      
+      <!-- include the aspectJ task -->
+      <var name="aspectj.location.tools" value="${aspectj.path.tools}\aspectjtools-${aspectj.version}.jar" />
+      <if>
+        <or>
+          <not><isset property="aspectj.version" /></not>
+          <equals arg1="${aspectj.version}" arg2="" />
+        </or>
+        <then>
+          <fail>You have to specify an aspectj version to be used with ant</fail>
+        </then>
+        <elseif>
+          <not><available file="${aspectj.location.tools}" /></not>
+          <then>
+            
+            <!-- let's try to get the file via maven -->
+            <trycatch property="aspectj.tmp.error" reference="aspectj.tmp.errReference">
+              <try>
+                <mavenResolveDependencies fileset="aspectj.tmp.toolsLibs" pomid="aspectj.tmp.pomToolsLibs" pomfile="${aspectj.library.resfile.toolsPom}" />
+                <filePrintFileset filesetid="aspectj.tmp.toolsLibs" />
+              </try>
+              <catch>
+                <fail>The aspectJ version ${aspectj.version} couldn't be found on the file-system under ${aspectj.location.tools} and neither in the repository</fail>
+              </catch>
+              <finally />
+            </trycatch>
+          </then>
+        </elseif>
+        <else>
+        
+          <!-- use the specified file -->
+          <fileInfo file="${aspectj.location.tools}" />
+          <fileset id="aspectj.tmp.toolsLibs" dir="${fileInfo.dir}">
+            <filename name="${fileInfo.name}"/>
+          </fileset>
+        </else>
+      </if>
+      
+      <filePrintFileset filesetid="aspectj.tmp.toolsLibs" />
+      
+      <!-- load the task -->
+      <taskdef resource="org/aspectj/antlib.xml">
+        <classpath>
+          <fileset refid="aspectj.tmp.toolsLibs" />
+        </classpath>
+      </taskdef>
+
+      <var name="aspectj.init" value="true" />
+    </then>
+  </if>
+  
+  <macrodef name="compile">
+    <attribute name="srcdir" />
+    <attribute name="destdir" />
+    <attribute name="debug" />
+    <attribute name="excludes" />
+  
+    <element name="classpath" implicit="true" />
+  
+    <sequential>
+
+      <!-- make sure the destination exists -->
+      <mkdir dir="@{destdir}" />
+
+      <!-- debug the compiler used -->
+      <echo level="info">Compiling using the aspectJ compiler</echo>
+      
+      <!-- run the compilation -->
+      <iajc source="${build.javac.source}" srcdir="@{srcdir}" destDir="@{destdir}" debug="@{debug}" excludes="@{excludes}">      
+        <classpath />
+      </iajc>
+    </sequential>
+  </macrodef>
+</project>

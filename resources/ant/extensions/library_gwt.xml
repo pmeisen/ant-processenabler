@@ -40,7 +40,7 @@
   
   <property name="gwt.binary.dir" value="gwt" description="Project gwt binary directory" />
   <property name="gwt.add.binary.dir" value="gwtBin" description="The compiled java classed which are needed for additional packages" />
-  <property name="gwt.version" value="2.3.0" description="GWT Version to be used" />
+  <property name="gwt.version" value="" description="GWT Version to be used" />
   <property name="gwt.module" value="" description="The module to be compiled, muse be set by an overloading property" />
 
   <property name="gwt.maxmemory" value="512M" description="maxmemory argument for com.google.gwt.dev.GWTCompiler java task" />
@@ -76,7 +76,32 @@
       <var name="gwt.addFullCompiled" value="" />
       <var name="gwt.addDistribute" value="" />
       <var name="gwt.buildWebAppResources" value="" />
-            
+
+      <!-- check the version -->
+      <if>
+        <or>
+          <not><isset property="gwt.version" /></not>
+          <equals arg1="${gwt.version}" arg2="" />
+        </or>
+        <then>
+          <fail>You have to specify a GWT version to be used with ant</fail>
+        </then>
+        <else>
+           
+          <!-- let's try to get the GWT stuff via maven -->
+          <trycatch property="gwt.tmp.error" reference="gwt.tmp.errReference">
+            <try>
+              <mavenResolveDependencies fileset="gwt.tmp.toolsLibs" pomid="gwt.tmp.pomToolsLibs" pomfile="${gwt.library.resfile.maven.gwtPom}" />
+              <filePrintFileset filesetid="aspectj.tmp.toolsLibs" />
+            </try>
+            <catch>
+              <fail>The GWT version ${gwt.version} couldn't be found on in the repository</fail>
+            </catch>
+            <finally />
+          </trycatch>
+        </else>
+      </if>
+      
       <!-- use the right template directory -->
       <if>
         <or>
