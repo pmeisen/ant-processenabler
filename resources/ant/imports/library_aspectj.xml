@@ -5,10 +5,13 @@
   <dirname property="library_aspectj.basedir" file="${ant.file.library_aspectj}" />
   
   <property name="aspectj.library.resfile.toolsPom" location="${main.root}/aspectj/pomAspectJ.xml" />
+  <property name="aspectj.library.resfile.template.project" location="${library_aspectj.basedir}/library_aspectj_project.template" description="The name of the project template" />
   
   <property name="aspectj.version" value="" description="The version to be used with aspectj" />
   <property name="aspectj.path.tools" value="${ant.home}/lib/aspectj" description="The path to look for the aspectj tool version" />
   <property name="aspectj.pack.default.excludes" value="**/*.aj" description="Defines whatever has to be excluded from a jar by default" />
+
+  <property name="aspectj.eclipse.useAspectJPlugIn" value="false" description="defines if the eclipse project should use the AspectJ PlugIn" />
   
   <property name="aspectj.init" value="false" description="For internal usage only, please do not modify this property by a file" />
 
@@ -21,6 +24,20 @@
   <if>
     <equals arg1="${aspectj.init}" arg2="false" />
     <then>
+    
+      <!-- 
+        eclipse has to use another template
+        -->
+      <if>
+        <or>
+          <equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="y" />
+          <equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="yes" />
+          <equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="true" />
+        </or>
+        <then>
+          <var name="eclipse.template.project" value="${aspectj.library.resfile.template.project}" />
+        </then>
+      </if>
     
       <!-- 
         we have to add something to the files that should be excluded when building the jar,

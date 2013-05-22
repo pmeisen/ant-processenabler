@@ -7,7 +7,7 @@
   <classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
   <classpathentry kind="con" path="com.google.gwt.eclipse.core.GWT_CONTAINER"/>
 	${eclipse.tmp.classpath}
-  <classpathentry kind="lib" path="${build.resources.dir}"/>
+  <classpathentry kind="lib" path="${build.project.resources.dir}"/>
 	<!-- <classpathentry kind="output" path="${eclipse.eclipse.dir}/${build.binary.dir}"/> -->
   <classpathentry kind="output" path="${eclipse.eclipse.dir}/${gwt.eclipse.warDir}/WEB-INF/classes"/>
 </classpath>

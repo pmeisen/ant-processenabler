@@ -86,13 +86,13 @@
         <then>
           <fail>You have to specify a GWT version to be used with ant</fail>
         </then>
+        <!-- mavenResolveDependencies is not known currently
         <else>
            
-          <!-- let's try to get the GWT stuff via maven -->
+          
           <trycatch property="gwt.tmp.error" reference="gwt.tmp.errReference">
             <try>
               <mavenResolveDependencies fileset="gwt.tmp.toolsLibs" pomid="gwt.tmp.pomToolsLibs" pomfile="${gwt.library.resfile.maven.gwtPom}" />
-              <filePrintFileset filesetid="aspectj.tmp.toolsLibs" />
             </try>
             <catch>
               <fail>The GWT version ${gwt.version} couldn't be found on in the repository</fail>
@@ -100,6 +100,7 @@
             <finally />
           </trycatch>
         </else>
+        -->
       </if>
       
       <!-- use the right template directory -->

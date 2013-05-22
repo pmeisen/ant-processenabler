@@ -1,19 +1,24 @@
 <!--
   Library which adds some macros and targets for file operations/modifications
   
-  Created on: 01.03.2012
+  Created on: 17.05.2013
   Created by: Philipp Meisen <philipp@meisen.net>
   History:
     01.03.2012
       - Creation of library
+    17.05.2013
+      - default templates are now read when passing no value as parameter
   -->
 <project name="library_eclipse">
-  <property name="eclipse.library.version" value="1.2.0" description="The current version of the library" />
+  <property name="eclipse.library.version" value="1.3.0" description="The current version of the library" />
   <dirname property="library_eclipse.basedir" file="${ant.file.library_eclipse}"/>
   
   <property name="eclipse.library.resfile.maven.eclipseMerge" location="${main.root}/maven/pomEclipse_xmlMerge.properties" />
   <property name="eclipse.library.resfile.template.project" location="${library_eclipse.basedir}/library_eclipse_project.template" description="The name of the project template" />
   <property name="eclipse.library.resfile.template.classpath" location="${library_eclipse.basedir}/library_eclipse_classpath.template" description="The name of the classpath template" />
+  
+  <property name="eclipse.template.project" value="${eclipse.library.resfile.template.project}" />
+  <property name="eclipse.template.classpath" value="${eclipse.library.resfile.template.classpath}" />
   
   <property name="eclipse.eclipse.dir" value="_eclipse" description="Project binary directory" />
   <property name="eclipse.lib.dir" value="lib" description="Project binary directory" />
@@ -97,13 +102,24 @@
     eclipseCreateProject - creates a .project file used within eclipse to load the project
     -->
   <macrodef name="eclipseCreateProject">   
-    <attribute name="template" default="${eclipse.library.resfile.template.project}" />
+    <attribute name="template" default="" />
     <sequential>
+      <!-- if no template is passed use the one set -->
+      <if>
+        <equals arg1="@{template}" arg2="" />
+        <then>
+          <var name="eclipse.tmp.template.project" value="${eclipse.template.project}" />
+        </then>
+        <else>
+          <var name="eclipse.tmp.template.project" value="@{template}" />
+        </else>
+      </if>
+    
       <!-- get the pom settings -->
       <mavenSetPom />
 
       <!-- replace the properties -->
-      <fileReplaceAllProperties file="@{template}" destFile="${basedir}/.project" />
+      <fileReplaceAllProperties file="${eclipse.tmp.template.project}" destFile="${basedir}/.project" />
     </sequential>
   </macrodef>
   
@@ -112,9 +128,20 @@
     -->
   <macrodef name="eclipseCreateClassPath">
     <attribute name="addDependenciesFilesetId" default="" />
-    <attribute name="template" default="${eclipse.library.resfile.template.classpath}" />
+    <attribute name="template" default="" />
 
     <sequential>
+      
+      <!-- if no template is passed use the one set -->
+      <if>
+        <equals arg1="@{template}" arg2="" />
+        <then>
+          <var name="eclipse.tmp.template.classpath" value="${eclipse.template.classpath}" />
+        </then>
+        <else>
+          <var name="eclipse.tmp.template.classpath" value="@{template}" />
+        </else>
+      </if>
     
       <!-- get all the libraries needed -->
       <if>
@@ -325,7 +352,7 @@
                                packages="${build.package.excludes}" suffix="/" packageSeparatore="/" separatore="|" />
 
       <!-- replace the properties -->
-      <fileReplaceAllProperties file="@{template}" destFile="${basedir}/.classpath" />
+      <fileReplaceAllProperties file="${eclipse.tmp.template.classpath}" destFile="${basedir}/.classpath" />
     </sequential>
   </macrodef>
   
