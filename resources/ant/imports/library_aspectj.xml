@@ -6,8 +6,11 @@
   
   <property name="aspectj.library.resfile.toolsPom" location="${main.root}/aspectj/pomAspectJ.xml" />
   <property name="aspectj.library.resfile.template.project" location="${library_aspectj.basedir}/library_aspectj_project.template" description="The name of the project template" />
+  <property name="aspectj.library.resfile.maven.aspectjMerge" value="${main.root}/maven/pomAspectJ_xmlMerge.properties" />
   
   <property name="aspectj.version" value="" description="The version to be used with aspectj" />
+  <property name="aspectj.outputxml" value="true" description="Defines if the aop-ajc.xml should be generated for the project" />
+  <property name="aspectj.xlint.messages" value="ignore" description="Defines the level on which xlint messages are shown, ignore (not shown), warn (shown as warning), error (shown as error)" />
   <property name="aspectj.path.tools" value="${ant.home}/lib/aspectj" description="The path to look for the aspectj tool version" />
   <property name="aspectj.pack.default.excludes" value="**/*.aj" description="Defines whatever has to be excluded from a jar by default" />
 
@@ -122,9 +125,35 @@
       <!-- debug the compiler used -->
       <echo level="info">Compiling using the aspectJ compiler</echo>
       
+      <!-- get the aspectJ path -->
+      <if>
+        <available file="${basedir}/pomAspectJ.xml" />
+        <then>
+          <!-- check if we have a pom to be merged and merge it -->
+          <fileMergeXml file1="${maven.library.resfile.pom.empty}" 
+                        file2="${basedir}/pomAspectJ.xml" 
+                        dest="${build.tmpdir}/merged_pomAspectJ.xml" 
+                        conf="${aspectj.library.resfile.maven.aspectjMerge}" />
+          <fileReplaceAllProperties file="${build.tmpdir}/merged_pomAspectJ.xml" destFile="${build.tmpdir}/merged_pomAspectJ.xml" />
+          
+          <mavenResolveDependencies fileset="aspectj.tmp.aspectjPath" 
+                                    pomid="aspectj.tmp.pomAspectjPath" pomfile="${build.tmpdir}/merged_pomAspectJ.xml" />
+        </then>
+        <else>
+          <fileset id="aspectj.tmp.aspectjPath" dir=".">
+            <!-- exclude everything -->
+            <exclude name="**/*" />
+          </fileset>
+        </else>
+      </if>
+      
       <!-- run the compilation -->
-      <iajc source="${build.javac.source}" srcdir="@{srcdir}" destDir="@{destdir}" debug="@{debug}" excludes="@{excludes}">      
+      <iajc source="${build.javac.source}" srcdir="@{srcdir}" destDir="@{destdir}" Xlint="${aspectj.xlint.messages}" debug="@{debug}" excludes="@{excludes}" outxml="${aspectj.outputxml}">      
         <classpath />
+
+        <aspectPath>
+          <fileset refid="aspectj.tmp.aspectjPath" />
+        </aspectPath>
       </iajc>
     </sequential>
   </macrodef>
