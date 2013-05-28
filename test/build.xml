@@ -50,10 +50,10 @@
     <if>
       <isset property="excludes"/>
       <then>
-        <var name="tmp.excludes" value="${excludes}" />
+        <var name="tmp.excludes" value="net,${excludes}" />
       </then>
       <else>
-        <var name="tmp.excludes" value="" />
+        <var name="tmp.excludes" value="net" />
       </else>
     </if>
   

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testDefinedHooksWithAttributes" xmlns:ap="antlib:net.meisen.ant.tasks">
+
+	<!-- define some hooks in here as well -->
+	<ap:defineHook name="DefinedHooksWithAttributes1">
+		<attribute name="test1" />
+		<attribute name="test2" default="true" />
+	</ap:defineHook>
+</project>

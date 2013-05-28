@@ -542,6 +542,18 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="callHookFromLibrary">
+    <attribute name="library" />
+    <attribute name="hook" />
+    <attribute name="parameters" />
+    
+    <attribute name="failOnError" default="false" />
+    
+    <sequential>
+
+    </sequential>
+  </macrodef>
+  
   <macrodef name="allLibrariesFiles">
     <attribute name="filesetid" />
   

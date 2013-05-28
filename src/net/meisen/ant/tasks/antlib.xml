@@ -1,0 +1,24 @@
+<antlib>
+    <taskdef
+        name="defineHook"
+        classname="net.meisen.ant.tasks.DefineHook"
+        onerror="ignore" />
+    <taskdef
+        name="definehook"
+        classname="net.meisen.ant.tasks.DefineHook"
+        onerror="ignore" />
+        
+    <taskdef
+        name="hook"
+        classname="net.meisen.ant.tasks.Hook"
+        onerror="ignore" />
+        
+    <taskdef
+        name="triggerHooks"
+        classname="net.meisen.ant.tasks.TriggerHooks"
+        onerror="ignore" />
+    <taskdef
+        name="triggerhooks"
+        classname="net.meisen.ant.tasks.TriggerHooks"
+        onerror="ignore" />
+</antlib>

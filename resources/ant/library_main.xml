@@ -159,7 +159,7 @@
       <var name="main.init" value="true" />
     </then>
   </if>
-  
+   
   <macrodef name="mainAvailable">
     <sequential>
       <echo level="debug">The main-ant-settings are imported successfully</echo>

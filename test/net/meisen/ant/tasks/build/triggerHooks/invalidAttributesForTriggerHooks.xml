@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testSimpleTriggerHooks">
+	<taskdef resource="net/meisen/ant/tasks/antlib.xml" />
+	
+	<defineHook name="SimpleHook">
+		<attribute name="testAttribute1" />
+		<attribute name="testAttribute2" default="true" />
+	</defineHook>
+	
+	<hook name="SimpleHook">
+		<sequential>
+			<echo>Called SimpleHook</echo>
+		</sequential>
+	</hook>
+	
+	<target name="testTarget">
+		<triggerHooks name="SimpleHook">
+			<attributeValue name="testAttribute2" value="sampleValue" />
+		</triggerHooks>
+	</target>
+</project>

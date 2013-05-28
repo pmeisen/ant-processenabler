@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testImportedDefinedHooks" xmlns:ap="antlib:net.meisen.ant.tasks">
+
+	<!-- import another file with defined hooks -->
+	<import file="importWithDefinedHooks.xml" />
+
+	<!-- define some hooks in here as well -->
+	<ap:defineHook name="NotImportedHook1" />
+	<ap:defineHook name="NotImportedHook2" />
+</project>

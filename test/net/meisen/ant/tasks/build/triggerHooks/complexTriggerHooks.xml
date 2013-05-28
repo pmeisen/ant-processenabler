@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testSimpleTriggerHooks">
+	<taskdef resource="net/meisen/ant/tasks/antlib.xml" />
+	<taskdef resource="net/sf/antcontrib/antlib.xml" />
+
+	<defineHook name="ComplexHook">
+		<attribute name="testAttribute1" />
+		<attribute name="testAttribute2" default="true" />
+	</defineHook>
+
+	<hook name="ComplexHook">
+		<sequential>
+			<echo>StartTest: ComplexHook</echo>
+			<echo>${caller}</echo>
+			<echo>@{testAttribute1}</echo>
+			<echo>@{testAttribute2}</echo>
+			<echo>EndTest: ComplexHook</echo>
+
+			<var name="caller" value="${caller},firstComplexHook" />
+		</sequential>
+	</hook>
+
+	<hook name="ComplexHook">
+		<sequential>
+			<echo>StartTest: ComplexHook</echo>
+			<echo>${caller}</echo>
+			<echo>@{testAttribute1}</echo>
+			<echo>@{testAttribute2}</echo>
+			<echo>EndTest: ComplexHook</echo>
+
+			<var name="caller" value="${caller},secondComplexHook" />
+		</sequential>
+	</hook>
+
+	<hook name="ComplexHook">
+		<sequential>
+			<echo>StartTest: ComplexHook</echo>
+			<echo>${caller}</echo>
+			<echo>@{testAttribute1}</echo>
+			<echo>@{testAttribute2}</echo>
+			<echo>EndTest: ComplexHook</echo>
+
+			<var name="caller" value="${caller},thirdComplexHook" />
+		</sequential>
+	</hook>
+
+	<target name="testTarget">
+		<var name="caller" value="testTarget" />
+
+		<triggerHooks name="ComplexHook">
+			<attributeValue name="testAttribute1" value="sampleValue" />
+		</triggerHooks>
+		
+		<echo>${caller}</echo>
+	</target>
+</project>

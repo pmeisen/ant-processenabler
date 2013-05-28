@@ -259,9 +259,6 @@
           <testRemovePreBuilds />
         </then>
       </if>
-
-      <!-- cleanup a little -->
-      <fileCleanUp dir="${test.tmpdir}" recreate="false" />
       
       <!-- reset the latest builds -->
       <var name="test.testFile" value="" />
