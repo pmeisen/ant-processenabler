@@ -6,8 +6,18 @@ import net.meisen.general.genmisc.collections.Collections;
 import org.apache.tools.ant.BuildException;
 import org.junit.Test;
 
+/**
+ * Tests the implementation of the <code>TriggerHook</code>.
+ * 
+ * @author pmeisen
+ * 
+ */
 public class TestTriggerHooks extends ClassPathBuildFileTest {
 
+	/**
+	 * Tests an invalid definition of a <code>TriggerHook</code> concerning the
+	 * defined attributes.
+	 */
 	@Test
 	public void testInvalidAttributesForTriggerHooks() {
 
@@ -25,6 +35,10 @@ public class TestTriggerHooks extends ClassPathBuildFileTest {
 		}
 	}
 
+	/**
+	 * Tests an invalid definition of a <code>TriggerHook</code> concerning the
+	 * position (i.e. defined on top-level).
+	 */
 	@Test
 	public void testInvalidPositionOfTriggerHooks() {
 
@@ -39,6 +53,9 @@ public class TestTriggerHooks extends ClassPathBuildFileTest {
 		}
 	}
 
+	/**
+	 * Tests the simple parsing and execution of a <code>TriggerHook</code>.
+	 */
 	@Test
 	public void testSimpleTrigger() {
 		// initialize Ant
@@ -58,6 +75,9 @@ public class TestTriggerHooks extends ClassPathBuildFileTest {
 		assertEquals(getLog(), "Called SimpleHook");
 	}
 
+	/**
+	 * Tests a more complex definition of a <code>TriggerHook</code>.
+	 */
 	@Test
 	public void testComplexTrigger() {
 		// initialize Ant
@@ -74,6 +94,23 @@ public class TestTriggerHooks extends ClassPathBuildFileTest {
 		executeTarget("testTarget");
 
 		// the trigger should have been fired
-		assertTrue(getLog().endsWith("testTarget,firstComplexHook,secondComplexHook,thirdComplexHook"));
+		assertTrue(getLog().endsWith(
+				"testTarget,firstComplexHook,secondComplexHook,thirdComplexHook"));
+	}
+
+	/**
+	 * Tests a definition using prioritized hooks.
+	 */
+	@Test
+	public void testPrioritizedHooks() {
+		// initialize Ant
+		configureProject("build/triggerHooks/prioritizedHooks.xml");
+
+		// execute the target
+		executeTarget("testTarget");
+
+		// the trigger should have been fired
+		assertEquals(getLog(),
+				"testTarget,thirdPriorityHook,secondPriorityHook,firstPriorityHook");
 	}
 }

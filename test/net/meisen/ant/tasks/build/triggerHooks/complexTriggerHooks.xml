@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
-<project name="testSimpleTriggerHooks">
+<project name="testComplexTriggerHooks">
 	<taskdef resource="net/meisen/ant/tasks/antlib.xml" />
 	<taskdef resource="net/sf/antcontrib/antlib.xml" />
 

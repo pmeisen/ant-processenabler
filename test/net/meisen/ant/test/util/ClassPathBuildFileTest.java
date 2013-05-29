@@ -14,6 +14,13 @@ import org.apache.tools.ant.UnknownElement;
 import org.junit.After;
 import org.junit.Before;
 
+/**
+ * Helper method which enables us to load the "build.xml" from the classpath for
+ * a test.
+ * 
+ * @author pmeisen
+ * 
+ */
 public abstract class ClassPathBuildFileTest extends BuildFileTest {
 
 	private String testTmpDir;
@@ -50,6 +57,19 @@ public abstract class ClassPathBuildFileTest extends BuildFileTest {
 		super.configureProject(Files.getCanonicalPath(file), logLevel);
 	}
 
+	/**
+	 * Copies the specified file into the project directory. This is mainly used
+	 * when the used build.xml has imports.
+	 * 
+	 * @param filename
+	 *          the file to be copied from classpath (relative to
+	 *          <code>this</code>)
+	 * 
+	 * @return the new location of the file
+	 * 
+	 * @throws IOException
+	 *           if the file cannot be copied
+	 */
 	public File copyProjectFile(final String filename) throws IOException {
 		// copy the buildFile to that directory
 		final InputStream stream = getClass().getResourceAsStream(filename);
@@ -62,10 +82,24 @@ public abstract class ClassPathBuildFileTest extends BuildFileTest {
 		return file;
 	}
 
+	/**
+	 * Gets the main target of the current project.
+	 * 
+	 * @return the main target of the current project
+	 */
 	protected Target getMainTarget() {
 		return getTarget("");
 	}
 
+	/**
+	 * Gets the specified target for the current project, fails if the target
+	 * doesn't exist.
+	 * 
+	 * @param name
+	 *          the name of the target to be returned from the current project
+	 * 
+	 * @return the target with the specified <code>name</code>
+	 */
 	protected Target getTarget(final String name) {
 		final Target target = (Target) getProject().getTargets().get(name);
 		assertNotNull(target);
@@ -74,6 +108,18 @@ public abstract class ClassPathBuildFileTest extends BuildFileTest {
 
 	}
 
+	/**
+	 * Searches the specified task (the first occurence) within the specified
+	 * target.
+	 * 
+	 * @param target
+	 *          the target to search for the task for
+	 * @param clazz
+	 *          the type of the task to be returned (if several are found the
+	 *          first one is returned)
+	 * 
+	 * @return the found task
+	 */
 	@SuppressWarnings("unchecked")
 	protected <T extends Task> T findTask(final Target target,
 			final Class<T> clazz) {

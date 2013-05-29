@@ -132,7 +132,7 @@
           <not><equals arg1="${testReplacePropertiesInProperties.tmp.value2}" arg2="This is an inline $${testReplacePropertiesInProperties.tmp.value3}" /></not>
         </and>
         <then>
-          <fail>complexInlineReplacementNoLoop failed because of invalid pre-conditions</fail>
+          <fail>complexInlineReplacement failed because of invalid pre-conditions</fail>
         </then>
       </if>
       
@@ -148,10 +148,10 @@
           <equals arg1="${testReplacePropertiesInProperties.tmp.value3}" arg2="Inline Value" />
         </and>
         <then>
-          <echo level="info">complexInlineReplacementNoLoop was successful!</echo>
+          <echo level="info">complexInlineReplacement was successful!</echo>
         </then>
         <else>
-          <fail>complexInlineReplacementNoLoop failed (${testReplacePropertiesInProperties.tmp.value1} != ${testReplacePropertiesInProperties.tmp.value2} != ${testReplacePropertiesInProperties.tmp.value3})!</fail>
+          <fail>complexInlineReplacement failed (${testReplacePropertiesInProperties.tmp.value1} != ${testReplacePropertiesInProperties.tmp.value2} != ${testReplacePropertiesInProperties.tmp.value3})!</fail>
         </else>
       </if>
     </sequential>
@@ -196,12 +196,83 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="replacePropertiesWithOtherPrefix">
+    <sequential>
+      <var name="replacePropertiesWithOtherPrefix.tmp.value1" value="marked" />
+      <var name="replacePropertiesWithOtherPrefix.tmp.result" value="This is a special @{replacePropertiesWithOtherPrefix.tmp.value1} property" />
+      
+      <!-- do the test -->
+      <propertyset id="replacePropertiesWithOtherPrefix.tmp.propertySet">
+        <propertyref regex="^replacePropertiesWithOtherPrefix\..+" />
+      </propertyset>
+      <replacePropertiesInProperties propertySetId="replacePropertiesWithOtherPrefix.tmp.propertySet" propertymarker="@" sortAlphanumeric="true" />
+      <if>
+        <equals arg1="${replacePropertiesWithOtherPrefix.tmp.result}" arg2="This is a special marked property" />
+        <then>
+          <echo level="info">replacePropertiesWithOtherPrefix was successful!</echo>
+        </then>
+        <else>
+          <fail>replacePropertiesWithOtherPrefix failed (${replacePropertiesWithOtherPrefix.tmp.result})!</fail> 
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="replacePropertiesWithOtherPrefixLooped">
+    <sequential>
+      <var name="replacePropertiesWithOtherPrefixLooped.tmp.value1" value="@{replacePropertiesWithOtherPrefixLooped.tmp.value2}" />
+      <var name="replacePropertiesWithOtherPrefixLooped.tmp.value2" value="marked" />
+      <var name="replacePropertiesWithOtherPrefixLooped.tmp.result" value="This is a special @{replacePropertiesWithOtherPrefix.tmp.value1} property" />
+
+      <!-- do the test -->
+      <propertyset id="replacePropertiesWithOtherPrefixLooped.tmp.propertySet">
+        <propertyref regex="\QreplacePropertiesWithOtherPrefixLooped.tmp.result\E" />
+      </propertyset>
+      <replacePropertiesInProperties propertySetId="replacePropertiesWithOtherPrefixLooped.tmp.propertySet" propertymarker="@" sortAlphanumeric="true" />
+      <if>
+        <equals arg1="${replacePropertiesWithOtherPrefixLooped.tmp.result}" arg2="This is a special marked property" />
+        <then>
+          <echo level="info">replacePropertiesWithOtherPrefixLooped was successful!</echo>
+        </then>
+        <else>
+          <fail>replacePropertiesWithOtherPrefixLooped failed (${replacePropertiesWithOtherPrefixLooped.tmp.result})!</fail> 
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="replacePropertiesWithOtherPrefixNoLoop">
+    <sequential>
+      <var name="replacePropertiesWithOtherPrefixNoLoop.tmp.value1" value="@{replacePropertiesWithOtherPrefixNoLoop.tmp.value2}" />
+      <var name="replacePropertiesWithOtherPrefixNoLoop.tmp.value2" value="marked" />
+      <var name="replacePropertiesWithOtherPrefixNoLoop.tmp.result" value="This is a special @{replacePropertiesWithOtherPrefixNoLoop.tmp.value1}@{replacePropertiesWithOtherPrefixNoLoop.tmp.value2} property" />
+
+      <!-- do the test -->
+      <propertyset id="replacePropertiesWithOtherPrefixNoLoop.tmp.propertySet">
+        <propertyref regex="\QreplacePropertiesWithOtherPrefixNoLoop.tmp.result\E" />
+      </propertyset>
+      <replacePropertiesInProperties propertySetId="replacePropertiesWithOtherPrefixNoLoop.tmp.propertySet" propertymarker="@" sortAlphanumeric="true" loopUntilAllReplaced="false" />
+      <if>
+        <equals arg1="${replacePropertiesWithOtherPrefixNoLoop.tmp.result}" arg2="This is a special @{replacePropertiesWithOtherPrefixNoLoop.tmp.value2}marked property" />
+        <then>
+          <echo level="info">replacePropertiesWithOtherPrefixNoLoop was successful!</echo>
+        </then>
+        <else>
+          <fail>replacePropertiesWithOtherPrefixNoLoop failed (${replacePropertiesWithOtherPrefix.tmp.result})!</fail> 
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
   <target name="antTest">
     <simpleReplacement />
     <complexReplacement />
     <complexReplacementNoLoop />
     <complexInlineReplacement />
     <complexInlineReplacementNoLoop />
+    <replacePropertiesWithOtherPrefix />
+    <replacePropertiesWithOtherPrefixLooped />
+    <replacePropertiesWithOtherPrefixNoLoop />
   </target>
   
   <target name="antTestCleanUp">

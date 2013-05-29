@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testPriorityTriggerHooks">
+	<taskdef resource="net/meisen/ant/tasks/antlib.xml" />
+	<taskdef resource="net/sf/antcontrib/antlib.xml" />
+
+	<defineHook name="PriorityHook">
+		<attribute name="testAttribute1" />
+		<attribute name="testAttribute2" default="true" />
+	</defineHook>
+
+	<!-- this one will be executed last because it has the least priority -->
+	<hook name="PriorityHook" priority="1">
+		<sequential>
+			<var name="caller" value="${caller},firstPriorityHook" />
+		</sequential>
+	</hook>
+
+	<hook name="PriorityHook" priority="2">
+		<sequential>
+			<var name="caller" value="${caller},secondPriorityHook" />
+		</sequential>
+	</hook>
+
+	<!-- this one will be executed first because it has the highest priority -->
+	<hook name="PriorityHook" priority="3">
+		<sequential>
+			<var name="caller" value="${caller},thirdPriorityHook" />
+		</sequential>
+	</hook>
+
+	<target name="testTarget">
+		<var name="caller" value="testTarget" />
+
+		<triggerHooks name="PriorityHook">
+			<attributeValue name="testAttribute1" value="sampleValue" />
+		</triggerHooks>
+		
+		<echo>${caller}</echo>
+	</target>
+</project>

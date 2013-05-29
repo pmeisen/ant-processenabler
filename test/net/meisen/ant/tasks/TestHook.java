@@ -14,14 +14,33 @@ import org.junit.Test;
  * 
  */
 public class TestHook extends ClassPathBuildFileTest {
-	
+
+	/**
+	 * Tests the parsing of a simple hook definition
+	 */
 	@Test
 	public void testSimpleHook() {
-		
+
 		// initialize Ant
 		configureProject("build/hook/simpleHook.xml");
 
 		final Hook hook = findTask(getMainTarget(), Hook.class);
 		assertNotNull(hook);
+		assertEquals(hook.getName(), "simplehook");
+	}
+
+	/**
+	 * Tests the parsing of a prioritized hook definition
+	 */
+	@Test
+	public void testPrioritizedHook() {
+
+		// initialize Ant
+		configureProject("build/hook/prioritizedHook.xml");
+
+		final Hook hook = findTask(getMainTarget(), Hook.class);
+		assertNotNull(hook);
+		assertEquals(hook.getName(), "prioritizedhook");
+		assertEquals(hook.getPriority(), 5);
 	}
 }

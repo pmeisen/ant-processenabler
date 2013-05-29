@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
-<project name="testSimpleHook">
+<project name="testPrioritizedHook">
 	<taskdef resource="net/meisen/ant/tasks/antlib.xml" />
 	
-	<hook name="SimpleHook">
+	<hook name="PrioritizedHook" priority="5">
 		<sequential>
 		</sequential>
 	</hook>
