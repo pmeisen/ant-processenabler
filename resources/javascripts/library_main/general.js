@@ -92,16 +92,18 @@ var checkFile = function(file, mustExist) {
   }
 }
 
-var replaceProperties = function(string, properties) {
+var replaceProperties = function(string, properties, marker, nested) {
   if (properties == null || properties instanceof java.util.Properties == false) {
     return string;
   } else {
-    var propertyRegEx = "\\$\\{([^\\}]+)\\}";
+    var propertyMarker = marker == null ? "$" : marker;
+    var replaceNested = nested == null ? true : nested;
+    var propertyRegEx = "\\Q" + propertyMarker + "\\E\\{([^\\}]+)\\}";
     var propertyPattern = java.util.regex.Pattern.compile(propertyRegEx);
     var propertyMatcher = propertyPattern.matcher(string);
 
     var offset = 0;
-    while (propertyMatcher.find(offset)) {
+    while (propertyMatcher.find(offset)) {    
       var propName = propertyMatcher.group(1);
       var propValue = properties.getProperty(propName);
       var start = propertyMatcher.start();
@@ -111,6 +113,10 @@ var replaceProperties = function(string, properties) {
         offset = end;
       } else {
         string = new java.lang.String(string.substring(0, start) + propValue + string.substring(end));
+        
+        if (!replaceNested) {
+          offset = start + propValue.length();
+        }
       }
      
       // let's examine th new string

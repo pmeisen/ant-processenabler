@@ -2,12 +2,12 @@ package net.meisen.ant.tasks;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import net.meisen.ant.tasks.types.AttributeValue;
 import net.meisen.ant.tasks.types.HookKey;
@@ -16,11 +16,17 @@ import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.UnknownElement;
 import org.apache.tools.ant.taskdefs.AntlibDefinition;
 import org.apache.tools.ant.taskdefs.MacroDef;
-import org.apache.tools.ant.taskdefs.MacroInstance;
 import org.apache.tools.ant.taskdefs.MacroDef.Attribute;
+import org.apache.tools.ant.taskdefs.MacroInstance;
 
 import edu.emory.mathcs.backport.java.util.Collections;
 
+/**
+ * The task which is used to define a trigger. A trigger is used
+ * 
+ * @author pmeisen
+ * 
+ */
 public class TriggerHooks extends AntlibDefinition {
 
 	private String namespace;
@@ -146,6 +152,11 @@ public class TriggerHooks extends AntlibDefinition {
 		return getDefinedHooks().get(new HookKey(namespace, name));
 	}
 
+	/**
+	 * Get all the defined hooks sorted by their priority (highest first).
+	 * 
+	 * @return the defined hooks sorted by their priority
+	 */
 	@SuppressWarnings("unchecked")
 	protected List<Hook> getHooks() {
 		final List<Hook> hooks = getAllHooks().get(new HookKey(namespace, name));
@@ -153,6 +164,20 @@ public class TriggerHooks extends AntlibDefinition {
 		if (hooks == null) {
 			return new ArrayList<Hook>();
 		} else {
+
+			// we have to sort the hooks by their priority
+			Collections.sort(hooks, new Comparator<Hook>() {
+				public int compare(final Hook h1, final Hook h2) {
+
+					// get the priorities
+					final Integer p1 = new Integer(h1.getPriority());
+					final Integer p2 = new Integer(h2.getPriority());
+
+					// compare them
+					return -1 * p1.compareTo(p2);
+				}
+			});
+
 			return Collections.unmodifiableList(hooks);
 		}
 	}
@@ -175,6 +200,14 @@ public class TriggerHooks extends AntlibDefinition {
 		}
 	}
 
+	/**
+	 * Get all the attributes defined for the triggered hook, i.e. the once which
+	 * are defined by the hook.
+	 * 
+	 * @return the defined attributes
+	 * 
+	 * @see DefineHook#getAttributes()
+	 */
 	protected List<Attribute> getAttributes() {
 
 		// get the definition
@@ -211,6 +244,12 @@ public class TriggerHooks extends AntlibDefinition {
 		return definition.getAttributes();
 	}
 
+	/**
+	 * Executes the passed <code>hook</code> using the attributes defined.
+	 * 
+	 * @param hook
+	 *          the hook to be executed
+	 */
 	public void executeDelayed(final Hook hook) {
 
 		final MacroDef macroDef = new MacroDef() {
@@ -260,6 +299,15 @@ public class TriggerHooks extends AntlibDefinition {
 		instance.execute();
 	}
 
+	/**
+	 * Checks if the defined attributes for the trigger are valid.
+	 * 
+	 * @param attributes
+	 *          the attributes to be checked
+	 * 
+	 * @return <code>true</code> if the attributes are valid, otherwise
+	 *         <code>false</code>
+	 */
 	protected boolean validAttributes(final List<Attribute> attributes) {
 
 		// check if we have a value for each attribute

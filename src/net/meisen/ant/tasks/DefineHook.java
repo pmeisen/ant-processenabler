@@ -2,10 +2,8 @@ package net.meisen.ant.tasks;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import net.meisen.ant.tasks.types.HookKey;
 
@@ -30,6 +28,11 @@ public class DefineHook extends AntlibDefinition {
 	private String name;
 	private List<Attribute> attributes = new ArrayList<Attribute>();
 
+	/**
+	 * Get the identifier of the reference to retrieve all the defined hooks.
+	 * 
+	 * @return the identifier of the reference to retrieve all the defined hooks
+	 */
 	public final static String getIdRefDefinedHooks() {
 		return idRefHooks;
 	}

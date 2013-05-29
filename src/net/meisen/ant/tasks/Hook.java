@@ -3,29 +3,39 @@ package net.meisen.ant.tasks;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import net.meisen.ant.tasks.types.HookKey;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
-import org.apache.tools.ant.RuntimeConfigurable;
 import org.apache.tools.ant.UnknownElement;
 import org.apache.tools.ant.taskdefs.AntlibDefinition;
-import org.apache.tools.ant.taskdefs.MacroDef;
 import org.apache.tools.ant.taskdefs.MacroDef.NestedSequential;
-import org.apache.tools.ant.taskdefs.MacroInstance;
 
+/**
+ * Implementations of a hook. A hook is executed whenever a trigger is fired for
+ * the specified hook. This can be seen as an event driven mechanism.
+ * 
+ * @author pmeisen
+ * 
+ */
 public class Hook extends AntlibDefinition {
 	private final static String idRefHooks = Hook.class.getName() + ":hooks";
 
 	private String namespace;
 	private String name;
+	private int priority = 0;
 
 	private NestedSequential nestedSequential;
 
+	/**
+	 * Gets the identifier of the reference used to refer to the available hook
+	 * instances.
+	 * 
+	 * @return the identifier of the reference used to refer to the available hook
+	 *         instances
+	 */
 	public final static String getIdRefHooks() {
 		return idRefHooks;
 	}
@@ -116,6 +126,11 @@ public class Hook extends AntlibDefinition {
 		list.add(this);
 	}
 
+	/**
+	 * Get all the nested tasks defined for the hook.
+	 * 
+	 * @return all the nested tasks, defined for <code>this</code> instance
+	 */
 	@SuppressWarnings("unchecked")
 	public List<UnknownElement> getNested() {
 		return (List<UnknownElement>) nestedSequential.getNested();
@@ -132,5 +147,24 @@ public class Hook extends AntlibDefinition {
 		}
 		this.nestedSequential = new NestedSequential();
 		return this.nestedSequential;
+	}
+
+	/**
+	 * Gets the priority of the hook.
+	 * 
+	 * @return the priority of the hook
+	 */
+	public int getPriority() {
+		return priority;
+	}
+
+	/**
+	 * Sets the priority of the hook.
+	 * 
+	 * @param priority
+	 *          the priority of the hook
+	 */
+	public void setPriority(int priority) {
+		this.priority = priority;
 	}
 }
