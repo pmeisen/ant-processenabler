@@ -403,6 +403,7 @@
               while(iterator.hasNext()) {
                 var p = iterator.next();
                 properties.put(p.toLowerCase(), project.getProperty(p));
+                properties.put(p, project.getProperty(p));
               }
             } else {
               properties.putAll(project.getProperties());

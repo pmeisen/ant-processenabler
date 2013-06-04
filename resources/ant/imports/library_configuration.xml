@@ -412,6 +412,7 @@
         <propertyref regex=".*"/>
       </propertyset>
       <replacePropertiesInProperties propertySetId="configuration.tmp.propertiesSet" />
+      <replacePropertiesInProperties propertySetId="main.tmp.propertiesSet" propertyMarker="@" />
       
       <!-- now add a hook -->
       <configurationPostProperties />
