@@ -662,6 +662,7 @@
               var unzip = project.getProperty(includedCustomer + ".files.file" + fileNumber + "(unzip)");
               var includes = project.getProperty(includedCustomer + ".files.file" + fileNumber + "(includes)");
               var excludes = project.getProperty(includedCustomer + ".files.file" + fileNumber + "(excludes)");
+              var ignore = project.getProperty(includedCustomer + ".files.file" + fileNumber + "(ignore)");
 
               // execute whatever has to be done
               var configurationCopyFiles = project.createTask("configurationCopyFiles"); 
@@ -670,6 +671,7 @@
               configurationCopyFiles.setDynamicAttribute("unzip", unzip);
               configurationCopyFiles.setDynamicAttribute("includes", includes);
               configurationCopyFiles.setDynamicAttribute("excludes", excludes);
+              configurationCopyFiles.setDynamicAttribute("ignore", ignore);
               configurationCopyFiles.execute();
             }
           }
@@ -869,26 +871,35 @@
     <attribute name="unzip" default="false" />
     <attribute name="includes" default="**/*" />
     <attribute name="excludes" default="" />
+    <attribute name="ignore" default="false" />
     
-    <sequential>
-      <fileInfo file="@{from}" />
-
-      <!-- do the stuff -->
+    <sequential>    
       <if>
-        <equals arg1="${fileInfo.dir}" arg2="true" />
+        <or><equals arg1="@{ignore}" arg2="y" /><equals arg1="@{ignore}" arg2="yes" /><equals arg1="@{ignore}" arg2="true" /></or>
         <then>
-          <copy todir="@{to}">
-            <fileset dir="@{from}" includes="@{includes}" excludes="@{excludes}" />
-          </copy>
+          <!-- nothing to do -->
         </then>
         <else>
+          <fileInfo file="@{from}" />
+        
+          <!-- do whatever is defined -->
           <if>
-            <equals arg1="@{unzip}" arg2="true" />
+            <equals arg1="${fileInfo.dir}" arg2="true" />
             <then>
-              <unzip src="@{from}" dest="@{to}" overwrite="true" />
+              <copy todir="@{to}">
+                <fileset dir="@{from}" includes="@{includes}" excludes="@{excludes}" />
+              </copy>
             </then>
             <else>
-              <copy file="@{from}" todir="@{to}" />
+              <if>
+                <or><equals arg1="@{unzip}" arg2="y" /><equals arg1="@{unzip}" arg2="yes" /><equals arg1="@{unzip}" arg2="true" /></or>
+                <then>
+                  <unzip src="@{from}" dest="@{to}" overwrite="true" />
+                </then>
+                <else>
+                  <copy file="@{from}" todir="@{to}" />
+                </else>
+              </if>
             </else>
           </if>
         </else>
