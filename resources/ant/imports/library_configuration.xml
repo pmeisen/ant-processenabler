@@ -277,7 +277,9 @@
       <!-- reload the properties first the default, then the customer - it's var not property -->
       <var file="${configuration.settings.default}/${configuration.config.filename}" />
       
-      <!-- resolve possible imports -->
+      <!-- resolve possible imports, the result of this script returns a property which contains the 
+           a "|" separated list with all the imports
+        -->
       <script language="javascript"><![CDATA[
         // helper method to load js files
         // thanks to http://stackoverflow.com/questions/650377/javascript-rhino-use-library-or-include-other-scripts
@@ -290,21 +292,26 @@
         }
         
         // load the libraries
-        eval(l("configuration.library.resfile.js.general"));
-      
+        eval(l("main.library.resfile.js.general"));
+
         var rootCustomerFolder = project.getProperty("configuration.settings.root");
         var importFilename = project.getProperty("configuration.config.import.filename");
         var propertyFilename = project.getProperty("configuration.config.filename");
-        var imports = new java.util.Stack();
         var importProps = new java.util.Properties();
+        importProps.putAll(project.getProperties());
+        var imports = new java.util.Stack();
         imports.push(project.getProperty("configuration.customer"));
-        
+
         // check all the imports
         var folders = new java.util.ArrayList();
         while (!imports.empty()) {
-        
+
           // get the next import
-          var nextImport = replaceProperties(imports.pop(), importProps);
+          var nextImport = imports.pop();
+          nextImport = replaceProperties(nextImport, importProps);
+          nextImport = replaceProperties(nextImport, importProps, "@");
+          
+          // add it as folder
           folders.add(nextImport);
           
           // load the properties of the import
@@ -316,14 +323,14 @@
             // get the properties and add those
             prop.load(inStream);
             importProps.putAll(prop);
-            
+
             // close the input again
             try {
               inStream.close();
             } catch (e) {
             }
           }
-          
+
           // now get the import file
           var importFile = new java.io.File(rootCustomerFolder + "/" + nextImport + "/" + importFilename);
           if (importFile.exists() && importFile.isFile()) {
@@ -352,7 +359,7 @@
             }
           }
         }
-        
+
         // transform the folders to a list
         var folderList = "";
         for (var i = folders.size(); i > 0; i--) {
@@ -365,6 +372,8 @@
         setProperty.setName("configuration.settings.includedCustomers");
         setProperty.setValue(folderList);
         setProperty.execute();
+        
+        java.lang.System.out.println("------>" + folderList);
       ]]></script>
       
       <!-- check if the alternative should be loaded -->
