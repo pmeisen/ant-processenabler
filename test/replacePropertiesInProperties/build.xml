@@ -190,7 +190,7 @@
           <echo level="info">complexInlineReplacementNoLoop was successful!</echo>
         </then>
         <else>
-          <fail>complexInlineReplacementNoLoop failed (${testReplacePropertiesInProperties.tmp.value1} != ${testReplacePropertiesInProperties.tmp.value2} != ${testReplacePropertiesInProperties.tmp.value3})!</fail>
+          <fail>complexInlineReplacementNoLoop failed (${testReplacePropertiesInProperties.tmp.value1}, ${testReplacePropertiesInProperties.tmp.value2}, ${testReplacePropertiesInProperties.tmp.value3})!</fail>
         </else>
       </if>
     </sequential>

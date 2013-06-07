@@ -92,37 +92,82 @@ var checkFile = function(file, mustExist) {
   }
 }
 
-var replaceProperties = function(string, properties, marker, nested) {
-  if (properties == null || properties instanceof java.util.Properties == false) {
-    return string;
+var quoteAntProperties = function(value) {
+  var propertyRegEx = "\\$\\{([^\\}]+)\\}";
+  var propertyPattern = java.util.regex.Pattern.compile(propertyRegEx);
+  var propertyMatcher = propertyPattern.matcher(value);
+
+  var offset = 0;
+  while (propertyMatcher.find(offset)) {    
+    var start = propertyMatcher.start();
+    var end = propertyMatcher.end();
+      
+    // make sure that the property is not replaced by ant and quote it if necessary
+    value = new java.lang.String(value.substring(0, start) + "$" + value.substring(start));
+    offset = end + 1;
+    
+    // let's examine th new value
+    propertyMatcher = propertyPattern.matcher(value);
+  }
+
+  return value;
+}
+
+var replaceProperties = function(value, properties, marker, nested) {
+  if (properties == null || properties instanceof java.util.Map == false) {
+    return value;
   } else {
     var propertyMarker = marker == null ? "$" : marker;
     var replaceNested = nested == null ? true : nested;
     var propertyRegEx = "\\Q" + propertyMarker + "\\E\\{([^\\}]+)\\}";
     var propertyPattern = java.util.regex.Pattern.compile(propertyRegEx);
-    var propertyMatcher = propertyPattern.matcher(string);
+    var propertyMatcher = propertyPattern.matcher(value);
 
+    // create the properties to be replaced
+    var modProperties = new java.util.Properties();
+    
+    // the @ needs lowerCase properties as well
+    if (propertyMarker.equals("@")) {
+      var iterator = properties.keySet().iterator();
+      while(iterator.hasNext()) {
+        var p = iterator.next();
+        modProperties.put(p.toLowerCase(), properties.get(p));
+      }
+    }
+    
+    // everything else should be case-sensitive
+    modProperties.putAll(properties);
+    
+    // replace the properties
+    var newValue = value;
+    var propertyRegEx = "\\Q" + propertyMarker + "\\E\\{([^\\}]+)\\}";
+    var propertyPattern = java.util.regex.Pattern.compile(propertyRegEx);
+    var propertyMatcher = propertyPattern.matcher(newValue);
+    
     var offset = 0;
     while (propertyMatcher.find(offset)) {    
       var propName = propertyMatcher.group(1);
-      var propValue = properties.getProperty(propName);
+      var propValue = modProperties.getProperty(propName);
       var start = propertyMatcher.start();
       var end = propertyMatcher.end();
       
       if (propValue == null) {
         offset = end;
       } else {
-        string = new java.lang.String(string.substring(0, start) + propValue + string.substring(end));
+      
+        // make sure that the property is not replaced by ant and quote it if necessary
+        newValue = new java.lang.String(newValue.substring(0, start) + propValue + newValue.substring(end));
         
+        // increase the offset if we are done here
         if (!replaceNested) {
           offset = start + propValue.length();
         }
       }
      
-      // let's examine th new string
-      propertyMatcher = propertyPattern.matcher(string);
+      // let's examine th new value
+      propertyMatcher = propertyPattern.matcher(newValue);
     }
     
-    return string;
+    return newValue;
   }
 }

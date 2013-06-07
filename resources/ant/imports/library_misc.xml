@@ -371,54 +371,16 @@
           var propertyKey = property.getName();
           var propertyValue = property.getValue();
 
-          // if the marker is the default ant-marker we have to use this 
-          // more or less complex implementation
-          var propertySet = true;
-          var propertyNewValue;
-          if (propertyMarker.equals("$")) {
-            var replacedNewValue = project.replaceProperties(propertyValue);
-            propertyNewValue = replacedNewValue;
-            
-            // we have to quote a property within the new value otherwise it would be replaced directly
-            if (propertyNewValue != null) {
-              var propertyRegEx = "\\$\\{[^\\}]+\\}";
-              var propertyPattern = java.util.regex.Pattern.compile(propertyRegEx);
-              var propertyMatcher = propertyPattern.matcher(propertyNewValue);
-              var offset = 0;
-              while (propertyMatcher.find()) {
-                var replacePosition = propertyMatcher.start() + offset;
-                propertyNewValue = new java.lang.String(propertyNewValue.substring(0, replacePosition) + "$" + propertyNewValue.substring(replacePosition));
-                offset++;
-              }
-            }
-            
-            propertySet = !(propertyValue == null && replacedNewValue == null) && !propertyValue.equals(replacedNewValue);
-          } 
-          // otherwise we can just look for properties and replace those
-          else {
-            // create the properties to be replaced
-            var properties = new java.util.Properties();
-            if (propertyMarker.equals("@")) {
-              var iterator = project.getProperties().keySet().iterator();
-              while(iterator.hasNext()) {
-                var p = iterator.next();
-                properties.put(p.toLowerCase(), project.getProperty(p));
-                properties.put(p, project.getProperty(p));
-              }
-            } else {
-              properties.putAll(project.getProperties());
-            }
-            
-            // replace the properties
-            propertyNewValue = replaceProperties(propertyValue, properties, propertyMarker, loopUntilAllReplaced);            
-            propertySet = !propertyValue.equals(propertyNewValue);
-          }
+          var propertyNewValue = replaceProperties(propertyValue, project.getProperties(), propertyMarker, loopUntilAllReplaced);            
+          var propertySet = !propertyValue.equals(propertyNewValue);
 
           // set the new value if it changed
           if (propertySet) {
+            var quotedNewValue = quoteAntProperties(propertyNewValue);
+          
             var setProperty = project.createTask("var");
             setProperty.setName(propertyKey);
-            setProperty.setValue(propertyNewValue);
+            setProperty.setValue(quotedNewValue);
             setProperty.execute();
             changes = loopUntilAllReplaced;
           } 

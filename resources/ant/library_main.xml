@@ -139,7 +139,6 @@
         <propertyref regex=".*"/>
       </propertyset>
       <replacePropertiesInProperties propertySetId="main.tmp.propertiesSet" />
-      <replacePropertiesInProperties propertySetId="main.tmp.propertiesSet" propertyMarker="@" />
                 
       <!-- define the loglevel -->
       <setLogLevel logLevel="${main.logLevel}" />
