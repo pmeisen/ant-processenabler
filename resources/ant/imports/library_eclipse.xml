@@ -16,6 +16,7 @@
   <property name="eclipse.library.resfile.maven.eclipseMerge" location="${main.root}/maven/pomEclipse_xmlMerge.properties" />
   <property name="eclipse.library.resfile.template.project" location="${library_eclipse.basedir}/library_eclipse_project.template" description="The name of the project template" />
   <property name="eclipse.library.resfile.template.classpath" location="${library_eclipse.basedir}/library_eclipse_classpath.template" description="The name of the classpath template" />
+  <property name="eclipse.library.resfile.eclipse.classpathMerge" location="${library_eclipse.basedir}/library_eclipse_classpath_xmlMerge.properties" />
   
   <property name="eclipse.template.project" value="${eclipse.library.resfile.template.project}" />
   <property name="eclipse.template.classpath" value="${eclipse.library.resfile.template.classpath}" />
@@ -35,9 +36,26 @@
   <property name="eclipse.dependencies.mavenRepoPlaceholder" value="M2_REPO" description="Defines the name of the variable used in Eclipse for the maven Repository location, only used if ${eclipse.dependencies.useM2Repo} is true and ${eclipse.dependencies.copy} is false" />
 
   <!--
-    add the antcontrib library
+    add the antcontrib and ant-processenabler library
     -->
   <taskdef resource="net/sf/antcontrib/antlib.xml" />
+  <taskdef resource="net/meisen/ant/tasks/antlib.xml" />
+  
+  <defineHook name="eclipseModifyProjectFile">
+		<attribute name="file" />
+	</defineHook>
+  
+  <defineHook name="eclipseModifyClasspathFile">
+		<attribute name="file" />
+	</defineHook>
+  
+  <defineHook name="eclipseCreateSettings">
+    <attribute name="settingsdir" />
+	</defineHook>
+  
+  <defineHook name="eclipseCreateLauncher">
+    <attribute name="launcherdir" />
+	</defineHook>
   
   <macrodef name="eclipseResolveDependencies">
     <attribute name="fileset" default="eclipse.tmp.dependencies" />
@@ -103,6 +121,7 @@
     -->
   <macrodef name="eclipseCreateProject">   
     <attribute name="template" default="" />
+    <attribute name="destination" default="${basedir}/.project" />
     <sequential>
       <!-- if no template is passed use the one set -->
       <if>
@@ -117,9 +136,93 @@
     
       <!-- get the pom settings -->
       <mavenSetPom />
-
+      
+      <!-- trigger the defined hooks -->
+      <copy file="${eclipse.tmp.template.project}" tofile="@{destination}" overwrite="true" />
+      <triggerHooks name="eclipseModifyProjectFile">
+        <attributeValue name="file" value="@{destination}" />
+      </triggerHooks>
+      
       <!-- replace the properties -->
-      <fileReplaceAllProperties file="${eclipse.tmp.template.project}" destFile="${basedir}/.project" />
+      <fileReplaceAllProperties file="@{destination}" destFile="@{destination}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="eclipseAddAttributeToClassPath">
+    <attribute name="attributename" />
+    <attribute name="attributevalue" />
+    <attribute name="classpathentry" />
+    <attribute name="classpathfile" default="${basedir}/.classpath" />
+  
+    <sequential>
+      <var name="eclipse.tmp.attributename" value="@{attributename}" />
+      <var name="eclipse.tmp.attributevalue" value="@{attributevalue}" />
+      <var name="eclipse.tmp.classpathentry" value="@{classpathentry}" />
+      <var name="eclipse.tmp.classpathfile" value="@{classpathfile}" />
+      
+      <var name="eclipse.tmp.mergeCommand" unset="true" />
+      
+      <script language="javascript"><![CDATA[
+        var s = java.lang.System.getProperty("line.separator");
+        
+        var attributename = project.getProperty("eclipse.tmp.attributename");
+        var attributevalue = project.getProperty("eclipse.tmp.attributevalue");
+        
+        var source = project.getProperty("eclipse.tmp.classpathentry");
+        var sourceFile = new java.io.File(source);
+        var sourceName = sourceFile.getName();
+
+        // get the xPath
+        var xPath = "/classpath/classpathentry[@kind='lib' and (ends-with(@path,'/" + sourceName + "') or ends-with(@path,'\\" + sourceName + "'))]";
+        
+        // check if the file contains the dependency
+        var xmlFile = new java.io.File(project.getProperty("eclipse.tmp.classpathfile"));
+        var builder = new org.jdom.input.SAXBuilder();
+        var doc = builder.build(xmlFile);
+        var root = doc.getRootElement();
+        
+        // get the matches
+        var matches = org.jdom.xpath.XPath.selectNodes(root, xPath);
+        
+        // create the entry
+        var entry = "";
+        if (matches.size() == 1) {
+          entry += s + '\t' + "<classpathentry xpathmatcher:rule=\"" + xPath + "\">";
+          entry += s + '\t' + '\t' + "<attributes>";
+          entry += s + '\t' + '\t' + '\t' + "<attribute name=\"" + attributename + "\" value=\"" + attributevalue + "\"/>";
+          entry += s + '\t' + '\t' + "</attributes>";
+          entry += s + '\t' + "</classpathentry>";
+          
+          var setVar = project.createTask("var");
+          setVar.setName("eclipse.tmp.mergeCommand"); setVar.setValue(entry); setVar.execute();                  
+        }
+      ]]></script>
+      
+      <if>
+        <isset property="eclipse.tmp.mergeCommand" />
+        <then>
+          <!-- create the complete file to merge -->
+          <var name="eclipse.tmp.mergeXml" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;${line.separator}" />
+          <var name="eclipse.tmp.mergeXml" value="${eclipse.tmp.mergeXml}&lt;classpath xmlns:xpathmatcher=&quot;http://ant-processenabler.meisen.net/schema/xpathmatcher&quot;&gt;" />
+          <var name="eclipse.tmp.mergeXml" value="${eclipse.tmp.mergeXml}${eclipse.tmp.mergeCommand}${line.separator}" />
+          <var name="eclipse.tmp.mergeXml" value="${eclipse.tmp.mergeXml}&lt;/classpath&gt;" />
+          
+          <!-- create a file with the merges -->
+          <var name="eclipse.tmp.mergeXmlFile" value="${main.tmpdir}/eclipseMerger.xml" />
+          <delete file="${eclipse.tmp.mergeXmlFile}" />
+          <echo file="${eclipse.tmp.mergeXmlFile}" append="false">${eclipse.tmp.mergeXml}</echo>
+          
+          <!-- merge it -->
+          <fileMergeXml file1="${eclipse.tmp.classpathfile}" 
+                        file2="${eclipse.tmp.mergeXmlFile}" 
+                        dest="${eclipse.tmp.classpathfile}" 
+                        conf="${eclipse.library.resfile.eclipse.classpathMerge}" />
+        </then>
+        <else>
+          <fileInfo file="${eclipse.tmp.classpathentry}" />
+          <echo level="warn">The '${fileInfo.name}' is not available on the classpath, therefore the attribute cannot be added.</echo>
+        </else>
+      </if>
     </sequential>
   </macrodef>
   
@@ -129,6 +232,7 @@
   <macrodef name="eclipseCreateClassPath">
     <attribute name="addDependenciesFilesetId" default="" />
     <attribute name="template" default="" />
+    <attribute name="destination" default="${basedir}/.classpath" />
 
     <sequential>
       
@@ -218,7 +322,7 @@
         </classpathentry>
         -->
       <mavenSetPom />
-      <pathconvert pathsep="&#xA;&#x9;" property="eclipse.tmp.classpath" refid="eclipse.tmp.libs">
+      <pathconvert pathsep="${line.separator}" property="eclipse.tmp.classpath" refid="eclipse.tmp.libs">
         <scriptmapper language="javascript">
             <![CDATA[
             // get some meta settings to define how the classpath file looks like
@@ -226,6 +330,7 @@
             var useM2Repo = self.getProject().getProperty("eclipse.dependencies.useM2Repo").equals("true");
             
             // get some values about the library file
+            var s = java.lang.System.getProperty("line.separator");
             var libFile = new java.io.File(source);
             var jarName = "" + libFile.getName();
             var jarLocation = libFile.getParent();
@@ -330,29 +435,38 @@
               
               // add the javadoc
               if (javaDocPath != null) {
-                entry += '\t' + '\t' + "<attributes>" + '\n';
+                entry += '\t' + '\t' + "<attributes>" + s;
                 entry += '\t' + '\t' + '\t' + "<attribute name=\"javadoc_location\" ";
                 entry += "value=\"" + javaDocPath + "!/\" ";
-                entry += "/>" + '\n';
-                entry += '\t' + '\t' + "</attributes>" + '\n';
+                entry += "/>" + s;
+                entry += '\t' + '\t' + "</attributes>" + s;
               }
               
               // finish the entry
-              entry += '\t' + "</classpathentry>";
+              entry += '\t' + "</classpathentry>" + s;
               
               // add it as mapping result
               self.addMappedName(entry);
             }
             ]]>
         </scriptmapper>
-      </pathconvert>
+      </pathconvert> 
       
       <!-- set the excluded sources -->
       <transformPackagesToPath property="eclipse.tmp.srcExcludes" 
                                packages="${build.package.excludes}" suffix="/" packageSeparatore="/" separatore="|" />
 
       <!-- replace the properties -->
-      <fileReplaceAllProperties file="${eclipse.tmp.template.classpath}" destFile="${basedir}/.classpath" />
+      <copy file="${eclipse.tmp.template.classpath}" tofile="@{destination}" overwrite="true" />
+      <fileReplaceAllProperties file="@{destination}" destFile="@{destination}" />
+                               
+      <!-- trigger the modification of the file -->
+      <triggerHooks name="eclipseModifyClasspathFile">
+        <attributeValue name="file" value="@{destination}" />
+      </triggerHooks>
+
+      <!-- replace the properties again after the hook -->
+      <fileReplaceAllProperties file="@{destination}" destFile="@{destination}" />
     </sequential>
   </macrodef>
   
@@ -372,10 +486,111 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="eclipseCreateSettings">
+    <attribute name="filename" default="" />
+    
+    <sequential>
+      <!-- get the default if nothing is specified -->
+      <varEmpty property="eclipse.tmp.settingsdir" value="@{filename}" default="${eclipse.settings.dir}" />
+      
+      <!-- trigger the hooks -->
+      <triggerHooks name="eclipseCreateSettings">
+        <attributeValue name="settingsdir" value="${eclipse.tmp.settingsdir}" />
+      </triggerHooks>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="eclipseCreateSettingsFromPackage">
+    <attribute name="packagefolder" />
+    <attribute name="filename" />
+    <attribute name="location" default="" />
+    <attribute name="packageprefix" default="eclipsePlugIn_" />
+    <attribute name="replaceproperties" default="true" />
+    
+    <sequential>
+      <!-- the properties will be marked with a prefix to be removeable after success -->
+      <var name="eclipse.tmp.packageproperties.prefix" value="eclipseCreateSettingsFromPackage" />
+      <propertyset id="eclipse.tmp.packageproperties">
+        <propertyref prefix="${eclipse.tmp.packageproperties.prefix}."/>
+      </propertyset>
+      
+      <!-- unset all the properties, might be set somehow -->
+      <unsetProperties propertySetId="eclipse.tmp.packageproperties" />
+    
+      <!-- get the directory to place the settings at, default is the defined location -->
+      <varEmpty property="eclipse.tmp.settingslocation" value="@{location}" default="${eclipse.settings.dir}" />
+      <mkdir dir="${eclipse.tmp.settingslocation}" />
+      
+      <!-- get all the files of the package and process those -->
+      <for param="propertyfile">
+        <path>
+          <fileset id="eclipse.tmp.packagefiles" dir="@{packagefolder}">
+            <include name="@{packageprefix}*.properties" />
+          </fileset>
+        </path>
+        <sequential>
+          <var name="eclipse.tmp.propertyPrefix" unset="true" />
+        
+          <!-- first remove the prefix -->
+          <fileInfo file="@{propertyfile}" />
+          <propertyregex property="eclipse.tmp.propertyPrefix" input="${fileInfo.name}" regexp="@{packageprefix}(.*)\.properties" select="\1" casesensitive="false" />
+          
+          <!-- if it's not the default we have to look for local properties -->
+          <if>
+            <not><equals arg1="${eclipse.tmp.propertyPrefix}" arg2="default" /></not>
+            <then>
+              <!-- get the local, i.e. already defined properties -->
+              <propertyset id="eclipse.tmp.predefinedproperties">
+                <propertyref prefix="${eclipse.tmp.propertyPrefix}."/>
+              </propertyset>
+              
+              <!-- add the marker prefix -->
+              <modifyProperties prefix="${eclipse.tmp.packageproperties.prefix}" propertySetId="eclipse.tmp.predefinedproperties" prefixhandling="add" />
+            </then>
+          </if>
+          
+          <!-- now load the properties of the file -->
+          <loadproperties srcFile="@{propertyfile}" prefix="${eclipse.tmp.packageproperties.prefix}" />
+        </sequential>
+      </for>
+            
+      <!-- replace all properties in those which are defined -->
+      <varNormalizeBoolean property="eclipse.tmp.replaceproperties" value="@{replaceproperties}" />
+      <if>
+        <equals arg1="${eclipse.tmp.replaceproperties}" arg2="true" />
+        <then>
+          <replacePropertiesInProperties propertySetId="eclipse.tmp.packageproperties" />
+        </then>
+      </if>
+
+      <!-- get all the properties and write those to a file -->
+      <echoproperties destfile="${eclipse.tmp.settingslocation}/@{filename}">
+        <propertyset>
+          <propertyref prefix="${eclipse.tmp.packageproperties.prefix}."/>
+          <mapper type="glob" from="${eclipse.tmp.packageproperties.prefix}.*" to="*"/>
+        </propertyset>
+      </echoproperties>
+      
+      <!-- unset all the properties so that these don't disturb anymore -->
+      <unsetProperties propertySetId="eclipse.tmp.packageproperties" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="eclipseCreateLauncher">    
+    <sequential>
+      <triggerHooks name="eclipseCreateLauncher">
+        <attributeValue name="launcherdir" value="${eclipse.launcher.dir}" />
+      </triggerHooks>
+    </sequential>
+  </macrodef>
+  
   <!-- the targets provided by this lib -->
   <target name="createDevEnv">
     <eclipseCreateDirectories />
     <eclipseCreateProject />
     <eclipseCreateClassPath />
+    
+    <eclipseCreateSettings />
+    <eclipseCreateLauncher />
   </target>
 </project>

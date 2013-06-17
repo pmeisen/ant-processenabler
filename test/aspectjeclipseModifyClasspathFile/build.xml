@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testAspectJModifyClasspathFile">
+
+  <!-- the project needs aspectj -->
+  <property name="main.import.library.aspectj" value="true" />
+  <property name="aspectj.version" value="fake" />
+  <property name="aspectj.path.tools" value="." />
+  <property name="aspectj.eclipse.useAspectJPlugIn" value="true" />
+  
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+  
+  <!-- we mook the aspectJPath retrieval -->
+  <macrodef name="aspectJDetermineAspectJPath">
+    <attribute name="filesetid" />
+    
+    <sequential>    
+      <fileset id="@{filesetid}" dir="./${project.tmp.aspectjpath.folder}">
+        <include name="**/*.jar" />
+      </fileset>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkNoAspectJPathFiles">
+    <sequential>
+      <var name="project.tmp.checkNoAspectJPathFiles.file" value=".classpath" />
+      <var name="project.tmp.aspectjpath.folder" value="aspectJPathNoFiles" />
+    
+      <!-- set some properties needed for the test -->
+      <var name="project.tmp.checkNoAspectJPathFiles.aspectPrefix" value="_eclipse/src/spring-aspects-1.0.0" />
+      <script language="javascript"><![CDATA[
+        var s = java.lang.System.getProperty("line.separator");
+        var aspectPrefix = project.getProperty("project.tmp.checkNoAspectJPathFiles.aspectPrefix");
+      
+        var value = "";
+        value += "<classpathentry kind=\"lib\" path=\"" + aspectPrefix + ".jar\" sourcepath=\"" + aspectPrefix + "-sources.jar\">";
+        value += s + "  <attributes>";
+        value += s + "    <attribute name=\"javadoc_location\" value=\"jar:platform:/resource/project/" + aspectPrefix + "-javadoc.jar!/\" />";
+        value += s + "  </attributes>";
+        value += s + "</classpathentry>";
+
+        var setProperty = project.createTask("var");
+        setProperty.setName("eclipse.tmp.classpath");
+        setProperty.setValue(value);
+        setProperty.execute();
+      ]]></script>
+      
+      <!-- get the template and replace the properties -->
+      <copy file="${eclipse.template.classpath}" tofile="${project.tmp.checkNoAspectJPathFiles.file}" overwrite="true" />
+      <fileReplaceAllProperties file="${project.tmp.checkNoAspectJPathFiles.file}" destFile="${project.tmp.checkNoAspectJPathFiles.file}" />
+       
+      <!-- trigger the creation of a default .project file -->
+      <triggerHooks name="eclipseModifyClasspathFile">
+        <attributeValue name="file" value="${project.tmp.checkNoAspectJPathFiles.file}" />
+      </triggerHooks>
+      
+      <!-- load the file -->
+      <loadfile property="test.tmp.checkNoAspectJPathFiles" srcfile="${project.tmp.checkNoAspectJPathFiles.file}"/>
+      
+      <!-- the expected result -->
+      <var name="test.tmp.regex" value="^.*" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\Q&lt;classpathentry kind=&quot;lib&quot; path=&quot;${project.tmp.checkNoAspectJPathFiles.aspectPrefix}.jar&quot; sourcepath=&quot;${project.tmp.checkNoAspectJPathFiles.aspectPrefix}-sources.jar&quot;>\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attributes&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attribute name=&quot;javadoc_location&quot; value=&quot;jar:platform:/resource/project/${project.tmp.checkNoAspectJPathFiles.aspectPrefix}-javadoc.jar!/&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/attributes&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/classpathentry&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
+
+      <if>
+        <matches string="${test.tmp.checkNoAspectJPathFiles}" pattern="${test.tmp.regex}" multiline="true" singleline="true" />
+        <then><echo>checkNoAspectJPathFiles was successful!</echo></then>
+        <else><fail>checkNoAspectJPathFiles failed - ${test.tmp.checkNoAspectJPathFiles}!</fail></else>
+      </if>
+      
+      <!-- remove the created file -->
+      <delete file="${project.tmp.checkNoAspectJPathFiles.file}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkDefaultClasspathCreation">
+    <sequential>
+      <var name="project.tmp.checkDefaultClasspathCreation.file" value=".classpath" />
+      <var name="project.tmp.aspectjpath.folder" value="aspectJPathOneFile" />
+    
+      <!-- set some properties needed for the test -->
+      <var name="project.tmp.checkDefaultClasspathCreation.aspectPrefix" value="_eclipse/src/spring-aspects-1.0.0" />
+      <script language="javascript"><![CDATA[
+        var s = java.lang.System.getProperty("line.separator");
+        var aspectPrefix = project.getProperty("project.tmp.checkDefaultClasspathCreation.aspectPrefix");
+      
+        var value = "";
+        value += "<classpathentry kind=\"lib\" path=\"" + aspectPrefix + ".jar\" sourcepath=\"" + aspectPrefix + "-sources.jar\">";
+        value += s + "  <attributes>";
+        value += s + "    <attribute name=\"javadoc_location\" value=\"jar:platform:/resource/project/" + aspectPrefix + "-javadoc.jar!/\"/>";
+        value += s + "  </attributes>";
+        value += s + "</classpathentry>";
+
+        var setProperty = project.createTask("var");
+        setProperty.setName("eclipse.tmp.classpath");
+        setProperty.setValue(value);
+        setProperty.execute();
+      ]]></script>
+      
+      <!-- get the template and replace the properties -->
+      <copy file="${eclipse.template.classpath}" tofile="${project.tmp.checkDefaultClasspathCreation.file}" overwrite="true" />
+      <fileReplaceAllProperties file="${project.tmp.checkDefaultClasspathCreation.file}" destFile="${project.tmp.checkDefaultClasspathCreation.file}" />
+       
+      <!-- trigger the creation of a default .project file -->
+      <triggerHooks name="eclipseModifyClasspathFile">
+        <attributeValue name="file" value="${project.tmp.checkDefaultClasspathCreation.file}" />
+      </triggerHooks>
+      
+      <!-- load the file -->
+      <loadfile property="test.tmp.checkDefaultClasspathCreation" srcfile="${project.tmp.checkDefaultClasspathCreation.file}"/>
+      
+      <!-- the expected result -->
+      <var name="test.tmp.regex" value="^.*" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\Q&lt;classpathentry kind=&quot;lib&quot; path=&quot;${project.tmp.checkDefaultClasspathCreation.aspectPrefix}.jar&quot; sourcepath=&quot;${project.tmp.checkDefaultClasspathCreation.aspectPrefix}-sources.jar&quot;>\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attributes&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attribute name=&quot;javadoc_location&quot; value=&quot;jar:platform:/resource/project/${project.tmp.checkDefaultClasspathCreation.aspectPrefix}-javadoc.jar!/&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attribute name=&quot;org.eclipse.ajdt.aspectpath&quot; value=&quot;org.eclipse.ajdt.aspectpath&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/attributes&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/classpathentry&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
+
+      <if>
+        <matches string="${test.tmp.checkDefaultClasspathCreation}" pattern="${test.tmp.regex}" multiline="true" singleline="true" />
+        <then><echo>checkDefaultClasspathCreation was successful!</echo></then>
+        <else><fail>checkDefaultClasspathCreation failed - ${test.tmp.checkDefaultClasspathCreation}!</fail></else>
+      </if>
+      
+      <!-- remove the created file -->
+      <delete file="${project.tmp.checkDefaultClasspathCreation.file}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkNotAvailableAspectJPathFile">
+    <sequential>
+      <var name="project.tmp.checkNotAvailableAspectJPathFile.file" value=".classpath" />
+      <var name="project.tmp.aspectjpath.folder" value="aspectJPathTwoFiles" />
+    
+      <!-- set some properties needed for the test -->
+      <var name="project.tmp.checkNotAvailableAspectJPathFile.aspectPrefix" value="_eclipse/src/spring-aspects-1.0.0" />
+      <script language="javascript"><![CDATA[
+        var s = java.lang.System.getProperty("line.separator");
+        var aspectPrefix = project.getProperty("project.tmp.checkNotAvailableAspectJPathFile.aspectPrefix");
+      
+        var value = "";
+        value += "<classpathentry kind=\"lib\" path=\"" + aspectPrefix + ".jar\" sourcepath=\"" + aspectPrefix + "-sources.jar\">";
+        value += s + "  <attributes>";
+        value += s + "    <attribute name=\"javadoc_location\" value=\"jar:platform:/resource/project/" + aspectPrefix + "-javadoc.jar!/\"/>";
+        value += s + "  </attributes>";
+        value += s + "</classpathentry>";
+
+        var setProperty = project.createTask("var");
+        setProperty.setName("eclipse.tmp.classpath");
+        setProperty.setValue(value);
+        setProperty.execute();
+      ]]></script>
+      
+      <!-- get the template and replace the properties -->
+      <copy file="${eclipse.template.classpath}" tofile="${project.tmp.checkNotAvailableAspectJPathFile.file}" overwrite="true" />
+      <fileReplaceAllProperties file="${project.tmp.checkNotAvailableAspectJPathFile.file}" destFile="${project.tmp.checkNotAvailableAspectJPathFile.file}" />
+       
+      <!-- trigger the creation of a default .project file -->
+      <triggerHooks name="eclipseModifyClasspathFile">
+        <attributeValue name="file" value="${project.tmp.checkNotAvailableAspectJPathFile.file}" />
+      </triggerHooks>
+      
+      <!-- load the file -->
+      <loadfile property="test.tmp.checkNotAvailableAspectJPathFile" srcfile="${project.tmp.checkNotAvailableAspectJPathFile.file}"/>
+      
+      <!-- the expected result -->
+      <var name="test.tmp.regex" value="^.*" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpath&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;src&quot; excluding=&quot;${eclipse.tmp.srcExcludes}&quot; path=&quot;src&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;src&quot; path=&quot;test&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;con&quot; path=&quot;org.eclipse.jdt.launching.JRE_CONTAINER&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;con&quot; path=&quot;org.eclipse.jdt.junit.JUNIT_CONTAINER/4&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;lib&quot; path=&quot;${project.tmp.checkNotAvailableAspectJPathFile.aspectPrefix}.jar&quot; sourcepath=&quot;${project.tmp.checkNotAvailableAspectJPathFile.aspectPrefix}-sources.jar&quot;>\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attributes&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attribute name=&quot;javadoc_location&quot; value=&quot;jar:platform:/resource/project/${project.tmp.checkNotAvailableAspectJPathFile.aspectPrefix}-javadoc.jar!/&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attribute name=&quot;org.eclipse.ajdt.aspectpath&quot; value=&quot;org.eclipse.ajdt.aspectpath&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/attributes&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/classpathentry&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;lib&quot; path=&quot;resources&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;output&quot; path=&quot;_eclipse/bin&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/classpath&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
+      
+      <if>
+        <matches string="${test.tmp.checkNotAvailableAspectJPathFile}" pattern="${test.tmp.regex}" multiline="true" singleline="true" />
+        <then><echo>checkNotAvailableAspectJPathFile was successful!</echo></then>
+        <else><fail>checkNotAvailableAspectJPathFile failed - ${test.tmp.checkNotAvailableAspectJPathFile}!</fail></else>
+      </if>
+      
+      <!-- remove the created file -->
+      <delete file="${project.tmp.checkNotAvailableAspectJPathFile.file}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkSeveralAspectJPathFiles">
+    <sequential>
+      <var name="project.tmp.checkSeveralAspectJPathFiles.file" value=".classpath" />
+      <var name="project.tmp.aspectjpath.folder" value="aspectJPathTwoFiles" />
+    
+      <!-- set some properties needed for the test -->
+      <var name="project.tmp.checkSeveralAspectJPathFiles.aspectPrefix" value="_eclipse/src/spring-aspects-1.0.0" />
+      <var name="project.tmp.checkSeveralAspectJPathFiles.otherPrefix" value="_eclipse/src/other-aspects-1.0.0" />
+      <script language="javascript"><![CDATA[
+        var s = java.lang.System.getProperty("line.separator");
+        var aspectPrefix = project.getProperty("project.tmp.checkSeveralAspectJPathFiles.aspectPrefix");
+        var otherPrefix = project.getProperty("project.tmp.checkSeveralAspectJPathFiles.otherPrefix");
+      
+        var value = "";
+        value += "<classpathentry kind=\"lib\" path=\"" + otherPrefix + ".jar\" />";
+        
+        value += s + "<classpathentry kind=\"lib\" path=\"" + aspectPrefix + ".jar\" sourcepath=\"" + aspectPrefix + "-sources.jar\">";
+        value += s + "  <attributes>";
+        value += s + "    <attribute name=\"javadoc_location\" value=\"jar:platform:/resource/project/" + aspectPrefix + "-javadoc.jar!/\"/>";
+        value += s + "  </attributes>";
+        value += s + "</classpathentry>";
+
+        var setProperty = project.createTask("var");
+        setProperty.setName("eclipse.tmp.classpath");
+        setProperty.setValue(value);
+        setProperty.execute();
+      ]]></script>
+      
+      <!-- get the template and replace the properties -->
+      <copy file="${eclipse.template.classpath}" tofile="${project.tmp.checkSeveralAspectJPathFiles.file}" overwrite="true" />
+      <fileReplaceAllProperties file="${project.tmp.checkSeveralAspectJPathFiles.file}" destFile="${project.tmp.checkSeveralAspectJPathFiles.file}" />
+       
+      <!-- trigger the creation of a default .project file -->
+      <triggerHooks name="eclipseModifyClasspathFile">
+        <attributeValue name="file" value="${project.tmp.checkSeveralAspectJPathFiles.file}" />
+      </triggerHooks>
+      
+      <!-- load the file -->
+      <loadfile property="test.tmp.checkSeveralAspectJPathFiles" srcfile="${project.tmp.checkSeveralAspectJPathFiles.file}"/>
+      
+      <!-- the expected result -->
+      <var name="test.tmp.regex" value="^.*" />
+      
+      <var name="test.tmp.regex" value="${test.tmp.regex}\Q&lt;classpathentry kind=&quot;lib&quot; path=&quot;${project.tmp.checkSeveralAspectJPathFiles.otherPrefix}.jar&quot;>\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attributes&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attribute name=&quot;org.eclipse.ajdt.aspectpath&quot; value=&quot;org.eclipse.ajdt.aspectpath&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/attributes&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/classpathentry&gt;\E" />
+      
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;lib&quot; path=&quot;${project.tmp.checkSeveralAspectJPathFiles.aspectPrefix}.jar&quot; sourcepath=&quot;${project.tmp.checkSeveralAspectJPathFiles.aspectPrefix}-sources.jar&quot;>\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attributes&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attribute name=&quot;javadoc_location&quot; value=&quot;jar:platform:/resource/project/${project.tmp.checkSeveralAspectJPathFiles.aspectPrefix}-javadoc.jar!/&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;attribute name=&quot;org.eclipse.ajdt.aspectpath&quot; value=&quot;org.eclipse.ajdt.aspectpath&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/attributes&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/classpathentry&gt;\E" />
+      
+      <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
+
+      <if>
+        <matches string="${test.tmp.checkSeveralAspectJPathFiles}" pattern="${test.tmp.regex}" multiline="true" singleline="true" />
+        <then><echo>checkSeveralAspectJPathFiles was successful!</echo></then>
+        <else><fail>checkSeveralAspectJPathFiles failed - ${test.tmp.checkSeveralAspectJPathFiles}!</fail></else>
+      </if>
+      
+      <!-- remove the created file -->
+      <delete file="${project.tmp.checkSeveralAspectJPathFiles.file}" />
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <checkNoAspectJPathFiles />
+    <checkDefaultClasspathCreation />
+    <checkNotAvailableAspectJPathFile />
+    <checkSeveralAspectJPathFiles />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

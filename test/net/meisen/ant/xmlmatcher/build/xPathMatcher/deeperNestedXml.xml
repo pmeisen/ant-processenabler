@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<root>
+  <node attribute="something">
+  </node>
+
+  <node attribute="cake">
+  	<subnode attribute="notme">
+  		<cake name="another" />
+  	</subnode>
+  	<subnode attribute="deeper">
+  		<cake name="chocolate" />
+  	</subnode>
+  </node>
+</root>

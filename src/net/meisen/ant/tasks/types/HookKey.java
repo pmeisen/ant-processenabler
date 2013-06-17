@@ -76,6 +76,15 @@ public class HookKey implements Serializable {
 		return (name != null && name.length() > 0);
 	}
 
+	/**
+	 * Normalizes the name of the key, i.e. to a defined <code>Locale</code> and a
+	 * specified case.
+	 * 
+	 * @param name
+	 *          the name to be normalized
+	 * 
+	 * @return the normalized name
+	 */
 	public static String normalizeName(final String name) {
 		return name.toLowerCase(Locale.ENGLISH);
 	}

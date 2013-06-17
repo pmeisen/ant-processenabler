@@ -25,7 +25,7 @@ public class MergeAction extends AbstractMergeAction {
 	public void perform(final Element originalElement,
 			final Element patchElement, final Element outputParentElement)
 			throws AbstractXmlMergeException {
-
+		
 		if (patchElement == null && originalElement == null) {
 
 			// nothing to change
@@ -43,7 +43,7 @@ public class MergeAction extends AbstractMergeAction {
 			@SuppressWarnings("unchecked")
 			final List<Element> patchChildren = patchElement.getChildren();
 			final List<Element> appliedPatches = new ArrayList<Element>();
-
+			
 			for (final Element orgEl : orgChildren) {
 				Element match = null;
 

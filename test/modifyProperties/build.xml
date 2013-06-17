@@ -226,6 +226,46 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="checkAddPrefix">
+    <sequential>
+    
+      <!-- lets create some properties -->
+      <var name="checkAddPrefix.checkResultPropertySetLevel2.value1" value="value1" />
+      <var name="checkAddPrefix.checkResultPropertySetLevel2.value2" value="value2" />
+      <var name="checkAddPrefix.checkResultPropertySetLevel2.value3" value="value3" />
+      
+      <propertyset id="test.properties">
+        <propertyref prefix="checkAddPrefix." />
+      </propertyset>
+      
+      <!-- modify -->
+      <modifyProperties prefix="newPrefix" propertySetId="test.properties" resultPropertySetId="test.result.properties" prefixhandling="add" skipPattern="value3" />
+      
+      <!-- check the amount selected -->
+      <var name="test.resources.count" value="" unset="true" />
+      <resourcecount property="test.resources.count" refid="test.properties" />
+      
+      <!-- make sure nothing is modified -->
+      <var name="test.result.count" value="" unset="true" />
+      <resourcecount property="test.result.count" refid="test.result.properties" />
+
+      <if>
+        <and>
+          <equals arg1="${test.resources.count}" arg2="3" />
+          <equals arg1="${test.result.count}" arg2="2" />
+          <equals arg1="${checkAddPrefix.checkResultPropertySetLevel2.value1}" arg2="value1" />
+          <equals arg1="${checkAddPrefix.checkResultPropertySetLevel2.value2}" arg2="value2" />
+          <equals arg1="${checkAddPrefix.checkResultPropertySetLevel2.value3}" arg2="value3" />
+          <equals arg1="${newPrefix.checkAddPrefix.checkResultPropertySetLevel2.value1}" arg2="value1" />
+          <equals arg1="${newPrefix.checkAddPrefix.checkResultPropertySetLevel2.value2}" arg2="value2" />
+          <not><isset property="newPrefix.checkAddPrefix.checkResultPropertySetLevel2.value3" /></not>
+        </and>
+        <then><echo>checkAddPrefix was successful!</echo></then>
+        <else><fail>checkAddPrefix failed - ${test.resources.count}/${test.result.count}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
   <target name="antTest">
     <checkEmptyProperties />
     <checkPropertiesSelection />
@@ -234,6 +274,7 @@
     <checkPropertiesModifyAndUnset />
     <checkSkipPattern />
     <checkResultPropertySet />
+    <checkAddPrefix />
   </target>
   
   <target name="antTestCleanUp">

@@ -4,16 +4,22 @@
   <property name="aspectj.library.version" value="1.0.0" description="The current version of the library" />
   <dirname property="library_aspectj.basedir" file="${ant.file.library_aspectj}" />
   
+  <property name="aspectj.plugin.settings.package" location="${main.root}/aspectj/plugInSettings" />
+  
   <property name="aspectj.library.resfile.toolsPom" location="${main.root}/aspectj/pomAspectJ.xml" />
-  <property name="aspectj.library.resfile.template.project" location="${library_aspectj.basedir}/library_aspectj_project.template" description="The name of the project template" />
   <property name="aspectj.library.resfile.maven.aspectjMerge" value="${main.root}/maven/pomAspectJ_xmlMerge.properties" />
+  <property name="aspectj.library.resfile.eclipse.project" location="${main.root}/aspectj/eclipseProject_xmlMerge.xml" />
+  <property name="aspectj.library.resfile.eclipse.projectMerge" location="${main.root}/aspectj/eclipseProject_xmlMerge.properties" />
+  <property name="aspectj.library.resfile.eclipse.packageDefault" location="${aspectj.plugin.settings.package}/eclipsePlugIn_default.properties" />
+  <property name="aspectj.library.resfile.eclipse.packageAjdt" location="${aspectj.plugin.settings.package}/eclipsePlugIn_org.aspectj.ajdt.core.properties" />
+  <property name="aspectj.library.resfile.eclipse.packageCore" location="${aspectj.plugin.settings.package}/eclipsePlugIn_org.eclipse.ajdt.core.properties" />
   
   <property name="aspectj.version" value="" description="The version to be used with aspectj" />
   <property name="aspectj.outputxml" value="true" description="Defines if the aop-ajc.xml should be generated for the project" />
   <property name="aspectj.xlint.messages" value="ignore" description="Defines the level on which xlint messages are shown, ignore (not shown), warn (shown as warning), error (shown as error)" />
   <property name="aspectj.path.tools" value="${ant.home}/lib/aspectj" description="The path to look for the aspectj tool version" />
   <property name="aspectj.pack.default.excludes" value="**/*.aj" description="Defines whatever has to be excluded from a jar by default" />
-
+  
   <property name="aspectj.eclipse.useAspectJPlugIn" value="false" description="defines if the eclipse project should use the AspectJ PlugIn" />
   
   <property name="aspectj.init" value="false" description="For internal usage only, please do not modify this property by a file" />
@@ -27,21 +33,7 @@
   <if>
     <equals arg1="${aspectj.init}" arg2="false" />
     <then>
-    
-      <!-- 
-        eclipse has to use another template
-        -->
-      <if>
-        <or>
-          <equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="y" />
-          <equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="yes" />
-          <equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="true" />
-        </or>
-        <then>
-          <var name="eclipse.template.project" value="${aspectj.library.resfile.template.project}" />
-        </then>
-      </if>
-    
+        
       <!-- 
         we have to add something to the files that should be excluded when building the jar,
         because aspectj uses .aj files as source files for weaving 
@@ -77,7 +69,6 @@
             <trycatch property="aspectj.tmp.error" reference="aspectj.tmp.errReference">
               <try>
                 <mavenResolveDependencies fileset="aspectj.tmp.toolsLibs" pomid="aspectj.tmp.pomToolsLibs" pomfile="${aspectj.library.resfile.toolsPom}" />
-                <filePrintFileset filesetid="aspectj.tmp.toolsLibs" />
               </try>
               <catch>
                 <fail>The aspectJ version ${aspectj.version} couldn't be found on the file-system under ${aspectj.location.tools} and neither in the repository</fail>
@@ -90,13 +81,11 @@
         
           <!-- use the specified file -->
           <fileInfo file="${aspectj.location.tools}" />
-          <fileset id="aspectj.tmp.toolsLibs" dir="${fileInfo.dir}">
+          <fileset id="aspectj.tmp.toolsLibs" dir="${fileInfo.directory}">
             <filename name="${fileInfo.name}"/>
           </fileset>
         </else>
       </if>
-      
-      <filePrintFileset filesetid="aspectj.tmp.toolsLibs" />
       
       <!-- load the task -->
       <taskdef resource="org/aspectj/antlib.xml">
@@ -108,6 +97,90 @@
       <var name="aspectj.init" value="true" />
     </then>
   </if>
+  
+  <hook name="eclipseCreateSettings">
+    <sequential>
+    
+      <!-- we have to create special settings for the XML settings, when the plugin is used -->
+      <if>
+        <or><equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="y" /><equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="yes" /><equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="true" /></or>
+        <then>
+          <eclipseCreateSettingsFromPackage packagefolder="${aspectj.plugin.settings.package}" filename="org.eclipse.ajdt.core.prefs" />
+        </then>
+      </if>
+    </sequential>
+  </hook>
+  
+  <hook name="eclipseModifyProjectFile">
+    <sequential>
+
+      <!-- we only have to do something if the plugin is enabled -->
+      <if>
+        <or><equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="y" /><equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="yes" /><equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="true" /></or>
+        <then>
+          <fileMergeXml file1="@{file}" 
+                        file2="${aspectj.library.resfile.eclipse.project}" 
+                        dest="@{file}" 
+                        conf="${aspectj.library.resfile.eclipse.projectMerge}" />
+        </then>
+      </if>
+    </sequential>
+  </hook>
+  
+  <hook name="eclipseModifyClasspathFile">
+    <sequential>
+      
+      <!-- we only have to do something if the plugin is enabled -->
+      <if>
+        <or><equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="y" /><equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="yes" /><equals arg1="${aspectj.eclipse.useAspectJPlugIn}" arg2="true" /></or>
+        <then>
+
+          <!-- get all the files on the aspectjPath -->
+          <aspectJDetermineAspectJPath filesetid="aspectj.tmp.aspectjPath" />
+          
+          <!-- merge with each defined file -->
+          <for param="aspectPathFile">
+            <path>
+              <fileset refid="aspectj.tmp.aspectjPath" />
+            </path>
+            <sequential>
+              <eclipseAddAttributeToClassPath attributename="org.eclipse.ajdt.aspectpath" attributevalue="org.eclipse.ajdt.aspectpath" 
+                                              classpathentry="@{aspectPathFile}" classpathfile="@{file}" />
+            </sequential>
+          </for>
+        </then>
+      </if>
+    </sequential>
+  </hook>
+  
+  <macrodef name="aspectJDetermineAspectJPath">
+    <attribute name="filesetid" />
+  
+    <sequential>
+    
+      <!-- get the aspectJ path -->
+      <if>
+        <available file="${basedir}/pomAspectJ.xml" />
+        <then>
+          <!-- check if we have a pom to be merged and merge it -->
+          <fileMergeXml file1="${maven.library.resfile.pom.empty}" 
+                        file2="${basedir}/pomAspectJ.xml" 
+                        dest="${build.tmpdir}/merged_pomAspectJ.xml" 
+                        conf="${aspectj.library.resfile.maven.aspectjMerge}" />
+          <fileReplaceAllProperties file="${build.tmpdir}/merged_pomAspectJ.xml" destFile="${build.tmpdir}/merged_pomAspectJ.xml" />
+          
+          <mavenResolveDependencies fileset="@{filesetid}" 
+                                    pomid="aspectj.tmp.pomAspectjPath" pomfile="${build.tmpdir}/merged_pomAspectJ.xml" />
+        </then>
+        <else>
+          <!-- exclude everything -->
+          <fileset id="@{filesetid}" dir=".">
+            <exclude name="**/*" />
+          </fileset>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
   
   <macrodef name="compile">
     <attribute name="srcdir" />
@@ -126,26 +199,7 @@
       <echo level="info">Compiling using the aspectJ compiler</echo>
       
       <!-- get the aspectJ path -->
-      <if>
-        <available file="${basedir}/pomAspectJ.xml" />
-        <then>
-          <!-- check if we have a pom to be merged and merge it -->
-          <fileMergeXml file1="${maven.library.resfile.pom.empty}" 
-                        file2="${basedir}/pomAspectJ.xml" 
-                        dest="${build.tmpdir}/merged_pomAspectJ.xml" 
-                        conf="${aspectj.library.resfile.maven.aspectjMerge}" />
-          <fileReplaceAllProperties file="${build.tmpdir}/merged_pomAspectJ.xml" destFile="${build.tmpdir}/merged_pomAspectJ.xml" />
-          
-          <mavenResolveDependencies fileset="aspectj.tmp.aspectjPath" 
-                                    pomid="aspectj.tmp.pomAspectjPath" pomfile="${build.tmpdir}/merged_pomAspectJ.xml" />
-        </then>
-        <else>
-          <fileset id="aspectj.tmp.aspectjPath" dir=".">
-            <!-- exclude everything -->
-            <exclude name="**/*" />
-          </fileset>
-        </else>
-      </if>
+      <aspectJDetermineAspectJPath filesetid="aspectj.tmp.aspectjPath" />
       
       <!-- run the compilation -->
       <iajc source="${build.javac.source}" srcdir="@{srcdir}" destDir="@{destdir}" Xlint="${aspectj.xlint.messages}" debug="@{debug}" excludes="@{excludes}" outxml="${aspectj.outputxml}">      

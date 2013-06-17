@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testAspectJModifyProjectFile">
+
+  <!-- the project needs aspectj -->
+  <property name="main.import.library.aspectj" value="true" />
+  <property name="aspectj.version" value="fake" />
+  <property name="aspectj.path.tools" value="." />
+  <property name="aspectj.eclipse.useAspectJPlugIn" value="true" />
+  
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+    
+  <macrodef name="checkDefaultProjectCreation">
+    <sequential>
+    
+      <!-- trigger the creation of a default .project file -->
+      <eclipseCreateProject />
+      
+      <!-- load the file -->
+      <loadfile property="test.tmp.checkDefaultProjectCreation" srcfile=".project"/>
+      
+      <!-- the expected result -->
+      <var name="test.tmp.regex" value="^" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;projectDescription&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;name&gt;aspectjeclipseModifyProjectFile&lt;/name&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;comment /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;projects /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;buildSpec&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;buildCommand&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;name&gt;org.eclipse.ajdt.core.ajbuilder&lt;/name&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;arguments /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/buildCommand&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/buildSpec&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;natures&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;nature&gt;org.eclipse.ajdt.ui.ajnature&lt;/nature&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;nature&gt;org.eclipse.jdt.core.javanature&lt;/nature&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/natures&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;/projectDescription&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*$" />
+      
+      <if>
+        <matches string="${test.tmp.checkDefaultProjectCreation}" pattern="${test.tmp.regex}" multiline="true" singleline="true" />
+        <then><echo>checkDefaultProjectCreation was successful!</echo></then>
+        <else><fail>checkDefaultProjectCreation failed - ${test.tmp.checkDefaultProjectCreation}!</fail></else>
+      </if>
+      
+      <!-- remove the created file -->
+      <delete file=".project" />
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <checkDefaultProjectCreation />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

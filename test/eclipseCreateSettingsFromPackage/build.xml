@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testEclipseCreateSettingsFromPackage">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkEclipseCreateSettingsFromPackageDefault">
+    <sequential>
+      
+      <!-- define some properties to override those specified -->
+      <var name="ant-processenabler.meisen.net.newproperty" value="newvalue" />
+      <var name="ant-processenabler.meisen.net.loglevel" value="error" />
+      <var name="another.class.sample.default.string" value="NULL" />
+      <var name="project.tmp.setproperty" value="propertyvalue" />
+      
+      <!-- create the settings file -->
+      <eclipseCreateSettingsFromPackage packagefolder="./defaultPackage" packageprefix="eclipsePlugIn_" filename="org.eclipse.default" />
+      
+      <!-- make sure the property is not resolved afterwards, i.e. after the loadproperties from the file -->
+      <var name="project.tmp.setproperty" unset="true" />
+      
+      <!-- load all the properties -->
+      <loadproperties srcFile="./${eclipse.settings.dir}/org.eclipse.default">
+        <filterchain>
+          <prefixlines prefix="checkEclipseCreateSettingsFromPackageDefault."/>
+        </filterchain>
+      </loadproperties>
+      
+      <!-- cleanup -->
+      <fileCleanUp dir="./${eclipse.settings.dir}" recreate="false" />
+      
+      <!-- check the result -->
+      <if>
+        <and>
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefault.ant-processenabler.meisen.net.newproperty}" arg2="newvalue" />
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefault.ant-processenabler.meisen.net.loglevel}" arg2="error" />
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefault.another.class.sample.default.string}" arg2="NULL" />
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefault.another.class.sample.default.int}" arg2="0" />
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefault.another.class.sample.default.boolean}" arg2="true" />
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefault.ant-processenabler.meisen.net.setproperty}" arg2="propertyvalue" />
+        </and>
+        <then><echo>checkEclipseCreateSettingsFromPackageDefault was successful!</echo></then>
+        <else><fail>checkEclipseCreateSettingsFromPackageDefault failed!
+                    - ${checkEclipseCreateSettingsFromPackageDefault.ant-processenabler.meisen.net.newproperty}
+                    - ${checkEclipseCreateSettingsFromPackageDefault.ant-processenabler.meisen.net.loglevel}
+                    - ${checkEclipseCreateSettingsFromPackageDefault.another.class.sample.default.string}
+                    - ${checkEclipseCreateSettingsFromPackageDefault.another.class.sample.default.int}
+                    - ${checkEclipseCreateSettingsFromPackageDefault.another.class.sample.default.boolean}
+                    - ${checkEclipseCreateSettingsFromPackageDefault.ant-processenabler.meisen.net.setproperty}</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement">
+    <sequential>
+      
+      <!-- define some properties to override those specified -->
+      <var name="ant-processenabler.meisen.net.newproperty" value="newvalue" />
+      <var name="ant-processenabler.meisen.net.loglevel" value="error" />
+      <var name="another.class.sample.default.string" value="NULL" />
+      <var name="project.tmp.setproperty" value="propertyvalue" />
+      
+      <!-- create the settings file -->
+      <eclipseCreateSettingsFromPackage packagefolder="./defaultPackage" packageprefix="eclipsePlugIn_" filename="org.eclipse.default" replaceproperties="false" />
+      
+      <!-- make sure the property is not resolved afterwards, i.e. after the loadproperties from the file -->
+      <var name="project.tmp.setproperty" unset="true" />
+      
+      <!-- load all the properties -->
+      <loadproperties srcFile="./${eclipse.settings.dir}/org.eclipse.default">
+        <filterchain>
+          <prefixlines prefix="checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement."/>
+        </filterchain>
+      </loadproperties>
+      
+      <!-- cleanup -->
+      <fileCleanUp dir="./${eclipse.settings.dir}" recreate="false" />
+      
+      <!-- check the result -->
+      <if>
+        <and>
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.ant-processenabler.meisen.net.newproperty}" arg2="newvalue" />
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.ant-processenabler.meisen.net.loglevel}" arg2="error" />
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.another.class.sample.default.string}" arg2="NULL" />
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.another.class.sample.default.int}" arg2="0" />
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.another.class.sample.default.boolean}" arg2="true" />
+          <equals arg1="${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.ant-processenabler.meisen.net.setproperty}" arg2="${project.tmp.setproperty}" />
+        </and>
+        <then><echo>checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement was successful!</echo></then>
+        <else><fail>checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement failed!
+                    - ${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.ant-processenabler.meisen.net.newproperty}
+                    - ${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.ant-processenabler.meisen.net.loglevel}
+                    - ${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.another.class.sample.default.string}
+                    - ${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.another.class.sample.default.int}
+                    - ${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.another.class.sample.default.boolean}
+                    - ${checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement.ant-processenabler.meisen.net.setproperty}</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <checkEclipseCreateSettingsFromPackageDefault />
+    <checkEclipseCreateSettingsFromPackageDefaultWithoutReplacement />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

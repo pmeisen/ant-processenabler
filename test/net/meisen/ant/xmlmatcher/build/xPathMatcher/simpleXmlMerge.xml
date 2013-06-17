@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<root xmlns:xpathmatcher="http://ant-processenabler.meisen.net/schema/xpathmatcher">
+  <node xpathmatcher:rule="/root/node[@attribute='cake']">
+  	<cake name="applepie" />
+  	<cake name="blackforestcake" />
+  </node>
+</root>

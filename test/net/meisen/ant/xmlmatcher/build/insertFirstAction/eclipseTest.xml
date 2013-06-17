@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testInsertFirstAction">
+  <taskdef name="xmlmerge" classname="ch.elca.el4j.services.xmlmerge.anttask.XmlMergeTask" />
+  
+  <target name="test">
+	<xmlmerge dest="tmpMerged.xml" conf="eclipseXmlMerge.properties">
+	  <fileset file="eclipseXml.xml" />
+	  <fileset file="eclipseXmlMerge.xml" />
+	</xmlmerge>
+  </target>
+</project>

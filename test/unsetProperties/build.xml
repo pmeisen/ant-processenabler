@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testUnsetProperties">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkUnsetProperties">
+    <sequential>
+     
+      <!-- set some samples -->
+      <property name="project.checkUnsetProperties.value1" value="1" />
+      <property name="project.checkUnsetProperties.value2" value="2" />
+      <property name="project.checkUnsetProperties.value3" value="3" />
+      <property name="project.checkUnsetProperties.keepValue" value="keep" />
+     
+      <!-- check pre-conditions -->
+      <if>
+        <and>
+          <isset property="project.checkUnsetProperties.value1" />
+          <isset property="project.checkUnsetProperties.value2" />
+          <isset property="project.checkUnsetProperties.value3" />
+          <isset property="project.checkUnsetProperties.keepValue" />
+        </and>
+        <then></then>
+        <else><fail>Pre-conditions for UnsetProperties not satisfied!</fail></else>
+      </if>
+     
+      <!-- create a set of those samples -->
+      <propertyset id="project.tmp.checkUnsetProperties">
+        <propertyref prefix="project.checkUnsetProperties.v"/>
+      </propertyset>
+      
+      <!-- reset all -->
+      <unsetProperties propertySetId="project.tmp.checkUnsetProperties" />
+
+      <if>
+        <and>
+          <not><isset property="project.checkUnsetProperties.value1" /></not>
+          <not><isset property="project.checkUnsetProperties.value2" /></not>
+          <not><isset property="project.checkUnsetProperties.value3" /></not>
+          <isset property="project.checkUnsetProperties.keepValue" />
+        </and>
+        <then><echo>UnsetProperties was successful!</echo></then>
+        <else><fail>UnsetProperties failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <checkUnsetProperties />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

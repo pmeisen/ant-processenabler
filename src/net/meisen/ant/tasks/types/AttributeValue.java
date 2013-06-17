@@ -4,6 +4,11 @@ import java.util.Locale;
 
 import org.apache.tools.ant.BuildException;
 
+/**
+ * 
+ * @author pmeisen
+ * 
+ */
 public class AttributeValue {
 	private String name;
 	private String value;
@@ -28,12 +33,23 @@ public class AttributeValue {
 	public String getName() {
 		return name;
 	}
-	
+
+	/**
+	 * Gets the value of the attribute.
+	 * 
+	 * @return the value of the attribute
+	 */
 	public String getValue() {
 		return value;
 	}
 
-	public void setValue(String value) {
+	/**
+	 * Sets the value of the attribute.
+	 * 
+	 * @param value
+	 *          the value to be set
+	 */
+	public void setValue(final String value) {
 		this.value = value;
 	}
 

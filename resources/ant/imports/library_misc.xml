@@ -8,9 +8,12 @@
       - Creation of library
     12.02.2013
       - added the 'appendList' task
+    14.06.2013
+      - added the 'unsetProperties' task
+      - modified the 'modifyProperties' to support the add prefixhandler
   -->
 <project name="library_misc">
-  <property name="misc.library.version" value="1.2.0" description="The current version of the library" />
+  <property name="misc.library.version" value="1.3.0" description="The current version of the library" />
   <dirname property="library_misc.basedir" file="${ant.file.library_misc}"/>
   
   <property name="misc.batch.name" value="antRunAsync" description="The general name of the script/batch to be executed" />
@@ -547,18 +550,6 @@
     </sequential>
   </macrodef>
   
-  <macrodef name="callHookFromLibrary">
-    <attribute name="library" />
-    <attribute name="hook" />
-    <attribute name="parameters" />
-    
-    <attribute name="failOnError" default="false" />
-    
-    <sequential>
-
-    </sequential>
-  </macrodef>
-  
   <macrodef name="allLibrariesFiles">
     <attribute name="filesetid" />
   
@@ -650,6 +641,36 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="unsetProperties">
+    <attribute name="propertySetId" default="misc.tmp.propertySet" />
+    
+    <sequential>
+      <var name="misc.tmp.propertySetId" value="@{propertySetId}" />
+      
+      <script language="javascript"><![CDATA[
+        var propertySetId = project.getProperty("misc.tmp.propertySetId");
+        var properties = project.hasReference(propertySetId) ? project.getReference(propertySetId) : null;
+        
+        if (properties != null && properties.size() > 0) {
+          var iterator = properties.iterator();
+          
+          // create the task to unset the properties
+          var unsetProperty = project.createTask("var");
+          unsetProperty.setValue(null);
+          unsetProperty.setUnset(true);
+
+          while (iterator.hasNext()) {             
+            var property = iterator.next();
+            
+            // unset it
+            unsetProperty.setName(property.getName());
+            unsetProperty.execute();
+          }
+        }
+      ]]></script>
+    </sequential>
+  </macrodef>
+  
   <macrodef name="modifyProperties">
     <attribute name="prefix" />
     <attribute name="propertySetId" default="misc.tmp.propertySet" />
@@ -657,27 +678,36 @@
     <attribute name="setPropertiesWithoutPrefix" default="true" />
     <attribute name="unsetProperties" default="false" />
     <attribute name="skipPattern" default="" />
+    <attribute name="prefixhandling" default="remove" />
     
     <sequential>
-      <var name="misc.tmp.propertyRegEx" value="^\Q@{prefix}\E\.(.+)$" />
+    
+      <!-- get all the passed values -->
+      <var name="misc.tmp.prefix" value="@{prefix}" />
       <var name="misc.tmp.propertySetId" value="@{propertySetId}" />
       <var name="misc.tmp.resultPropertySetId" value="@{resultPropertySetId}" />
       <var name="misc.tmp.skipPattern" value="@{skipPattern}" />
-      <if>
-        <or><equals arg1="@{setPropertiesWithoutPrefix}" arg2="y" /><equals arg1="@{setPropertiesWithoutPrefix}" arg2="yes" /><equals arg1="@{setPropertiesWithoutPrefix}" arg2="true" /></or>
-        <then><var name="misc.tmp.setPropertiesWithoutPrefix" value="true" /></then>
-        <else><var name="misc.tmp.setPropertiesWithoutPrefix" value="false" /></else>
-      </if>
-      <if>
-        <or><equals arg1="@{unsetProperties}" arg2="y" /><equals arg1="@{unsetProperties}" arg2="yes" /><equals arg1="@{unsetProperties}" arg2="true" /></or>
-        <then><var name="misc.tmp.unsetProperties" value="true" /></then>
-        <else><var name="misc.tmp.unsetProperties" value="false" /></else>
-      </if>
+      <var name="misc.tmp.prefixhandling" value="@{prefixhandling}" />
+      <varNormalizeBoolean property="misc.tmp.setPropertiesWithoutPrefix" value="@{setPropertiesWithoutPrefix}" />
+      <varNormalizeBoolean property="misc.tmp.unsetProperties" value="@{unsetProperties}" />
       
-      <!-- create the set -->
-      <propertyset id="@{propertySetId}">
-        <propertyref regex="${misc.tmp.propertyRegEx}" />
-      </propertyset>
+      <!-- define the regular expression to select the properties which have to be modified -->
+      <if>
+        <equals arg1="${misc.tmp.prefixhandling}" arg2="remove" />
+        <then>
+          <var name="misc.tmp.propertyRegEx" value="^\Q@{prefix}\E\.(.+)$" />
+          
+          <!-- create the set -->
+          <propertyset id="@{propertySetId}">
+            <propertyref regex="${misc.tmp.propertyRegEx}" />
+          </propertyset>
+        </then>
+        <else>
+          <var name="misc.tmp.propertyRegEx" value="^(.+)$" />
+          
+          <!-- the set should already be available -->          
+        </else>
+      </if>
       
       <!-- set the properties without a prefix -->
       <if>
@@ -685,12 +715,16 @@
         <then>
 
           <script language="javascript"><![CDATA[
+            var setProperty = project.createTask("var");
+          
+            var prefix = project.getProperty("misc.tmp.prefix");
             var propertyRegEx = project.getProperty("misc.tmp.propertyRegEx");
             var propertySetId = project.getProperty("misc.tmp.propertySetId");
             var resultPropertySetId = project.getProperty("misc.tmp.resultPropertySetId");
             var setPropertiesWithoutPrefix = project.getProperty("misc.tmp.setPropertiesWithoutPrefix");
             var unsetProperties = project.getProperty("misc.tmp.unsetProperties");
             var skipPattern = project.getProperty("misc.tmp.skipPattern");
+            var prefixhandling = project.getProperty("misc.tmp.prefixhandling");
             
             // get the collection
             var properties = project.hasReference(propertySetId) ? project.getReference(propertySetId) : null;
@@ -712,16 +746,27 @@
                 propertyMatcher.find();
                 var propertySuffix = propertyMatcher.group(1);
                 
+                // check if the property should be skipped, i.e. is excluded from modification
+                var isSkipped = !"".equals(skipPattern) && propertySuffix.matches(".*" + skipPattern + ".*");
+                
                 // set the property if asked for
-                if ("true".equals(setPropertiesWithoutPrefix) && 
-                    ("".equals(skipPattern) || !propertySuffix.matches(".*" + skipPattern + ".*"))) {
-                  var setProperty = project.createTask("var");
-                  setProperty.setName(propertySuffix);
+                var addPropertyName = null;
+                if (isSkipped) {
+                  // do nothing
+                } else if (prefixhandling.toLowerCase().equals("add")) {
+                  addPropertyName = prefix + "." + propertySuffix;
+                } else if (prefixhandling.toLowerCase().equals("remove") && "true".equals(setPropertiesWithoutPrefix)) {
+                  addPropertyName = propertySuffix;
+                }
+                
+                // add the property to the result
+                if (addPropertyName != null) {
+                  setProperty.setName(addPropertyName);
                   setProperty.setValue(property.getValue());
                   setProperty.execute();
-                  
+                
                   var propertyRef = new org.apache.tools.ant.types.PropertySet.PropertyRef();
-                  propertyRef.setRegex("^\\Q" + propertySuffix + "\\E$");
+                  propertyRef.setRegex("^\\Q" + addPropertyName + "\\E$");
                   resultPropertySet.addPropertyref(propertyRef);
                 }
                 
@@ -768,4 +813,50 @@
       </if>
     </sequential>
   </macrodef>
+  
+  <macrodef name="varEmpty">
+    <attribute name="property" />
+    <attribute name="value" />
+    <attribute name="default" />
+    
+    <sequential>
+      <if>
+        <equals arg1="@{value}" arg2="" />
+        <then>
+          <var name="@{property}" value="@{default}" />
+        </then>
+        <else>
+          <var name="@{property}" value="@{value}" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="varNormalizeBoolean">
+    <attribute name="property" />
+    <attribute name="value" default="" />
+    
+    <sequential>
+      <var name="misc.tmp.value" unset="true" />
+    
+      <!-- get the property to be set, by default it is the one read -->
+      <if>
+        <equals arg1="@{value}" arg2="" />
+        <then>
+          <propertycopy name="misc.tmp.value" from="@{property}" />
+        </then>
+        <else>
+          <var name="misc.tmp.value" value="@{value}" />
+        </else>
+      </if>
+    
+      <if>
+        <or><equals arg1="${misc.tmp.value}" arg2="y" /><equals arg1="${misc.tmp.value}" arg2="yes" /><equals arg1="${misc.tmp.value}" arg2="true" /></or>
+        <then><var name="@{property}" value="true" /></then>
+        <else><var name="@{property}" value="false" /></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+
 </project>

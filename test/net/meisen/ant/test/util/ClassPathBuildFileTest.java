@@ -150,4 +150,13 @@ public abstract class ClassPathBuildFileTest extends BuildFileTest {
 		// delete the directory
 		assertTrue(Files.deleteDir(new File(this.testTmpDir)));
 	}
+
+	/**
+	 * Gets the used temporary test directory for the test.
+	 * 
+	 * @return the used temporary test directory
+	 */
+	protected File getTmpDir() {
+		return new File(testTmpDir);
+	}
 }

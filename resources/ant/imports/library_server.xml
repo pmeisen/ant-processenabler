@@ -72,7 +72,6 @@
       <java jar="@{webapp}/../../bin/bootstrap.jar" fork="true">
         <jvmarg value="-Dcatalina.home=@{webapp}/../../"/>
         <jvmarg value="-Dcatalina.base=@{webapp}/../../"/>
-        <!-- this one is only needed for Pentaho Server -->
         <jvmarg value="-Dpentaho.installed.licenses.file=@{webapp}/../../../Config/.installedLicenses.xml"/>
         <jvmarg value="-Xms512m" />
         <jvmarg value="-XX:MaxPermSize=512m" />
