@@ -553,6 +553,7 @@
     <attribute name="sourcesFileset" default="maven.toplevel.srcDependencies" />
     <attribute name="javadocFileset" default="maven.toplevel.javaDocDependencies" />
     <attribute name="pomfile" default="${maven.pom.file}" />
+    <attribute name="pomid" default="maven.toplevel.pom"/>
     <attribute name="destfile" default="${maven.tmpdir}/topLevelPom.xml" />
     
     <sequential>    
