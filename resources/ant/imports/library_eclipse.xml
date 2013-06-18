@@ -112,7 +112,7 @@
       <fileCleanUp dir="${eclipse.javadocdir}" recreate="true" />
       
       <!-- load the dependencies -->
-      <mavenCopyDependecies pomfile="${eclipse.tmp.pomFile}" dir="${eclipse.libdir}" srcDir="${eclipse.srcdir}" javaDocDir="${eclipse.javadocdir}" scope="test" />
+      <mavenCopyDependencies pomfile="${eclipse.tmp.pomFile}" dir="${eclipse.libdir}" srcDir="${eclipse.srcdir}" javaDocDir="${eclipse.javadocdir}" scope="test" />
     </sequential>
   </macrodef>
   

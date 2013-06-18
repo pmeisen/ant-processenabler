@@ -1,0 +1,26 @@
+<!-- 
+  This is an empty pom.xml which contains the necessary fields.
+  Those fields should never be used
+  -->
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  
+  <groupId>ignore</groupId>
+  <artifactId>ignore</artifactId>
+  <version>ignore</version>
+  <name>ignore</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>test</groupId>
+      <artifactId>sample1</artifactId>
+      <version>1.0.0</version>
+      <type>jar</type>
+      <classifier></classifier>
+      
+      <exclusions>
+
+      </exclusions>
+    </dependency>
+  </dependencies>
+</project>

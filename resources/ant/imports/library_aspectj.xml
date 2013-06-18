@@ -15,6 +15,7 @@
   <property name="aspectj.library.resfile.eclipse.packageCore" location="${aspectj.plugin.settings.package}/eclipsePlugIn_org.eclipse.ajdt.core.properties" />
   
   <property name="aspectj.version" value="" description="The version to be used with aspectj" />
+  <property name="aspectj.aspectjpath.resolveTopLevel" value="true" description="Defines if the aspectJ Path should be resolved completly (i.e. all defined and all their dependencies will be added)" />
   <property name="aspectj.outputxml" value="true" description="Defines if the aop-ajc.xml should be generated for the project" />
   <property name="aspectj.xlint.messages" value="ignore" description="Defines the level on which xlint messages are shown, ignore (not shown), warn (shown as warning), error (shown as error)" />
   <property name="aspectj.path.tools" value="${ant.home}/lib/aspectj" description="The path to look for the aspectj tool version" />
@@ -155,6 +156,7 @@
   
   <macrodef name="aspectJDetermineAspectJPath">
     <attribute name="filesetid" />
+    <attribute name="resolveOnlyTopLevel" default="${aspectj.aspectjpath.resolveTopLevel}" />
   
     <sequential>
     
@@ -169,8 +171,17 @@
                         conf="${aspectj.library.resfile.maven.aspectjMerge}" />
           <fileReplaceAllProperties file="${build.tmpdir}/merged_pomAspectJ.xml" destFile="${build.tmpdir}/merged_pomAspectJ.xml" />
           
-          <mavenResolveDependencies fileset="@{filesetid}" 
-                                    pomid="aspectj.tmp.pomAspectjPath" pomfile="${build.tmpdir}/merged_pomAspectJ.xml" />
+          <!-- resolve only the top-level once or all if asked for -->
+          <varNormalizeBoolean property="aspectj.tmp.aspectjpath.resolveTopLevel" value="@{resolveOnlyTopLevel}" />
+          <if>
+            <equals arg1="${aspectj.tmp.aspectjpath.resolveTopLevel}" arg2="true" />
+            <then>
+              <mavenResolveTopLevelDependencies fileset="@{filesetid}" pomid="aspectj.tmp.pomAspectjPath" pomfile="${build.tmpdir}/merged_pomAspectJ.xml" />
+            </then>
+            <else>
+              <mavenResolveDependencies fileset="@{filesetid}" pomid="aspectj.tmp.pomAspectjPath" pomfile="${build.tmpdir}/merged_pomAspectJ.xml" />
+            </else>
+          </if>
         </then>
         <else>
           <!-- exclude everything -->

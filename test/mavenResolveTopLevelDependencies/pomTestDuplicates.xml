@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project>
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>net.meisen.tools</groupId>
+  <artifactId>net-meisen-tools-ant-processenabler-test</artifactId>
+  <version>1.0.0</version>
+  <name>ant-processenabler-test</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>test</groupId>
+      <artifactId>sample2</artifactId>
+      <version>2.0.0</version>
+      <type>zip</type>
+    </dependency>
+  
+    <dependency>
+      <groupId>test</groupId>
+      <artifactId>sample1</artifactId>
+      <version>1.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>test</groupId>
+      <artifactId>sample1</artifactId>
+      <version>1.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>

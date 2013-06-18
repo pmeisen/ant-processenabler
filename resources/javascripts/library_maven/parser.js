@@ -43,13 +43,17 @@ var parseDependency = function(node) {
   for (var i = 0; i < children.getLength(); i++) {
     var child = children.item(i);
     var childName = child.getNodeName();
-    
+        
     if (PomStructure.groupIdNode.equalsIgnoreCase(childName)) {
       definedDependency.setGroupId(child.getTextContent());
     } else if (PomStructure.artifactIdNode.equalsIgnoreCase(childName)) {
       definedDependency.setArtifactId(child.getTextContent());
     } else if (PomStructure.versionNode.equalsIgnoreCase(childName)) {
       definedDependency.setVersion(child.getTextContent());
+    } else if (PomStructure.typeNode.equalsIgnoreCase(childName)) {
+      definedDependency.setType(child.getTextContent());
+    } else if (PomStructure.classifierNode.equalsIgnoreCase(childName)) {
+      definedDependency.setClassifier(child.getTextContent());
     }
   }
 

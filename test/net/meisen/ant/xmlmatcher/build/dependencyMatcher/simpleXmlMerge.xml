@@ -1,0 +1,18 @@
+<project>
+  
+  <!-- the resource dependencies -->
+  <dependencies>
+    <dependency>
+      <groupId>com.extjs.GWT_2_3_0</groupId>
+      <artifactId>gxt</artifactId>
+      <classifier>${maven.attachment.webappresources}</classifier>
+    </dependency>
+    
+    <dependency>
+      <groupId>another.gwt.plugin</groupId>
+      <artifactId>puggy</artifactId>
+      <version>1.0.0</version>
+      <classifier>${maven.attachment.webappresources}</classifier>
+    </dependency>
+  </dependencies>
+</project>

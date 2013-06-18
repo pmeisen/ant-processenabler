@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testMavenResolveTopLevelDependencies" xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
+  
+  <property name="maven.artifactory.source.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.repository.source.local" value="testRepo" />
+  <property name="maven.repository.target.local" value="testRepo" />
+  
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+    
+  <macrodef name="checkMavenResolveTopLevelDependencies">
+    <sequential>
+      
+      <!-- resolve the top level dependencies -->
+      <mavenResolveTopLevelDependencies pomfile="pomTestSimple.xml" fileset="project.tmp.checkMavenResolveTopLevelDependencies" />
+      
+      <!-- count all the once found -->
+      <resourcecount property="project.tmp.checkMavenResolveTopLevelDependencies.all">
+        <fileset refid="project.tmp.checkMavenResolveTopLevelDependencies" />
+      </resourcecount>
+      
+      <!-- count the expected once -->
+      <resourcecount property="project.tmp.checkMavenResolveTopLevelDependencies.rsel">
+        <restrict>
+          <fileset refid="project.tmp.checkMavenResolveTopLevelDependencies" />
+          <rsel:or>
+            <rsel:name regex=".*[\\/]sample1\-1\.0\.0\.jar$" />
+            <rsel:name regex=".*[\\/]sample2\-2\.0\.0\.zip$" />
+          </rsel:or>
+        </restrict>
+      </resourcecount>
+            
+      <if>
+        <and>
+          <equals arg1="2" arg2="${project.tmp.checkMavenResolveTopLevelDependencies.all}" />
+          <equals arg1="${project.tmp.checkMavenResolveTopLevelDependencies.rsel}" arg2="${project.tmp.checkMavenResolveTopLevelDependencies.all}" />
+        </and>
+        <then><echo>checkMavenResolveTopLevelDependencies was successful!</echo></then>
+        <else><fail>checkMavenResolveTopLevelDependencies failed - ${test.tmp.checkDefaultProjectCreation}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkMavenResolveTopLevelDependenciesWithDuplicates">
+    <sequential>
+    
+      <mavenResolveTopLevelDependencies pomfile="pomTestDuplicates.xml" fileset="project.tmp.checkMavenResolveTopLevelDependenciesWithDuplicates" />
+    
+      <!-- count all the once found -->
+      <resourcecount property="project.tmp.checkMavenResolveTopLevelDependenciesWithDuplicates.all">
+        <fileset refid="project.tmp.checkMavenResolveTopLevelDependenciesWithDuplicates" />
+      </resourcecount>
+      
+      <!-- count the expected once -->
+      <resourcecount property="project.tmp.checkMavenResolveTopLevelDependenciesWithDuplicates.rsel">
+        <restrict>
+          <fileset refid="project.tmp.checkMavenResolveTopLevelDependenciesWithDuplicates" />
+          <rsel:or>
+            <rsel:name regex=".*[\\/]sample1\-1\.0\.0\.jar$" />
+            <rsel:name regex=".*[\\/]sample2\-2\.0\.0\.zip$" />
+          </rsel:or>
+        </restrict>
+      </resourcecount>
+            
+      <if>
+        <and>
+          <equals arg1="2" arg2="${project.tmp.checkMavenResolveTopLevelDependenciesWithDuplicates.all}" />
+          <equals arg1="${project.tmp.checkMavenResolveTopLevelDependenciesWithDuplicates.rsel}" arg2="${project.tmp.checkMavenResolveTopLevelDependenciesWithDuplicates.all}" />
+        </and>
+        <then><echo>checkMavenResolveTopLevelDependenciesWithDuplicates was successful!</echo></then>
+        <else><fail>checkMavenResolveTopLevelDependenciesWithDuplicates failed - ${test.tmp.checkDefaultProjectCreation}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+    
+  <target name="antTest">
+    <checkMavenResolveTopLevelDependencies />
+    <checkMavenResolveTopLevelDependenciesWithDuplicates />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

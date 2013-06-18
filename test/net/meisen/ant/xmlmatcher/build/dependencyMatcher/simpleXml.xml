@@ -1,0 +1,26 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+    
+  <!-- project settings -->
+  <groupId>net.meisen.test</groupId>
+  <artifactId>dependencyMatcherTest</artifactId>
+  <version>1.0.0</version>
+
+  <dependencies>
+    <!-- GXT DataModels -->
+    <dependency>
+      <groupId>com.extjs.GWT_2_3_0</groupId>
+      <artifactId>gxt</artifactId>
+      <version>2.2.5</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <!-- GWT WebService Servlet -->
+    <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-servlet</artifactId>
+      <version>2.3.0</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>

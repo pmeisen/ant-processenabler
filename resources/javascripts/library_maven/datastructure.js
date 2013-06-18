@@ -6,6 +6,8 @@ PomStructure.dependencyNode   = "dependency";
 PomStructure.groupIdNode      = "groupId";
 PomStructure.artifactIdNode   = "artifactId";
 PomStructure.versionNode      = "version";
+PomStructure.typeNode         = "type";
+PomStructure.classifierNode   = "classifier";
   
 // datastructore to hold a dependency
 var Dependency = function(groupId, artifactId, version) {
@@ -31,8 +33,20 @@ Dependency.prototype.setVersion = function(version) {
     this.version = this.version.trim();
   }
 }
+Dependency.prototype.setType = function(type) {
+  this.type = checkEmpty(type);
+  if (this.type != null) {
+    this.type = this.type.trim();
+  }
+}
+Dependency.prototype.setClassifier = function(classifier) {
+  this.classifier = checkEmpty(classifier);
+  if (this.classifier != null) {
+    this.classifier = this.classifier.trim();
+  }
+}
 Dependency.prototype.toString = function() {
-  return this.groupId + ":" + this.artifactId + ":" + this.version;
+  return this.groupId + ":" + this.artifactId + ":" + this.version + (this.classifier == null ? "" : ":" + this.classifier) + (this.type == null ? "" : ":" + this.type);
 }
 
 // datastructore to hold meta information for a pom

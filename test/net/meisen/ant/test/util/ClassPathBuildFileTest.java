@@ -147,8 +147,12 @@ public abstract class ClassPathBuildFileTest extends BuildFileTest {
 	@Override
 	public void tearDown() {
 
+		final File file = new File(testTmpDir);
+		
 		// delete the directory
-		assertTrue(Files.deleteDir(new File(this.testTmpDir)));
+		if (file.exists()) {
+			assertTrue("Could not delete '" + testTmpDir + "'", Files.deleteDir(file));
+		}
 	}
 
 	/**
