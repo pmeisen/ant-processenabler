@@ -372,8 +372,6 @@
         setProperty.setName("configuration.settings.includedCustomers");
         setProperty.setValue(folderList);
         setProperty.execute();
-        
-        java.lang.System.out.println("------>" + folderList);
       ]]></script>
       
       <!-- check if the alternative should be loaded -->
