@@ -1134,7 +1134,7 @@
         var matcher = pattern.matcher(s);
         
         if (matcher.find()) {
-          var encoding = matcher.group(1) == null ? matcher.group(2) : matcher.group(1);
+          encoding = matcher.group(1) == null ? matcher.group(2) : matcher.group(1);
         } else {          
           // check the file
           var getEncodingOfFile = project.createTask("fileEncoding");
@@ -1194,7 +1194,6 @@
       var buffer = java.lang.String(bufferContent).getBytes();
       bufferSize = buffer.length;
       
-      // look for the word encoding in the first lines, maybe one is defined
       read = inStream.read(buffer, 0, bufferSize);
       encoding = "US-ASCII";
       
