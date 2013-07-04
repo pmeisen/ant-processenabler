@@ -43,7 +43,7 @@
   -->
   <macrodef name="springDistributeSchemas">
     <attribute name="srcDir" default="${spring.schemafiles.srcdir}" />
-    <attribute name="destDir" default="${spring.schemafiles.destDir}" />
+    <attribute name="destDir" default="${spring.schemafiles.destdir}" />
     <attribute name="removePrefixPattern" default="^(http://)?[^/]*" />
     
     <sequential>
@@ -56,7 +56,7 @@
       <if>
         <matches string="${spring.tmp.destDir}" pattern="^\\s*$" />
         <then>
-          <fail>You must specify a destination directory. You can do that explicitly using the attribute destDir or implicitly by setting the 'spring.schemafiles.destDir' property.</fail>
+          <fail>You must specify a destination directory. You can do that explicitly using the attribute destDir or implicitly by setting the 'spring.schemafiles.destdir' property.</fail>
         </then>
       </if>
       
