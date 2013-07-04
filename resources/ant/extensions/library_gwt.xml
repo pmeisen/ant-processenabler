@@ -392,7 +392,7 @@
           <fileReplaceAllProperties file="${build.tmpdir}/merged_pomAddGWTLibs.xml" destFile="${build.tmpdir}/merged_pomAddGWTLibs.xml" />
         
           <mavenResolveDependencies fileset="gwt.tmp.addLibs" 
-                                    pomid="build.tmp.pomAddLibs" pomfile="${build.tmpdir}/merged_pomAddGWTLibs.xml" scope="test" />
+                                    pomid="gwt.tmp.pomAddLibs" pomfile="${build.tmpdir}/merged_pomAddGWTLibs.xml" scope="test" />
         </else>
       </if>
       
@@ -436,8 +436,6 @@
           </fileCombineFilesets>
         </else>
       </if>
-      
-
     </sequential>
   </macrodef>
   
@@ -583,14 +581,14 @@
   
   <macrodef name="gwtGetServerDependencies">
     <attribute name="filesetid" default="gwt.tmp.serverLibs" />
+    <attribute name="serverType" default="" />
   
     <sequential>
       <!-- check if we have a special configuration for the application server -->
       <if>
         <or>
-          <not><isset property="server.type"/></not>
-          <equals arg1="${server.type}" arg2="" />
-          <not><available file="${basedir}/pom_${server.type}.xml" /></not>
+          <matches string="@{serverType}" pattern="^\s*$" />
+          <not><available file="${basedir}/pom_@{serverType}.xml" /></not>
         </or>
         <then>
           <copy file="${basedir}/pom.xml" tofile="${build.tmpdir}/merged_pomAppServer.xml" />
@@ -598,9 +596,10 @@
         <else>
           <!-- check if we have a pom to be merged and merge it -->
           <fileMergeXml file1="${basedir}/pom.xml" 
-                        file2="${basedir}/pom_${server.type}.xml" 
+                        file2="${basedir}/pom_@{serverType}.xml" 
                         dest="${build.tmpdir}/merged_pomAppServer.xml" 
                         conf="${gwt.library.resfile.maven.gwtMerge}" />
+          <fileReplaceAllProperties file="${build.tmpdir}/merged_pomAppServer.xml" destFile="${build.tmpdir}/merged_pomAppServer.xml" />
         </else>
       </if>
       
@@ -611,20 +610,27 @@
   
   <macrodef name="gwtAssembly">
     <attribute name="serverLibraryDir" default="${build.library.dir}" />
+    <attribute name="serverType" default="" />
   
     <sequential>
     
       <!-- make sure we have a build -->
       <if>
-        <or>
-          <not><isset property="gwt.buildWebAppResources"/></not>
-          <equals arg1="${gwt.buildWebAppResources}" arg2="" />
-          <not><isset property="build.buildFile"/></not>
-          <equals arg1="${build.buildFile}" arg2="" />
-        </or>
+        <not><equals arg1="${build.assembly.create}" arg2="true" /></not>
         <then>
-          <fail>No latest build found, the application cannot be assembled</fail>
+          <fail>You must set the build.assembly.create attribute to true so that the project can be assembled</fail>
         </then>
+        <elseif>
+          <or>
+            <not><isset property="gwt.buildWebAppResources"/></not>
+            <equals arg1="${gwt.buildWebAppResources}" arg2="" />
+            <not><isset property="build.buildFile"/></not>
+            <equals arg1="${build.buildFile}" arg2="" />
+          </or>
+          <then>
+            <fail>No latest build found, the application cannot be assembled</fail>
+          </then>
+        </elseif>
       </if>
             
       <!-- the directory the app should be assembled to -->
@@ -637,7 +643,7 @@
       <mkdir dir="${gwt.tmp.webappFolder}" />
 
       <!-- check if we have a special configuration for the application server -->
-      <gwtGetServerDependencies filesetid="gwt.tmp.serverLibs" />
+      <gwtGetServerDependencies filesetid="gwt.tmp.serverLibs" serverType="@{serverType}" />
 
       <!-- copy the dependent files -->
       <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${gwt.tmp.webappFolder}]];defaultLocation=[[@{serverLibraryDir}]]">
@@ -656,16 +662,15 @@
            data is copied to the root, not the resource directory -->      
       <if>
         <and>
-          <isset property="server.type"/>
-          <not><equals arg1="${server.type}" arg2="" /></not>
-          <available file="${server.dir}/${server.type}" />
+          <not><matches string="@{serverType}" pattern="^\s*$" /></not>
+          <available file="${server.dir}/@{serverType}" />
         </and>
         <then>
           <fileCleanUp dir="${build.tmpdir}/applicationServer" recreate="true" />
         
           <!-- copy all files to temporary folder and replace properties -->
           <copy todir="${build.tmpdir}/applicationServer" failonerror="false">
-            <fileset dir="${server.dir}/${server.type}">
+            <fileset dir="${server.dir}/@{serverType}">
               <exclude name="config.properties" />
               <exclude name="override.properties" />
             </fileset>
@@ -691,25 +696,7 @@
       <var name="build.appDir" value="${build.tmp.appFolder}" />
     </sequential>
   </macrodef>
-  
-  <macrodef name="gwtDeployLatestAssembly">    
-    <sequential>
-      <!-- check if we have a special configuration for the application server -->
-      <if>
-        <or>
-          <not><isset property="server.type"/></not>
-          <equals arg1="${server.type}" arg2="" />
-        </or>
-        <then>
-          <buildDeployLatestAssembly />
-        </then>
-        <else>
-          <buildDeployLatestAssembly classifier="${server.type}" />
-        </else>
-      </if>
-    </sequential>
-  </macrodef>
-  
+    
   <macrodef name="gwtReplaceMavenProperties">
     <attribute name="resourceFolder" />
     <attribute name="resourceFileName" default="" />
@@ -725,6 +712,54 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="gwtCheckReleaseConditions">
+    <attribute name="serverTypes" default="" />
+  
+    <sequential>
+
+      <!-- get the pomGWT dependencies -->
+      <fileMergeXml file1="${maven.library.resfile.pom.empty}" file2="${basedir}/pomGWT.xml" dest="${build.tmpdir}/check_pomAddGWTLibs.xml" conf="${gwt.library.resfile.maven.gwtMerge}" />
+      <fileReplaceAllProperties file="${build.tmpdir}/check_pomAddGWTLibs.xml" destFile="${build.tmpdir}/check_pomAddGWTLibs.xml" />
+      <mavenResolveDependencies fileset="gwt.tmp.addLibs" pomid="gwt.tmp.pomAddLibs" pomfile="${build.tmpdir}/check_pomAddGWTLibs.xml" scopes="${build.release.scopes}" />
+                             
+      <!-- get default dependencies of the GWT compiler -->
+      <mavenResolveDependencies fileset="gwt.tmp.gwtLibs" pomid="gwt.tmp.pomGWTLibs" pomfile="${gwt.library.resfile.maven.gwtPom}" scopes="${build.release.scopes}" />
+      <!-- get the dependencies of the project -->
+      <mavenResolveDependencies fileset="gwt.tmp.projectLibs" pomid="gwt.tmp.pomGWTProjectLibs" scopes="${build.release.scopes}" />
+      
+      <!-- combine all those -->
+      <fileCombineFilesets filesetid="gwt.tmp.fullCheckDependencies">
+        <fileset refid="gwt.tmp.addLibs" />
+        <fileset refid="gwt.tmp.gwtLibs" />
+        <fileset refid="gwt.tmp.projectLibs" />
+      </fileCombineFilesets>
+      
+      <!-- we have to get the dependencies of each type -->
+      <for list="@{serverTypes}" param="gwt.tmp.release.server.type" delimiter="," trim="true">
+        <sequential>
+          <var name="gwt.tmp.fileServerType" value="${basedir}/pom_@{gwt.tmp.release.server.type}.xml" />
+
+          <if>
+            <available file="${gwt.tmp.fileServerType}" />
+            <then>
+              <fileMergeXml file1="${maven.library.resfile.pom.empty}" file2="${gwt.tmp.fileServerType}" dest="${build.tmpdir}/check_pomServerLibs.xml" conf="${gwt.library.resfile.maven.gwtMerge}" />
+              <fileReplaceAllProperties file="${build.tmpdir}/check_pomServerLibs.xml" destFile="${build.tmpdir}/check_pomServerLibs.xml" />
+
+              <!-- resolve the defined dependencies -->
+              <mavenResolveDependencies fileset="gwt.tmp.serverLibs" scopes="${build.release.scopes}" pomid="gwt.tmp.pomServerLibs" pomfile="${build.tmpdir}/check_pomServerLibs.xml" />        
+              <fileCombineFilesets filesetid="gwt.tmp.fullCheckDependencies">
+                <fileset refid="gwt.tmp.fullCheckDependencies" />
+                <fileset refid="gwt.tmp.serverLibs" />
+              </fileCombineFilesets>
+            </then>
+          </if>
+        </sequential>
+      </for>
+
+      <mavenCheckSnapshotDependenciesForFileset filesetid="gwt.tmp.fullCheckDependencies" />
+    </sequential>
+  </macrodef>
+    
   <!--
     targets defined by this library
     -->
@@ -766,7 +801,7 @@
   </target>
   
   <target name="assemble" depends="buildServer,buildClient">
-    <gwtAssembly />
+    <gwtAssembly serverType="${server.type}" />
     <buildZip />
   </target>
   
@@ -777,7 +812,7 @@
   </target>
   
   <target name="distributeServer" depends="buildServer">
-    <gwtGetServerDependencies filesetid="gwt.tmp.serverLibs" />
+    <gwtGetServerDependencies filesetid="gwt.tmp.serverLibs" serverType="${server.type}" />
     <var name="gwt.tmp.lib.dir" value="${gwt.server.dir}/${maven.pom.artifactId}/WEB-INF/lib" />
 
     <!-- delete all the libraries -->
@@ -809,6 +844,99 @@
     <gwtRemovePreBuilds />
     <buildRemovePreBuilds />
   </target>
+    
+  <target name="release" depends="removePreBuilds, testRemovePreBuilds">
+  
+    <!-- determine which server-types to build -->
+    <if>
+      <isset property="gwt.release.server.types" />
+      <then>
+        <var name="gwt.tmp.release.server.types" value="${gwt.release.server.types}" />
+      </then>
+      <else>
+        <var name="gwt.tmp.release.server.types" value="${server.type}" />
+      </else>
+    </if>
+  
+    <!-- check the availability of SVN and Maven -->
+    <buildCheckReleaseConditions />
+    <gwtCheckReleaseConditions serverTypes="${gwt.tmp.release.server.types}" />
+    
+    <!-- create the build -->
+    <if>
+      <available file="${basedir}/pom.xml" />
+      <then>
+        <gwtRemovePreBuilds />
+        <buildRemovePreBuilds />
+        
+        <gwtBuildAdditionals />
+        <gwtPackAdditionals />
+        <buildBuild addExcludes="${gwt.server.defaultExcludedFiles},${gwt.server.excludedFiles}" />
+        <buildPack addExcludes="${gwt.server.defaultExcludedFiles},${gwt.server.excludedFiles}" />       
+        <gwtBuild module="${gwt.module}" addPomFile="${basedir}/pomGWT.xml" />
+        <gwtPack />
+              
+        <eclipseResolveDependencies fileset="gwt.tmp.addClassPath" />
+        <buildJavaDoc addClassPathFileSet="gwt.tmp.addClassPath" />
+        <buildPackJavaDoc />
+        
+        <buildPackSource />
+        
+        <!-- test the version -->
+        <testRemovePreBuilds />
+        
+        <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" />
+        
+        <!-- we cannot exclude the excludeSourcePattern="${gwt.client.excludedFiles}", because 
+             otherwise the AllTest could not be compiled -->
+        <testTest classPathFileSetId="gwt.tmp.fullTestDependencies" includeSources="true" />
+        
+        <testPackSource />
+      </then>
+    </if>
+    
+    <!-- lets tag everything -->
+    <svnTag message="Release of ${maven.pom.version}" />
+    
+    <!-- lets deploy the binaries, source and javadoc -->
+    <if>
+      <available file="${basedir}/pom.xml" />
+      <then>
+        <buildDeployLatestBuild />
+        <gwtDeployLatestBuild />
+    
+        <testDeployLatestBuild />
+      </then>
+    </if>
+    
+    <!-- create the assembly -->
+    <if>
+      <and>
+        <equals arg1="${build.assembly.create}" arg2="true" />
+      </and>
+      <then>
+     
+        <!-- 
+           We have to release for each defined server-type
+           
+           IMPORTANT:
+             add the spaces around the list-attribute so that it's triggered even for an empty list
+          -->
+        <for list=" ${gwt.tmp.release.server.types} " param="gwt.tmp.release.server.type" delimiter="," trim="true">
+          <sequential>
+            <gwtAssembly serverType="@{gwt.tmp.release.server.type}" />
+            <buildZip />
+            <buildDeployLatestAssembly classifier="@{gwt.tmp.release.server.type}" />
+          </sequential>
+        </for>
+      </then>
+    </if>
+    
+    <!-- deploy the parents -->
+    <mavenDeployParents />
+
+    <echo level="warn">Please modify the needed files now! Especially modify the version number in the pom.xml and/or your parent-poms, so that a new generation of this artifact can be developed</echo>
+  </target>
 
   <target name="test" depends="buildServer, buildAdditionals">
     <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" />
@@ -829,7 +957,7 @@
   <target name="createDevEnv" depends="setupEclipseEnv,copyGwtPlugInLibs,copyGwtPlugInSettings,setupGwtWarPlugInDirectory" />
   
   <target name="deployAssembly" depends="deploy, assemble">
-    <gwtDeployLatestAssembly />
+    <buildDeployLatestAssembly classifier="${server.type}" />
   </target>
   
   <target name="setupEclipseEnv">

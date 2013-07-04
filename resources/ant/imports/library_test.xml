@@ -218,16 +218,22 @@
   
   <macrodef name="testDeployLatestBuild">
     <sequential>
-      <if>
-        <or>
-          <not><isset property="test.testFile"/></not>
-          <equals arg1="${test.testFile}" arg2="" />
-          <not><isset property="test.testSourceFile"/></not>
-          <equals arg1="${test.testSourceFile}" arg2="" />
-        </or>
+      <if>                
+        <equals arg1="${test.suite.class}" arg2="" />
         <then>
-          <fail>No latest test build found, nothing is deployed</fail>
+          <echo level="warn">No test suite defined, nothing to deploy</echo>
         </then>
+        <elseif>
+          <or>
+            <not><isset property="test.testFile"/></not>
+            <equals arg1="${test.testFile}" arg2="" />
+            <not><isset property="test.testSourceFile"/></not>
+            <equals arg1="${test.testSourceFile}" arg2="" />
+          </or>
+          <then>
+            <fail>No latest test build found, nothing is deployed</fail>
+          </then>
+        </elseif>
         <else>
           <mavenDeployAttachment file="${test.testFile}" classifier="${maven.attachment.test}" />
           <mavenDeployAttachment file="${test.testSourceFile}" classifier="${maven.attachment.testsources}" />

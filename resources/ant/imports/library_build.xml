@@ -61,6 +61,8 @@
   
   <property name="build.resource.dependency" value="build.dependency" description="The resource type of a dependency" />
   <property name="build.resource.resource" value="build.resource" description="The resource type of a resource" />
+  
+  <property name="build.release.scopes" value="compile" description="List of scopes which should be checked for SNAPSHOT dependencies" />
             
   <!--
     add the antcontrib library
@@ -1432,7 +1434,7 @@
           <svnCheckUnversioned />
 
           <!-- check that all dependency are releases -->
-          <mavenCheckSnapshotDependencies />
+          <mavenCheckSnapshotDependencies scopes="${build.release.scopes}" />
 
           <!-- now commit -->
           <svnCommit message="Commit prior to release of version '${maven.pom.version}'" />
@@ -1533,10 +1535,6 @@
     <mavenDeployParents />
 
     <echo level="warn">Please modify the needed files now! Especially modify the version number in the pom.xml and/or your parent-poms, so that a new generation of this artifact can be developed</echo>
-  </target>
-  
-  <target name="releaseAssembly" depends="deployAssembly">
-    <echo level="error">The release assemble target is currently not available</echo>
   </target>
   
   <target name="fullBuild" depends="removePreBuilds, build" />

@@ -1477,9 +1477,29 @@
   </macrodef>
   
   <macrodef name="mavenCheckSnapshotDependencies">
+    <attribute name="scope" default="compile" />
+    <attribute name="scopes" default="" />
+    <attribute name="pomid" default="${maven.pom.property}" />
+    <attribute name="pomfile" default="${maven.pom.file}" />
+  
     <sequential>
-      <mavenCheckStatus scope="compile" />
-    
+      <mavenCheckStatus scope="@{scope}" scopes="@{scopes}" pomid="@{pomid}" pomfile="@{pomfile}" />
+      
+      <if>
+        <not><equals arg1="${maven.tmp.snapshotCounter}" arg2="0" /></not>
+        <then>
+          <fail>There are still ${maven.tmp.snapshotCounter} snapshot dependencies, please resolve those first</fail>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="mavenCheckSnapshotDependenciesForFileset">
+    <attribute name="filesetid" />
+  
+    <sequential>
+      <mavenCheckStatusForFileset filesetid="@{filesetid}" />
+      
       <if>
         <not><equals arg1="${maven.tmp.snapshotCounter}" arg2="0" /></not>
         <then>
@@ -1492,6 +1512,24 @@
   <macrodef name="mavenCheckStatus">
     <attribute name="scope" default="compile" />
     <attribute name="scopes" default="" />
+    <attribute name="pomid" default="${maven.pom.property}" />
+    <attribute name="pomfile" default="${maven.pom.file}" />
+    <attribute name="snapshotProperty" default="maven.tmp.snapshotCounter" />
+    <attribute name="releaseProperty" default="maven.tmp.releaseCounter" />
+    
+    <sequential>
+      
+      <!-- get all the dependencies -->
+      <mavenResolveDependencies scope="@{scope}" scopes="@{scopes}" 
+                                pomid="@{pomid}" pomfile="@{pomfile}" 
+                                fileset="maven.tmp.dependencies" />
+                                
+      <mavenCheckStatusForFileset filesetid="maven.tmp.dependencies" snapshotProperty="@{snapshotProperty}" releaseProperty="@{releaseProperty}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="mavenCheckStatusForFileset">
+    <attribute name="filesetid" />
     <attribute name="snapshotProperty" default="maven.tmp.snapshotCounter" />
     <attribute name="releaseProperty" default="maven.tmp.releaseCounter" />
     
@@ -1499,17 +1537,14 @@
       <!-- reset -->
       <var name="@{snapshotProperty}" value="0" />
       <var name="@{releaseProperty}" value="0" />
-      
-      <!-- get all the dependencies -->
-      <mavenResolveDependencies scope="@{scope}" scopes="@{scopes}" fileset="maven.tmp.dependencies" />
-
+ 
       <if>
-        <resourcecount refid="maven.tmp.dependencies" when="greater" count="0" />
+        <resourcecount refid="@{filesetid}" when="greater" count="0" />
         <then>
         
           <!-- count the values  -->
           <fileCallMacroForEach macro="mavenCountTypes" parameters="snapshotProperty=[[@{snapshotProperty}]];releaseProperty=[[@{releaseProperty}]]">
-            <fileset refid="maven.tmp.dependencies" />
+            <fileset refid="@{filesetid}" />
           </fileCallMacroForEach>
         </then>
       </if>
