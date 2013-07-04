@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testRunAnt">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+  
+  <var name="tmp.destDir" value="${basedir}/xsd" />
+  
+  <macrodef name="checkNoFolderSchemaDistribution">
+    <sequential>
+      <!-- create a test environment -->
+      <var name="tmp.dir" value="${basedir}/thisfolderneverexists" />
+      <fileCleanUp dir="${tmp.dir}" recreate="false" />
+      <fileCleanUp dir="${tmp.destDir}" recreate="false" />
+      
+      <springDistributeSchemas srcDir="${tmp.dir}" destDir="${tmp.destDir}" />
+      
+      <!-- check the result -->
+      <if>
+        <resourcecount when="eq" count="0">
+          <fileset dir="${tmp.destDir}" />
+        </resourcecount>
+        <then><echo>noFolderSchemaDistribution was successful!</echo></then>
+        <else>
+          <resourcecount property="test.checkNoFolderSchemaDistribution.tmp.count">
+            <fileset dir="${tmp.destDir}" />
+          </resourcecount>
+          <fail>noFolderSchemaDistribution failed (0 files expected but ${test.checkNoFolderSchemaDistribution.tmp.count} found)!</fail>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkDefaultSchemaDistribution">
+    <sequential>
+      <!-- create a test environment -->
+      <var name="tmp.dir" value="${basedir}/src" />
+      <fileCleanUp dir="${tmp.dir}" recreate="false" />
+      <fileCleanUp dir="${tmp.destDir}" recreate="false" />
+      <echo file="${tmp.dir}/net/meisen/dev/test/schema1.xsd" />
+      <echo file="${tmp.dir}/net/meisen/dev/test/schema2.xsd" />
+      
+      <!-- create the schema file -->
+      <mkdir dir="${tmp.dir}/${spring.schemafiles.location}" />
+      <propertyfile file="${tmp.dir}/${spring.schemafiles.location}/${spring.schemafiles.list}">
+        <entry  key="http://dev.meisen.net/test/xsd/schema_mapped_1.xsd" value="net/meisen/dev/test/schema1.xsd"/>
+        <entry  key="http://dev.meisen.net/test/xsd/schema_mapped_2.xsd" value="net/meisen/dev/test/schema2.xsd"/>
+      </propertyfile>
+      
+      <springDistributeSchemas srcDir="${tmp.dir}" destDir="${tmp.destDir}" />
+      
+      <!-- check if the expected files exist -->
+      <if>
+        <and>
+          <available file="${tmp.destDir}/test/xsd/schema_mapped_1.xsd" />
+          <available file="${tmp.destDir}/test/xsd/schema_mapped_2.xsd" />
+          <resourcecount when="eq" count="2">
+            <fileset dir="${tmp.destDir}" />
+          </resourcecount>
+        </and>
+        <then><echo>defaultSchemaDistribution was successful!</echo></then>
+        <else>
+          <resourcecount property="test.checkDefaultSchemaDistribution.tmp.count">
+            <fileset dir="${tmp.destDir}" />
+          </resourcecount>
+          <fail>defaultSchemaDistribution failed (2 files expected - ${test.checkDefaultSchemaDistribution.tmp.count} found)!</fail>
+        </else>
+      </if>
+      
+      <!-- cleanUp -->
+      <fileCleanUp dir="${tmp.dir}" recreate="false" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkMultipleSchemaDistribution">
+    <sequential>
+      <!-- create a test environment -->
+      <var name="tmp.dir" value="${basedir}/src" />
+      <fileCleanUp dir="${tmp.dir}" recreate="false" />
+      <fileCleanUp dir="${tmp.destDir}" recreate="false" />
+      <echo file="${tmp.dir}/net/meisen/dev/test/schema1.1.xsd" />
+      <echo file="${tmp.dir}/net/meisen/dev/test/schema1.2.xsd" />
+      <echo file="${tmp.dir}/net/meisen/dev/test/schema2.1.xsd" />
+      <echo file="${tmp.dir}/net/meisen/dev/test/schema2.2.xsd" />
+      
+      <!-- modify the properties -->
+      <varKeep name="spring.schemafiles.list" value="file1.schema,file2.schema" property="spring.schemafiles.list.old" />
+      <varKeep name="spring.schemafiles.location" value="newLocation" property="spring.schemafiles.location.old" />
+
+      <!-- create the schema file -->
+      <mkdir dir="${tmp.dir}/${spring.schemafiles.location}" />
+      <propertyfile file="${tmp.dir}/${spring.schemafiles.location}/file1.schema">
+        <entry  key="http://dev.meisen.net/test/xsd/schema1.1.xsd" value="net/meisen/dev/test/schema1.1.xsd"/>
+        <entry  key="http://dev.meisen.net/test/xsd/schema1.2.xsd" value="net/meisen/dev/test/schema1.2.xsd"/>
+      </propertyfile>
+      <propertyfile file="${tmp.dir}/${spring.schemafiles.location}/file2.schema">
+        <entry  key="http://dev.meisen.net/test/xsd/schema2.1.xsd" value="net/meisen/dev/test/schema2.1.xsd"/>
+        <entry  key="http://dev.meisen.net/test/xsd/schema2.2.xsd" value="net/meisen/dev/test/schema2.2.xsd"/>
+      </propertyfile>
+      
+      <springDistributeSchemas srcDir="${tmp.dir}" destDir="${tmp.destDir}" />
+      
+      <!-- check if the expected files exist -->
+      <if>
+        <and>
+          <available file="${tmp.destDir}/test/xsd/schema1.1.xsd" />
+          <available file="${tmp.destDir}/test/xsd/schema1.2.xsd" />
+          <available file="${tmp.destDir}/test/xsd/schema2.1.xsd" />
+          <available file="${tmp.destDir}/test/xsd/schema2.2.xsd" />
+          <resourcecount when="eq" count="4">
+            <fileset dir="${tmp.destDir}" />
+          </resourcecount>
+        </and>
+        <then><echo>multipleSchemaDistribution was successful!</echo></then>
+        <else>
+          <resourcecount property="test.checkMultipleSchemaDistribution.tmp.count">
+            <fileset dir="${tmp.destDir}" />
+          </resourcecount>
+          <fail>multipleSchemaDistribution failed (4 files expected - ${test.checkMultipleSchemaDistribution.tmp.count} found)!</fail>
+        </else>
+      </if>
+      
+      <!-- cleanUp -->
+      <fileCleanUp dir="${tmp.dir}" recreate="false" />
+      <var name="spring.schemafiles.list" value="${spring.schemafiles.list.old}" />
+      <var name="spring.schemafiles.location" value="${spring.schemafiles.location.old}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkRegExManipulation">
+    <sequential>
+      <!-- create a test environment -->
+      <var name="tmp.dir" value="${basedir}/src" />
+      <fileCleanUp dir="${tmp.dir}" recreate="false" />
+      <fileCleanUp dir="${tmp.destDir}" recreate="false" />
+      <echo file="${tmp.dir}/net/meisen/dev/test/schema1.xsd" />
+      <echo file="${tmp.dir}/net/meisen/dev/test/schema2.xsd" />
+      
+      <!-- create the schema file -->
+      <mkdir dir="${tmp.dir}/${spring.schemafiles.location}" />
+      <propertyfile file="${tmp.dir}/${spring.schemafiles.location}/${spring.schemafiles.list}">
+        <entry  key="http://dev.meisen.net/test/xsd/schema1.xsd" value="net/meisen/dev/test/schema1.xsd"/>
+        <entry  key="http://dev.meisen.net/test/xsd/schema2.xsd" value="net/meisen/dev/test/schema2.xsd"/>
+      </propertyfile>
+      
+      <springDistributeSchemas srcDir="${tmp.dir}" destDir="${tmp.destDir}" removePrefixPattern="http://dev.meisen.net/test/xsd/" />
+      
+      <!-- check if the expected files exist -->
+      <if>
+        <and>
+          <available file="${tmp.destDir}/schema1.xsd" />
+          <available file="${tmp.destDir}/schema2.xsd" />
+          <resourcecount when="eq" count="2">
+            <fileset dir="${tmp.destDir}" />
+          </resourcecount>
+        </and>
+        <then><echo>regExManipulation was successful!</echo></then>
+        <else>
+          <resourcecount property="test.checkRegExManipulation.tmp.count">
+            <fileset dir="${tmp.destDir}" />
+          </resourcecount>
+          <fail>regExManipulation failed (2 files expected - ${test.checkRegExManipulation.tmp.count} found)!</fail>
+        </else>
+      </if>
+      
+      <!-- cleanUp -->
+      <fileCleanUp dir="${tmp.dir}" recreate="false" />
+      <var name="spring.schemafiles.list" value="${spring.schemafiles.list.old}" />
+      <var name="spring.schemafiles.location" value="${spring.schemafiles.location.old}" />
+    </sequential>
+  </macrodef>
+  
+  
+  <target name="antTest">
+    <checkNoFolderSchemaDistribution />
+    <checkDefaultSchemaDistribution />
+    <checkMultipleSchemaDistribution />
+    <checkRegExManipulation />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+    <fileCleanUp dir="${tmp.destDir}" recreate="false" />
+  </target>
+</project>

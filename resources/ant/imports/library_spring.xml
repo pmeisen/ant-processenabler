@@ -1,0 +1,143 @@
+<!--
+  This library is used to add some functionality to the process, which might be helpful
+  when having a Spring project.
+  
+  @author Philipp Meisen
+-->
+<project name="library_spring">
+  <property name="spring.library.version" value="1.0.0" description="The current version of the library" />
+  <dirname property="library_spring.basedir" file="${ant.file.library_spring}"/>
+  
+  <property name="spring.schemafiles.srcdir" value="${build.srcdir}" description="The default location of the source-files." />
+  <property name="spring.schemafiles.destdir" value="" description="The default destination directory for the schema-files." />
+  <property name="spring.schemafiles.list" value="spring.schemas" description="Comma separated list of files to look for a schema-mapping definition." />
+  <property name="spring.schemafiles.location" value="META-INF" description="The location within the source-directory to look for the schema-files for." />
+  
+  <!--
+    Spring enables the developer to remap schema-locations, so that no internet access is needed to retrieve
+    the schema file. This is quiet handy and increase the development-performance, because a newly created
+    xsd-file is directly part of the artifact (i.e. the package).<br/>
+    When distributing this package, this information can also be used to distribute the xsd-file to the web-location. 
+    This task enables the processenabler to copy the xsd file to a specific location on the server, which is running the 
+    processenabler.
+    
+    @param srcDir
+      the location to look for the META-INF directory and the spring.schemas file
+    @param destDir
+      the location to copy the xsd-files to
+    @param removePrefixPattern
+      the prefix-pattern (regular expression), which specifies what part of the url (key-value of the property)
+      has to be removed (e.g. 'http://dev.meisen.net/xsd/mySchema.xsd' should be mapped to 'xsd/mySchema.xsd', therefore
+      the pattern has to match 'http://dev\.meisen\.net/'); per default everything up to the first '/', behind the 'http://'
+      is removed
+            
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
+  <macrodef name="springDistributeSchemas">
+    <attribute name="srcDir" default="${spring.schemafiles.srcdir}" />
+    <attribute name="destDir" default="${spring.schemafiles.destDir}" />
+    <attribute name="removePrefixPattern" default="^(http://)?[^/]*" />
+    
+    <sequential>
+      <var name="spring.tmp.srcDir" value="@{srcDir}" />
+      <var name="spring.tmp.destDir" value="@{destDir}" />
+      <var name="spring.tmp.removePrefixPattern" value="@{removePrefixPattern}" />
+      <var name="spring.tmp.schemafiles.location" value="@{srcDir}/${spring.schemafiles.location}" />
+      
+      <!-- the destination directory cannot be empty -->
+      <if>
+        <matches string="${spring.tmp.destDir}" pattern="^\\s*$" />
+        <then>
+          <fail>You must specify a destination directory. You can do that explicitly using the attribute destDir or implicitly by setting the 'spring.schemafiles.destDir' property.</fail>
+        </then>
+      </if>
+      
+      <!-- we create the destination for sure -->
+      <mkdir dir="${spring.tmp.destDir}" />
+            
+      <!-- we only have to do anything if the needed files are available -->
+      <if>
+        <and>
+          <available file="${spring.tmp.srcDir}" />
+          <available file="${spring.tmp.schemafiles.location}" />
+          <not><matches string="${spring.schemafiles.list}" pattern="^\\s*$" /></not>
+        </and>
+        <then>
+        
+          <!-- check the files -->
+          <for list="${spring.schemafiles.list}" param="spring.tmp.schemafile" delimiter="," trim="true">
+            <sequential>
+              <var name="spring.tmp.schemafile" value="${spring.tmp.schemafiles.location}/@{spring.tmp.schemafile}" />
+              
+              <!-- process the file -->
+              <script language="javascript"><![CDATA[
+                var srcDir           = project.getProperty("spring.tmp.srcDir");
+                var destDir          = project.getProperty("spring.tmp.destDir");
+                var rmvPrfxPattern   = project.getProperty("spring.tmp.removePrefixPattern");
+                var propertyFileName = project.getProperty("spring.tmp.schemafile");
+                var propertyFile     = new java.io.File(propertyFileName);
+                
+                // make sure the rmvPrfxPattern is a prefix
+                if (!rmvPrfxPattern.startsWith("^")) {
+                  rmvPrfxPattern = "^" + rmvPrfxPattern;
+                }
+                
+                // make sure we have the property-file and read it
+                if (propertyFile.exists() && propertyFile.isFile() && propertyFile.canRead()) {
+                  var inStream = new java.io.FileInputStream(propertyFile);
+                  var prop     = new java.util.Properties(); prop.load(inStream);
+                  
+                  // copy-task
+                  var copy = project.createTask("copy");
+                  var fail = project.createTask("fail");
+                  
+                  // iterate over the properties
+                  var entries = prop.entrySet();
+                  var it      = entries.iterator();
+                  while (it.hasNext()) {
+                    var entry = it.next();
+                    var key   = entry.getKey();
+                    var value = entry.getValue();
+                    
+                    // check if the file exists in the sources
+                    var xsdFile = new java.io.File(srcDir, value);
+                    if (xsdFile.exists() && xsdFile.isFile() && xsdFile.canRead()) {
+                      filename = key.replaceFirst(rmvPrfxPattern, "");
+                      
+                      // define the destination to copy the file to
+                      var destFile = new java.io.File(destDir, filename);
+                      
+                      // the file cannot exist
+                      if (destFile.exists()) {
+                        fail.setMessage("The file '" + destFile.getCanonicalPath() + "' already exists!");
+                        fail.execute();
+                      } else {
+                      
+                        copy.setFile(xsdFile);
+                        copy.setTofile(destFile);
+                        copy.execute();
+                      }
+                    }
+                  }
+                }
+              ]]></script>
+            </sequential>
+          </for>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    This target can be used to copy all the defined schema-files from the sources to the specified destination directory. The 
+    destination directory should be defined by setting the <a href="#property_spring.schemafiles.destdir">spring.schemafiles.destdir</a>.
+    If the property isn't defined the execution will fail.
+    
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
+  <target name="copySpringXsdSchemas">
+    <springDistributeSchemas />
+  </target>
+</project>
