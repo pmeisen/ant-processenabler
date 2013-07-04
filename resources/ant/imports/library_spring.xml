@@ -30,6 +30,13 @@
       has to be removed (e.g. 'http://dev.meisen.net/xsd/mySchema.xsd' should be mapped to 'xsd/mySchema.xsd', therefore
       the pattern has to match 'http://dev\.meisen\.net/'); per default everything up to the first '/', behind the 'http://'
       is removed
+      
+    @fails 
+      <ul>
+        <li>if the <i>destDir</i> isn't defined (i.e. the property <a href="#property_spring.schemafiles.destdir">spring.schemafiles.destdir</a> 
+            is empty or the <i>destDir</i> isn't set explicitly)</li>
+        <li>if the files cannot be copied, reasons could be access restrictions, invalid filenames, invalid <i>removePrefixPattern</i></li>
+      </ul>
             
     @author Philipp Meisen
     @since 1.0.0
@@ -90,7 +97,6 @@
                   
                   // copy-task
                   var copy = project.createTask("copy");
-                  var fail = project.createTask("fail");
                   
                   // iterate over the properties
                   var entries = prop.entrySet();
@@ -109,15 +115,10 @@
                       var destFile = new java.io.File(destDir, filename);
                       
                       // the file cannot exist
-                      if (destFile.exists()) {
-                        fail.setMessage("The file '" + destFile.getCanonicalPath() + "' already exists!");
-                        fail.execute();
-                      } else {
-                      
-                        copy.setFile(xsdFile);
-                        copy.setTofile(destFile);
-                        copy.execute();
-                      }
+                      copy.setFile(xsdFile);
+                      copy.setTofile(destFile);
+                      copy.setOverwrite(true);
+                      copy.execute();
                     }
                   }
                 }
