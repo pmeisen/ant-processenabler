@@ -1501,6 +1501,7 @@
         <!-- test the version -->
         <testRemovePreBuilds />
         <testTest />
+        <testPackSource />
       </then>
     </if>
     
