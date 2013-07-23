@@ -609,7 +609,6 @@
   </macrodef>
   
   <macrodef name="gwtAssembly">
-    <attribute name="serverLibraryDir" default="${build.library.dir}" />
     <attribute name="serverType" default="" />
   
     <sequential>
@@ -632,6 +631,16 @@
           </then>
         </elseif>
       </if>
+      
+      <!-- load the server properties -->
+      <!-- 
+        that should be solved more elegant, currently it might happen
+        that the server loads properties which should use the default
+        properties in another configuration, those wouldn't be resetted
+        if called again
+        -->
+      <serverLoadProperties serverType="@{gwt.tmp.release.server.type}" />
+      <var name="gwt.tmp.serverLibraryDir" value="${build.library.dir}" />
             
       <!-- the directory the app should be assembled to -->
       <var name="build.tmp.appFolder" value="${build.dir}/${build.app.dir}" />
@@ -646,10 +655,10 @@
       <gwtGetServerDependencies filesetid="gwt.tmp.serverLibs" serverType="@{serverType}" />
 
       <!-- copy the dependent files -->
-      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${gwt.tmp.webappFolder}]];defaultLocation=[[@{serverLibraryDir}]]">
+      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${gwt.tmp.webappFolder}]];defaultLocation=[[${gwt.tmp.serverLibraryDir}]]">
         <fileset refid="gwt.tmp.serverLibs" />
       </fileCallMacroForEach>
-      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${gwt.tmp.webappFolder}]];defaultLocation=[[@{serverLibraryDir}]]">
+      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${gwt.tmp.webappFolder}]];defaultLocation=[[${gwt.tmp.serverLibraryDir}]]">
         <fileset file="${build.buildFile}" />
       </fileCallMacroForEach>
 

@@ -129,28 +129,28 @@
   
   <macrodef name="serverLoadProperties">
     <attribute name="appDir" default="${server.dir}" />
+    <attribute name="serverType" default="" />
     
     <sequential>
     
       <!-- load the properties of the application server if those exists -->
       <if>
         <or>
-          <not><isset property="server.type"/></not>
-          <equals arg1="${server.type}" arg2="" />
+          <equals arg1="@{serverType}" arg2="" />
         </or>
         <then>
           <fail>Please specify a server type, prior to loading it's properties</fail>
         </then>
         <elseif>
           <or>
-            <available file="@{appDir}/${server.type}/config.properties" />
-            <available file="@{appDir}/${server.type}/override.properties" />
+            <available file="@{appDir}/@{serverType}/config.properties" />
+            <available file="@{appDir}/@{serverType}/override.properties" />
           </or>
           <then>
             <echo level="info">Loading server type specific properties</echo>
             
-            <var file="@{appDir}/${server.type}/config.properties" />
-            <var file="@{appDir}/${server.type}/override.properties" />
+            <var file="@{appDir}/@{serverType}/config.properties" />
+            <var file="@{appDir}/@{serverType}/override.properties" />
           </then>
         </elseif>
         <else>
@@ -212,11 +212,11 @@
   
   <target name="serverUseTomCat">
     <var name="server.type" value="tomcat6" />
-    <serverLoadProperties />
+    <serverLoadProperties serverType="${server.type}" />
   </target>
   
   <target name="serverUseBisServer">
     <var name="server.type" value="gsbisserver36" />
-    <serverLoadProperties />
+    <serverLoadProperties serverType="${server.type}" />
   </target>
 </project>
