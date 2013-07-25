@@ -38,6 +38,8 @@
   <property name="maven.repository.target.local" location="${user.home}/.m2/repository" description="The local maven repository" />
   <property name="maven.repository.source.url" value="${maven.artifactory.source.url}/OVERALL" description="The source repository to be used (used in settings.xml)" />
   <property name="maven.repository.source.repositoryId" value="central" description="The id of the source repository (used in settings.xml)" />
+  <property name="maven.repository.source.updatePolicy.releases" value="always" description="Defines the updatePolicy for releases from the source" />
+  <property name="maven.repository.source.updatePolicy.snapshots" value="always" description="Defines the updatePolicy for snapshots from the source" />
   <property name="maven.repository.target.releaseUrl" value="${maven.artifactory.target.url}/RELEASES" description="The repository to be used for releases" />
   <property name="maven.repository.target.snapshotUrl" value="${maven.artifactory.target.url}/SNAPSHOTS" description="The repository to be used for snapshots" />
   <property name="maven.repository.target.repositoryId" value="centralTarget" description="The id of the target repository" />

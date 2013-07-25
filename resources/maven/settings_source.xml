@@ -108,12 +108,12 @@
           <name>Source Repository (GS BIS)</name>
           <releases>
             <enabled>true</enabled>
-            <updatePolicy>never</updatePolicy>
+            <updatePolicy>${maven.repository.source.updatePolicy.releases}</updatePolicy>
             <checksumPolicy>fail</checksumPolicy>
           </releases>
           <snapshots>
             <enabled>true</enabled>
-            <updatePolicy>always</updatePolicy>
+            <updatePolicy>${maven.repository.source.updatePolicy.snapshots}</updatePolicy>
             <checksumPolicy>fail</checksumPolicy>
           </snapshots>
           <url>${maven.repository.source.url}</url>
