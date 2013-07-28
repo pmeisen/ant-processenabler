@@ -34,8 +34,9 @@
   <property name="maven.artifactory.target.url" value="" description="URL to access the artifactory (for artifacts to be deployed)" />
   <property name="maven.repository.source.forceoffline" value="false" description="if set to true, the repository will be forced to be assumed offline" />
   <property name="maven.repository.target.forceoffline" value="false" description="if set to true, the repository will be forced to be assumed offline" />
-  <property name="maven.repository.source.local" location="${user.home}/.m2/repository" description="The local maven repository" />
-  <property name="maven.repository.target.local" location="${user.home}/.m2/repository" description="The local maven repository" />
+  <property name="maven.repository.local" location="${user.home}/.m2/repository" description="Property to set local source and target at once" />
+  <property name="maven.repository.source.local" location="${maven.repository.local}" description="The local maven repository" />
+  <property name="maven.repository.target.local" location="${maven.repository.local}" description="The local maven repository" />
   <property name="maven.repository.source.url" value="${maven.artifactory.source.url}/OVERALL" description="The source repository to be used (used in settings.xml)" />
   <property name="maven.repository.source.repositoryId" value="central" description="The id of the source repository (used in settings.xml)" />
   <property name="maven.repository.source.updatePolicy.releases" value="always" description="Defines the updatePolicy for releases from the source" />
