@@ -130,7 +130,7 @@
         </and>
         <then>
           <modifyProperties prefix="${main.markedProperties.prefix}" resultPropertySetId="main.markedProperties.propertySet" 
-                            setPropertiesWithoutPrefix="true" unsetProperties="true" skipPattern="^main\." />
+                            setPropertiesWithoutPrefix="true" unsetProperties="true" />
         </then>
       </if>
       
