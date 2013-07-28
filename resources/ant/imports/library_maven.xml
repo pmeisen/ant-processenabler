@@ -1478,6 +1478,25 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="mavenCheckVersionName">
+    <attribute name="pomfile" default="${maven.pom.file}" />
+    
+    <sequential>
+      <mavenSetPom pomid="maven.tmp.versionCheck" pomfile="@{pomfile}" />
+      
+      <if>
+        <or>
+          <equals arg1="${maven.tmp.versionCheck.version}" arg2="snapshot" casesensitive="false" />
+          <equals arg1="${maven.tmp.versionCheck.version}" arg2="trunk" casesensitive="false" />
+          <equals arg1="${maven.tmp.versionCheck.version}" arg2="" casesensitive="false" />
+        </or>
+        <then>
+          <fail>The version of the dependency '${maven.tmp.versionCheck.version}' is invalid for an release.</fail>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
   <macrodef name="mavenCheckSnapshotDependencies">
     <attribute name="scope" default="compile" />
     <attribute name="scopes" default="" />

@@ -42,9 +42,9 @@
     
   <property name="build.launcher.create" value="true" description="Defines if a launcher should be created" />
   <property name="build.launcher.mainClass" value="" description="The main class started by the launcher" />
-  <property name="build.launcher.groupId" value="" description="The launcher groupId to be used" />
-  <property name="build.launcher.artifactId" value="launcher" description="The launcher artifactId to be used" />
-  <property name="build.launcher.version" value="1.1" description="The launcher version to be used" />
+  <property name="build.launcher.groupId" value="net.meisen.general" description="The launcher groupId to be used" />
+  <property name="build.launcher.artifactId" value="net-meisen-general-gen-launcher" description="The launcher artifactId to be used" />
+  <property name="build.launcher.version" value="TRUNK-SNAPSHOT" description="The launcher version to be used" />
   <property name="build.launcher.cmdLineArgs" value="" description="additional command line arguments for the launcher" />
   <property name="build.launcher.jvmArgs" value="" description="additional JVM arguments for the launcher" />
   <property name="build.launcher.maxPermSize" value="256m" description="the maxPermSize value to be used by the launcher" />
@@ -1434,6 +1434,7 @@
           <svnCheckUnversioned />
 
           <!-- check that all dependency are releases -->
+          <mavenCheckVersionName />
           <mavenCheckSnapshotDependencies scopes="${build.release.scopes}" />
 
           <!-- now commit -->

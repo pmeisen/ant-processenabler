@@ -14,7 +14,7 @@
   <!-- project settings -->
   <groupId>net.meisen.tools</groupId>
   <artifactId>net-meisen-tools-ant-processenabler</artifactId>
-  <version>1.0.0</version>
+  <version>TRUNK</version>
   <name>ant-processenabler</name>
   <description>Defines processes like build, release, assemble to be used with ant</description>
   <packaging>jar</packaging>
@@ -212,7 +212,7 @@
       <artifactId>maven-ant-tasks</artifactId>
       <version>2.1.3</version>
     </dependency>
-    
+       
     <!-- testing stuff -->
     <dependency>
       <groupId>org.apache.ant</groupId>
@@ -230,7 +230,7 @@
     <dependency>
       <groupId>net.meisen.general</groupId>
       <artifactId>net-meisen-general-gen-misc</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>TRUNK-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
