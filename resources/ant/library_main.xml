@@ -217,7 +217,7 @@
     <delete file="${main.config.project.marked}" />
   </target>
   
-  <target name="writeMarkedProperties" description="lala">
+  <target name="writeMarkedProperties">
     <if>
       <and>
         <isset property="main.markedProperties.prefix" />
