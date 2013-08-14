@@ -212,6 +212,20 @@
       <artifactId>maven-ant-tasks</artifactId>
       <version>2.1.3</version>
     </dependency>
+    
+    <!-- add the server to implement server stuff -->
+    <dependency>
+      <groupId>net.meisen.general</groupId>
+      <artifactId>net-meisen-general-server-http-listener</artifactId>
+      <version>TRUNK-SNAPSHOT</version>
+      
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
        
     <!-- testing stuff -->
     <dependency>
@@ -227,11 +241,17 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <!--
+      The http-listener needs this one as runtime dependency,
+      therefore it cannot be set to test here
+      -->
+    <!--
     <dependency>
       <groupId>net.meisen.general</groupId>
       <artifactId>net-meisen-general-gen-misc</artifactId>
       <version>TRUNK-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
+    -->
   </dependencies>
 </project>

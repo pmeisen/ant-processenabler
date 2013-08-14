@@ -59,11 +59,36 @@
       </if>
     </sequential>
   </macrodef>
+  
+  <macrodef name="checkMapperUsage">
+    <sequential>
+     
+      <!-- create some test properties -->
+      <var name="test.property.mapper.1" value="1" />
+      <var name="test.property.mapper.2" value="2" />
+      <var name="test.property.mapper.3" value="3" />
+     
+      <propertyset id="test.properties">
+        <propertyref prefix="test.property.mapper." />
+      </propertyset>
+      
+      <createResourceList property="test.result" resourceCollectionId="test.properties" separator="!">
+        <mapper type="glob" from="*" to="6"/>
+      </createResourceList>
+      
+      <if>
+        <equals arg1="${test.result}" arg2="6!6!6" />
+        <then><echo>MapperUsage was successful!</echo></then>
+        <else><fail>MapperUsage failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
 
   <target name="antTest">
     <checkEmptyList />
     <checkPropertyList />
     <checkFileList />
+    <checkMapperUsage />
   </target>
   
   <target name="antTestCleanUp">

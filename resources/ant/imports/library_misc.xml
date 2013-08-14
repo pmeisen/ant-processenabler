@@ -13,7 +13,7 @@
       - modified the 'modifyProperties' to support the add prefixhandler
   -->
 <project name="library_misc">
-  <property name="misc.library.version" value="1.3.0" description="The current version of the library" />
+  <property name="misc.library.version" value="1.4.0" description="The current version of the library" />
   <dirname property="library_misc.basedir" file="${ant.file.library_misc}"/>
   
   <property name="misc.batch.name" value="antRunAsync" description="The general name of the script/batch to be executed" />
@@ -223,23 +223,43 @@
   </scriptdef>
   
   <!--
-    createList - Creates a list based on an already created list, by appending a value to it only and 
-                 only if its not in the list yet. The newly created list will never end on the passed separator
-    -->
+    This method is used creates list based on an already created list, by appending a value to it only and 
+    only if the value isn't in the list yet. The newly created list will never end on the passed separator.
+    
+    @param property
+      the property to set with the created list
+    @param list
+      the list to append the value to
+    @param value
+      the value to add to the list if it's not in the list yet
+    @param <span style="text-decoration:line-through">separatore</span>
+      this attribute is <b>deprecated</b> and should not be used, use <i>separator</i> instead
+    @param separator
+      the separator to be used to separate the values from each other
+      
+    @fails 
+      <ul>
+        <li>if the specified <i>resourceCollectionId</i> points to a not existing resource collection</li>
+      </ul>
+            
+    @author Philipp Meisen
+    @since 1.1.0
+  -->
   <scriptdef name="createList" language="javascript">
     <attribute name="property" />
     <attribute name="list" />
     <attribute name="value" />
     <attribute name="separatore" />
+    <attribute name="separator" />
     
     <![CDATA[
     var property = attributes.get("property");
     var list = attributes.get("list");
-    var separatore = attributes.get("separatore");
+    var separator = attributes.containsKey("separator") ? attributes.get("separator") : attributes.get("separatore");
     var value = attributes.get("value");
     value = value.trim();
 
-    var listEntries = list.split("\\s*" + separatore + "\\s*");
+    var listEntries = list.split("\\s*" + separator + "\\s*");
     
     var finalList = "";
     var sizeOfList = listEntries.length;
@@ -249,11 +269,11 @@
       var lastEntry = sizeOfList - 1 == i;
       foundEntry = foundEntry || entry.equals(value);
       
-      finalList += entry + (lastEntry ? "" : separatore);
+      finalList += entry + (lastEntry ? "" : separator);
     }
     
     if (!foundEntry) {
-      finalList += (sizeOfList > 0 && !finalList.equals("") ? separatore : "") + value;
+      finalList += (sizeOfList > 0 && !finalList.equals("") ? separator : "") + value;
     }
     
     var setProperty = project.createTask("var");
@@ -394,27 +414,61 @@
   </scriptdef>
   
   <!--
-    createList - Creates a ResourceCollection into a list
-    -->
+    This method is used to transform a <i>resourceCollection</i> into a list (separated by the specified <i>separator</i>).
+    
+    @param property
+      the property to set with the created list
+    @param resourceCollectionId
+      the id of the <i>resourceCollection</i> to be transformed to a list
+    @param <span style="text-decoration:line-through">separatore</span>
+      this attribute is <b>deprecated</b> and should not be used, use <i>separator</i> instead
+    @param separator
+      the separator to be used to separate the values from each other
+    @param pattern[{value}]
+      the pattern used to modify the look of the outcome
+      
+    @fails 
+      <ul>
+        <li>if the specified <i>resourceCollectionId</i> points to a not existing resource collection</li>
+      </ul>
+            
+    @author Philipp Meisen
+    @since 1.1.0
+  -->
   <scriptdef name="createResourceList" language="javascript">
     <attribute name="property" />
     <attribute name="resourceCollectionId" />
     <attribute name="separatore" />
+    <attribute name="separator" />
+    
+    <element name="mapper" type="mapper" />
     
     <![CDATA[
     var property = attributes.get("property");
     var resourceCollectionId = attributes.get("resourcecollectionid");
-    var separatore = attributes.get("separatore");
+    var separator = attributes.containsKey("separator") ? attributes.get("separator") : attributes.get("separatore");
     
     // get the resource collection
     var refs = project.hasReference(resourceCollectionId) ? project.getReference(resourceCollectionId) : null;
+    
+    // check if there is a mapper
+    var mappers = elements.get("mapper");
+    var mapper;
+    if (mappers == null) {
+      mapper = null;
+    } else if (mappers.size() > 1) {
+      self.fail("The createResourceList supports a maximum of one mapper, please use chainedMapper to combine several mappers.");
+    } else {
+      mapper = mappers.get(0);
+      mapper = mapper.getImplementation();
+    }
     
     // check the resource collection
     var finalList = "";
     if (refs != null && refs.size() > 0) {
       var entries = refs.iterator();
       
-      finalList = separatore;
+      finalList = separator;
       while (entries.hasNext()) {
         var value;
         var entry = entries.next();
@@ -433,10 +487,16 @@
           value = entry == null ? "" : entry.toString();
         }
         
-        finalList = finalList + value + separatore;
+        // use the mapper if there is one
+        if (mapper != null) {
+          value = mapper.mapFileName(value);
+          value = value == null ? null : value[0];
+        }
+        
+        finalList = finalList + value + separator;
       }
       
-      var length = separatore.length();
+      var length = separator.length();
       var listLength = finalList.length;      
       finalList = finalList.substring(length, listLength - length);
     }
@@ -444,6 +504,78 @@
     var setProperty = project.createTask("var");
     setProperty.setName(property);
     setProperty.setValue(finalList);
+    setProperty.execute();
+    ]]>
+  </scriptdef>
+  
+  <!--
+    This method is used to transform a <i>propertySet</i> into a list (separated by the specified <i>separator</i>).
+    
+    @param property
+      the property to set with the created list
+    @param resourceCollectionId
+      the id of the <i>propertySet</i> to be transformed to a list
+    @param separator
+      the separator to be used to separate the values from each other
+    @param pattern[{propertykey}={propertyvalue}]
+      the pattern used to identify how a property should be represented within the list
+
+    @fails 
+      <ul>
+        <li>if the specified <i>resourceCollectionId</i> points to a not existing resource collection</li>
+      </ul>
+            
+    @author Philipp Meisen
+    @since 1.1.0
+  -->
+  <scriptdef name="createPropertyList" language="javascript">
+    <attribute name="property" />
+    <attribute name="propertySetId" />
+    <attribute name="separator" />
+    
+    <attribute name="sortAlphanumeric" />
+    <attribute name="pattern" />
+    
+    <![CDATA[
+    var setProperty = project.createTask("var");
+    
+    var property = attributes.get("property");
+    var propertySetId = attributes.get("propertysetid");
+    var separator = attributes.get("separator");
+   
+    var sortAlphanumeric = attributes.containsKey("sortalphanumeric") ? attributes.get("sortalphanumeric").equals("true") : false;
+    var pattern = attributes.containsKey("pattern") ? attributes.get("pattern") : "{propertykey}={propertyvalue}";
+   
+    // get the resource collection
+    var refs = project.hasReference(propertySetId) ? project.getReference(propertySetId) : null;
+    
+    var sb = new java.lang.StringBuilder();
+    if (refs != null) {
+      var props = refs.getProperties();
+      if (props != null && props.size() > 0) {
+      
+        // sort if asked for otherwise keep insertion order
+        var set = sortAlphanumeric ? new java.util.TreeMap() : new java.util.LinkedHashMap();
+        set.putAll(props);
+
+        // loop through the properties
+        var loopSeparator = "";
+        var iterator = set.keySet().iterator();
+        while(iterator.hasNext()) {
+          var key = iterator.next();
+          var val = set.get(key);
+          var res = pattern.replace("{propertykey}", key).replace("{propertyvalue}", val);
+          
+          sb.append(loopSeparator);
+          sb.append(res);
+          loopSeparator = separator;
+        }
+      }
+    }
+    
+    // set the new list
+    setProperty.setName(property);
+    setProperty.setValue(sb.toString());
     setProperty.execute();
     ]]>
   </scriptdef>
@@ -832,6 +964,17 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="varLocation">
+    <attribute name="property" />
+    <attribute name="value" />
+    
+    <sequential>
+      <var name="@{property}" unset="true" />
+      <property name="@{property}" location="@{value}" />
+    </sequential>
+  </macrodef>
+
+  
   <macrodef name="varNormalizeBoolean">
     <attribute name="property" />
     <attribute name="value" default="" />
@@ -857,6 +1000,4 @@
       </if>
     </sequential>
   </macrodef>
-  
-
 </project>

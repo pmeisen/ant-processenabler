@@ -11,13 +11,105 @@
   <property name="server.library.version" value="1.0.1" description="The current version of the library" />
   <dirname property="library_server.basedir" file="${ant.file.library_server}"/>
 
-  <property name="server.type" value="" description="The server type to be used, currently valid gsbisserver36 or tomcat6" />
+  <property name="server.library.resfile.serverSettings" location="${library_server.basedir}/library_server-serverSettings.xml" description="The settings for the server to be used" />
+  
+  <property name="server.type" value="" description="The server type to be used, currently valid tomcat6" />
   <property name="server.dir" value="applicationServer" description="The name of the main-directory which contains application server specific resources" />
   
   <!--
     add the antcontrib library
     -->
   <taskdef resource="net/sf/antcontrib/antlib.xml" />
+  
+  <macrodef name="serverGenericStart">
+    <attribute name="appPort" />
+    <attribute name="appListener" default="" />
+    <attribute name="appServerSettings" default="" />
+    <attribute name="port" />
+    
+    <sequential>
+
+      <!-- define variables to be replaced in the settings -->
+      <var name="server.tmp.generic.start.port" value="@{port}" />
+      <var name="server.tmp.generic.main.port" value="@{appPort}" />
+    
+      <if>
+        <not><equals arg1="@{appServerSettings}" arg2="" /></not>
+        <then>
+          <var name="server.tmp.server.sourceFile" value="@{appServerSettings}" />
+        </then>
+        <elseif>
+          <not><equals arg1="@{appListener}" arg2="" /></not>
+          <then>
+            <var name="server.tmp.generic.main.listener" value="@{appListener}" />
+            <var name="server.tmp.server.sourceFile" value="${server.library.resfile.serverSettings}" />     
+          </then>
+        </elseif>
+        <else>
+          <fail>You have to specify a appServerSettings or an appListener</fail>
+        </else>
+      </if>
+      
+      <!-- create the settings for the server -->
+      <var name="server.tmp.server.file" value="${main.tmpdir}/serverSettings.xml" />  
+      <fileReplaceAllProperties file="${server.tmp.server.sourceFile}" destFile="${server.tmp.server.file}" force="true" />
+    
+      <!-- start the server -->
+      <java classname="net.meisen.general.server.Server" fork="true">
+        <classpath>
+          <pathelement path="${main.tmpdir}"/>
+          <pathelement path="${java.class.path}"/>
+        </classpath>
+      </java>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="serverGenericStop">
+    <attribute name="port" />
+    
+    <sequential>
+      
+      <if>
+        <socket server="localhost" port="@{port}"/>
+        <then>
+          <!-- define variables to be replaced in the settings -->
+          <var name="server.tmp.generic.stop.port" value="@{port}" />
+        
+          <!-- shutdown the server -->
+          <script language="javascript"><![CDATA[
+            var port = project.getProperty("server.tmp.generic.stop.port");
+            var controller = new net.meisen.general.server.control.ServerController("localhost", port);
+            
+            // send the shutdown signal
+            controller.sendShutdown();
+          ]]></script>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="serverGenericWait">
+    <attribute name="port" />
+    <attribute name="timeout" default="5000" />
+    
+    <sequential>
+      <!-- make sure the variable is not set -->
+      <var name="server.tmp.server.timeout" unset="true" />
+
+      <!-- wait for the server to be started -->
+      <waitfor maxwait="@{timeout}" maxwaitunit="millisecond" checkevery="500" timeoutproperty="server.tmp.server.timeout">
+        <socket server="localhost" port="@{port}"/>
+      </waitfor>
+
+      <!-- make sure the server is available now -->
+      <if>
+        <isset property="server.tmp.server.timeout" />
+        <then>
+          <fail>The generic server on port '@{port}' is not available after '@{timeout}' milliseconds.</fail>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
   
   <macrodef name="serverHttpReachable">
     <attribute name="url" />
@@ -63,41 +155,8 @@
   </macrodef>
   
   <!-- 
-    startBisServer - starts a Pentaho server
-  -->
-  <macrodef name="startBisServer">
-    <attribute name="webapp" default="${server.webapp.dir}"/>
-
-    <sequential>
-      <java jar="@{webapp}/../../bin/bootstrap.jar" fork="true">
-        <jvmarg value="-Dcatalina.home=@{webapp}/../../"/>
-        <jvmarg value="-Dcatalina.base=@{webapp}/../../"/>
-        <jvmarg value="-Dpentaho.installed.licenses.file=@{webapp}/../../../Config/.installedLicenses.xml"/>
-        <jvmarg value="-Xms512m" />
-        <jvmarg value="-XX:MaxPermSize=512m" />
-        <jvmarg value="-Dsun.rmi.dgc.server.gcInterval=3600000" />
-      </java>
-    </sequential>
-  </macrodef>
-   
-  <!-- 
-    stopBisServer - stops a Pentaho server
-  -->
-  <macrodef name="stopBisServer">
-    <attribute name="webapp" default="${server.webapp.dir}"/>
-
-    <sequential>   
-      <java jar="@{webapp}/../../bin/bootstrap.jar" fork="true">
-        <jvmarg value="-Dcatalina.home=@{webapp}/../../"/>
-        <jvmarg value="-Dcatalina.base=@{webapp}/../../"/>
-        <arg line="stop"/>
-      </java>
-    </sequential>
-  </macrodef>
-  
-  <!-- 
     startTomCat - starts a TomCat server
-  -->
+    -->
   <macrodef name="startTomCat">
     <attribute name="webapp" default="${server.webapp.dir}" />
     
@@ -105,7 +164,7 @@
       <java jar="@{webapp}/../bin/bootstrap.jar" fork="true">
         <jvmarg value="-Dcatalina.home=${server.webapp.dir}/../" />
         <jvmarg value="-Dcatalina.base=${server.webapp.dir}/../" />
-        <!-- this one is only needed for Pentaho Server -->
+
         <jvmarg value="-Xms512m" />
         <jvmarg value="-XX:MaxPermSize=512m" />
       </java>
@@ -114,7 +173,7 @@
   
   <!-- 
     stopTomCat - stops a TomCat server
-  -->
+    -->
   <macrodef name="stopTomCat">
     <attribute name="webapp" default="${server.webapp.dir}" />
 
@@ -159,7 +218,7 @@
       </if>
     </sequential>
   </macrodef>
-
+  
   <!--
     serverStart - target to directly start a TomCat server
     -->
@@ -171,14 +230,6 @@
       <then>
         <startTomCat />
       </then>
-      <elseif>
-        <or>
-          <equals arg1="${server.type}" arg2="gsbisserver36" />
-        </or>
-        <then>
-          <startBisServer />
-        </then>
-      </elseif>
       <else>
         <fail>No server specified, please specify the server to be used</fail>
       </else>
@@ -196,14 +247,6 @@
       <then>
         <stopTomCat />
       </then>
-      <elseif>
-        <or>
-          <equals arg1="${server.type}" arg2="gsbisserver36" />
-        </or>
-        <then>
-          <stopBisServer />
-        </then>
-      </elseif>
       <else>
         <fail>No server specified, please specify the server to be used</fail>
       </else>
@@ -212,11 +255,6 @@
   
   <target name="serverUseTomCat">
     <var name="server.type" value="tomcat6" />
-    <serverLoadProperties serverType="${server.type}" />
-  </target>
-  
-  <target name="serverUseBisServer">
-    <var name="server.type" value="gsbisserver36" />
     <serverLoadProperties serverType="${server.type}" />
   </target>
 </project>

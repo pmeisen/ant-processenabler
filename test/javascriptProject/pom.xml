@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  
+  <!-- project settings -->
+  <groupId>net.meisen.js.web</groupId>
+  <artifactId>net-meisen-js-web-testsample</artifactId>
+  <version>TRUNK</version>
+  <name>net-meisen-js-web-testsample</name>
+  <description>A test sample used for testing purposes only</description>
+  <packaging>js</packaging>
+  
+  <!-- the projects dependencies -->
+  <dependencies>
+    <dependency>
+      <groupId>org.jquery</groupId>
+      <artifactId>jquery</artifactId>
+      <version>1.9.1</version>
+      <scope>test</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.requirejs</groupId>
+      <artifactId>require</artifactId>
+      <version>2.1.8</version>
+    </dependency>    
+  </dependencies>
+</project>

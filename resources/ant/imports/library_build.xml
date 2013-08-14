@@ -707,7 +707,7 @@
   </macrodef>
   
   <!--
-    buildDeployLatestBuild - deployes the latest build to the reponsible repository
+    buildDeployLatestBuild - deploys the latest build to the responsible repository
     -->
   <macrodef name="buildDeployLatestBuild">
     <sequential>
@@ -715,19 +715,35 @@
         <or>
           <not><isset property="build.buildFile"/></not>
           <equals arg1="${build.buildFile}" arg2="" />
-          <not><isset property="build.buildSrcFile"/></not>
-          <equals arg1="${build.buildSrcFile}" arg2="" />
-          <not><isset property="build.buildJavaDocFile"/></not>
-          <equals arg1="${build.buildJavaDocFile}" arg2="" />
         </or>
         <then>
           <fail>No latest build found, nothing is deployed</fail>
         </then>
         <else>
           <mavenDeploy file="${build.buildFile}" />
-          <mavenDeployAttachment file="${build.buildSrcFile}" classifier="${maven.attachment.sources}" />
-          <mavenDeployAttachment file="${build.buildJavaDocFile}" classifier="${maven.attachment.javadoc}" />
         </else>
+      </if>
+      
+      <!-- deploy the sources if the exist -->
+      <if>
+        <and>
+          <isset property="build.buildSrcFile"/>
+          <not><equals arg1="${build.buildSrcFile}" arg2="" /></not>
+        </and>
+        <then>
+          <mavenDeployAttachment file="${build.buildSrcFile}" classifier="${maven.attachment.sources}" />
+        </then>
+      </if>
+      
+      <!-- deploy the javadoc if the exist -->
+      <if>
+        <and>
+          <isset property="build.buildJavaDocFile"/>
+          <not><equals arg1="${build.buildJavaDocFile}" arg2="" /></not>
+        </and>
+        <then>
+          <mavenDeployAttachment file="${build.buildJavaDocFile}" classifier="${maven.attachment.javadoc}" />
+        </then>
       </if>
     </sequential>
   </macrodef>

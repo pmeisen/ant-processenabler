@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<server xmlns="http://dev.meisen.net/server/config" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://dev.meisen.net/server/config http://dev.meisen.net/xsd/server/serverConfig.xsd">
+
+  <connector id="MAIN" port="${server.tmp.generic.main.port}" listener="${server.tmp.generic.main.listener}" />
+  <connector id="CONTROL" port="${server.tmp.generic.start.port}" listener="CONTROL" />
+  
+  <connector id="DEFAULT" port="${server.settings.defaultPort}" listener="${server.settings.defaultListener}" enable="false" />
+</server>

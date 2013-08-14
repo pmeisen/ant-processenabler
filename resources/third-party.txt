@@ -1,0 +1,61 @@
+/*
+ * This document contains the list of Third Party Software included with
+ * the ant-processenabler, along with the license information.
+ * 
+ * Third Party Software may impose additional restrictions and it is the
+ * user's responsibility to ensure that they have met the licensing
+ * requirements of the ant-processenabler and the relevant license of 
+ * the Third Party Software they are using.
+ */
+
+/*
+ * Java libraries used and distributed with the ant-processenabler
+ */
+ant - http://ant.apache.org
+License         : Apache License Version 2.0
+Reference       : http://ant.apache.org/license.html
+PlugIns included: ant-junit, ant-junit4, ant-apache-bsf, ant-testutil
+Retrieved from  : Maven Central Repository (http://repo1.maven.org/maven2/)
+
+maven-ant-task - http://maven.apache.org/ant-tasks
+License         : Apache License Version 2.0
+Reference       : http://maven.apache.org/ant-tasks/license.html
+Retrieved from  : Maven Central Repository (http://repo1.maven.org/maven2/)
+
+Rhino - http://www.mozilla.org/rhino
+License         : Mozilla Public License
+Reference       : http://www.mozilla.org/MPL/MPL-1.1.html
+Retrieved from  : Maven Central Repository (http://repo1.maven.org/maven2/)
+
+ant-contrib - http://ant-contrib.sourceforge.net
+License         : Apache Software License
+Reference       : http://ant-contrib.sourceforge.net/tasks/LICENSE.txt
+Retrieved from  : Maven Central Repository (http://repo1.maven.org/maven2/)
+
+slf4j - http://www.slf4j.org
+License         : MIT
+Reference       : http://www.slf4j.org/license.html
+Retrieved from  : Maven Central Repository (http://repo1.maven.org/maven2/)
+
+svnkit - http://svnkit.com
+License         : TMate License
+Reference       : http://svnkit.com/license.html
+Retrieved from  : Maven Central Repository (http://repo1.maven.org/maven2/)
+
+module-xml_merge-common - http://el4j.sourceforge.net
+License         : GNU Lesser General Public License (LGPL) Version 2.1
+Reference       : http://www.gnu.org/licenses/
+Retrieved from  : el4j Repository (http://public-el4.elca-services.ch/el4j/maven2repository/)
+
+/*
+ * ThirdParty JavaScripts used and distributed with the ant-processenabler
+ */
+QUnit - http://qunitjs.com
+License         : MIT
+Reference       : https://jquery.org/license/
+Retrieved from  : QUnit Website (http://code.jquery.com/qunit)
+
+PhantomJS Runner - http://qunitjs.com/plugins/
+License         : MIT
+Reference       : https://jquery.org/license/
+Retrieved from  : GitHub of QUnit (https://github.com/jquery/qunit/tree/master/addons/phantomjs)

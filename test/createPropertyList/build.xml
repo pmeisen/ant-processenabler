@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testResourceList">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkEmptyPropertySet">
+    <sequential>
+     
+      <propertyset id="test.properties">
+        <propertyref regex="^$" />
+      </propertyset>
+      
+      <createPropertyList property="test.result" propertySetId="test.properties" separator="|" />
+      <if>
+        <equals arg1="${test.result}" arg2="" />
+        <then><echo>EmptyPropertySet was successful!</echo></then>
+        <else><fail>EmptyPropertySet failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="checkSimplePropertySet">
+    <sequential>
+      <var name="project.tmp.checkSimplePropertySet.value1" value="first" />
+      <var name="project.tmp.checkSimplePropertySet.value2" value="second" />
+      
+      <propertyset id="test.properties">
+        <propertyref prefix="project.tmp.checkSimplePropertySet." />
+      </propertyset>
+      
+      <createPropertyList property="test.result" propertySetId="test.properties" sortAlphanumeric="true" separator=";" />
+      <if>
+        <equals arg1="${test.result}" arg2="project.tmp.checkSimplePropertySet.value1=first;project.tmp.checkSimplePropertySet.value2=second" />
+        <then><echo>SimplePropertySet was successful!</echo></then>
+        <else><fail>SimplePropertySet failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkChangedPattern">
+    <sequential>
+      <var name="project.tmp.checkChangedPattern.key1" value="first" />
+      <var name="project.tmp.checkChangedPattern.key2" value="second" />
+      
+      <propertyset id="test.properties">
+        <propertyref prefix="project.tmp.checkChangedPattern." />
+        <mapper type="glob" from="project.tmp.checkChangedPattern.*" to="*"/>
+      </propertyset>
+      
+      <createPropertyList property="test.result" propertySetId="test.properties" sortAlphanumeric="true" separator=";" pattern="{propertyvalue}:{propertykey}" />
+      <if>
+        <equals arg1="${test.result}" arg2="first:key1;second:key2" />
+        <then><echo>ChangedPattern was successful!</echo></then>
+        <else><fail>ChangedPattern failed - ${test.result}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <checkEmptyPropertySet />
+    <checkSimplePropertySet />
+    <checkChangedPattern />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

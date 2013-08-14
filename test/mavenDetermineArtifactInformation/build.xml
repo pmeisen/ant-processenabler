@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testMavenResolveTopLevelDependencies" xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
+  
+  <property name="maven.artifactory.source.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.repository.source.local" value="testRepo" />
+  <property name="maven.repository.target.local" value="testRepo" />
+  
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+    
+  <macrodef name="testMavenDetermineArtifactInformationJar">
+    <sequential>
+      
+      <!-- get the dependencies -->
+      <mavenResolveDependencies pomfile="pomTestJar.xml" fileset="test.tmp.dependencies" />
+      
+      <!-- check the pre-condition -->
+      <var name="test.tmp.count.dependencies" unset="true" />
+      <resourcecount property="test.tmp.count.dependencies">
+        <fileset refid="test.tmp.dependencies" />
+      </resourcecount>
+      <if>
+        <not><equals arg1="1" arg2="${test.tmp.count.dependencies}" /></not>
+        <then><fail>Pre-Condition invalid, found ${test.tmp.count.dependencies} dependencies, expected 1!</fail></then>
+      </if>
+      
+      <!-- check the one dependency -->
+      <fileCallMacroForEach macro="mavenDetermineArtifactInformation" parameters="">
+        <fileset refid="test.tmp.dependencies" />
+      </fileCallMacroForEach>
+      
+      <if>
+        <and>
+          <equals arg1="sample1" arg2="${maven.tmp.artifactId}" />
+          <equals arg1="test" arg2="${maven.tmp.groupId}" />
+          <equals arg1="1.0.0" arg2="${maven.tmp.version}" />
+          <equals arg1="" arg2="${maven.tmp.classifier}" />
+          <equals arg1="jar" arg2="${maven.tmp.type}" />
+        </and>
+        <then><echo>testMavenDetermineArtifactInformationJar was successful!</echo></then>
+        <else><fail>testMavenDetermineArtifactInformationJar failed - ${maven.tmp.artifactId}, ${maven.tmp.groupId}, ${maven.tmp.version}, ${maven.tmp.classifier}, ${maven.tmp.type}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testMavenDetermineArtifactInformationZip">
+    <sequential>
+      
+      <!-- get the dependencies -->
+      <mavenResolveDependencies pomfile="pomTestZip.xml" fileset="test.tmp.dependencies" />
+      
+      <!-- check the pre-condition -->
+      <var name="test.tmp.count.dependencies" unset="true" />
+      <resourcecount property="test.tmp.count.dependencies">
+        <fileset refid="test.tmp.dependencies" />
+      </resourcecount>
+      <if>
+        <not><equals arg1="1" arg2="${test.tmp.count.dependencies}" /></not>
+        <then><fail>Pre-Condition invalid, found ${test.tmp.count.dependencies} dependencies, expected 1!</fail></then>
+      </if>
+      
+      <!-- check the one dependency -->
+      <fileCallMacroForEach macro="mavenDetermineArtifactInformation" parameters="">
+        <fileset refid="test.tmp.dependencies" />
+      </fileCallMacroForEach>
+      
+      <if>
+        <and>
+          <equals arg1="sample2" arg2="${maven.tmp.artifactId}" />
+          <equals arg1="test" arg2="${maven.tmp.groupId}" />
+          <equals arg1="2.0.0" arg2="${maven.tmp.version}" />
+          <equals arg1="" arg2="${maven.tmp.classifier}" />
+          <equals arg1="zip" arg2="${maven.tmp.type}" />
+        </and>
+        <then><echo>testMavenDetermineArtifactInformationZip was successful!</echo></then>
+        <else><fail>testMavenDetermineArtifactInformationZip failed - ${maven.tmp.artifactId}, ${maven.tmp.groupId}, ${maven.tmp.version}, ${maven.tmp.classifier}, ${maven.tmp.type}!</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+      
+  <target name="antTest">
+    <testMavenDetermineArtifactInformationJar />
+    <testMavenDetermineArtifactInformationZip />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

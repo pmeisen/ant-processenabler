@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testModifyProperties">
+  <property name="maven.artifactory.source.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.repository.source.local" value="repo" />
+  <property name="maven.repository.target.local" value="repo" />
+  
+  <property name="main.import.library.javascript" value="true" />
+
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <var name="test.js.tmp.envdir" value="_envTest" />
+  
+  <macrodef name="testGeneratedDependencies">
+    <sequential>
+    
+      <!-- just run the default -->
+      <javascriptCreateDependenciesDir srvdir="${test.js.tmp.envdir}" />
+      
+      <!-- make sure the correct amount of dependencies was resolved -->
+      <if>
+        <resourcecount when="ne" count="1">
+          <fileset dir="${test.js.tmp.envdir}/${javascript.server.scripts.dir}">
+            <include name="**/*" />
+          </fileset>
+        </resourcecount>
+        <then><fail>The expected dependencies weren't resolved.</fail></then>
+      </if>
+      
+      <!-- make sure the correct dependency was selected -->
+      <if>
+        <resourcecount when="eq" count="1">
+          <fileset dir="${test.js.tmp.envdir}/${javascript.server.scripts.dir}">
+            <include name="require.js" />
+          </fileset>
+        </resourcecount>
+        <then><echo>testGeneratedDependencies was successful!</echo></then>
+        <else><fail>The require.js dependency wasn't found.</fail></else>
+      </if>
+      
+      <!-- cleanUp -->
+      <fileCleanUp dir="${test.js.tmp.envdir}" recreate="false" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testGeneratedTests">
+    <sequential>
+    
+      <!-- just run the default -->
+      <javascriptCreateTestDir srvdir="${test.js.tmp.envdir}" />
+      
+      <!-- make sure the file was generated -->
+      <if>
+        <not><available file="${test.js.tmp.envdir}/${javascript.test.dir}/${javascript.test.js}" /></not>
+        <then>
+          <fail>The expected generated file could not be found at '${test.js.tmp.envdir}/${javascript.test.dir}/${javascript.test.js}'.</fail>
+        </then>
+      </if>
+      
+      <!-- check the content of the file -->
+      <var name="test.tmp.jsFileContent" unset="true" />
+      <loadfile property="test.tmp.jsFileContent" srcfile="${test.js.tmp.envdir}/${javascript.test.dir}/${javascript.test.js}"/>
+
+      <!-- the expected dependencies -->
+      <var name="test.tmp.regex" value="^.*" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q depScriptList: ['${javascript.server.scripts.dir}/jquery.js','${javascript.server.scripts.dir}/require.js'],\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
+      <if>
+        <not><matches string="${test.tmp.jsFileContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" /></not>
+        <then><fail>expectedDependencies failed - ${test.tmp.jsFileContent}!</fail></then>
+      </if>
+      
+      <!-- the expected tests -->
+      <var name="test.tmp.regex" value="^.*" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q testScriptList: ['${javascript.server.scripts.dir}/${javascript.server.tests.dir}/testWithRequire.js','${javascript.server.scripts.dir}/${javascript.server.tests.dir}/testWithoutRequire.js'],\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
+      <if>
+        <not><matches string="${test.tmp.jsFileContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" /></not>
+        <then><fail>expectedTests failed - ${test.tmp.jsFileContent}!</fail></then>
+      </if>
+      
+      <!-- the expected sources -->
+      <var name="test.tmp.regex" value="^.*" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q srcScriptList: ['${javascript.server.scripts.dir}/main.js','${javascript.server.scripts.dir}/source.js'],\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
+      <if>
+        <matches string="${test.tmp.jsFileContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" />
+        <then><echo>testGeneratedTests was successful!</echo></then>
+        <else><fail>expectedSources failed - ${test.tmp.jsFileContent}!</fail></else>
+      </if>
+      
+      <!-- cleanUp -->
+      <fileCleanUp dir="${test.js.tmp.envdir}" recreate="false" />
+    </sequential>
+  </macrodef>
+    
+  <target name="antTest">
+    <testGeneratedDependencies />
+    <testGeneratedTests />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

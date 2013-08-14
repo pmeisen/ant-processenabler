@@ -56,7 +56,7 @@
   
   <property name="maven.attachment.sources" value="sources" description="attachment classifer for sources" />
   <property name="maven.attachment.javadoc" value="javadoc" description="attachment classifer for javadocs" />
-  <property name="maven.attachment.webappresources" value="webappres" description="attachment classifer for gwt-compiled javascripts and other web application resources" />
+  <property name="maven.attachment.webappresources" value="webappres" description="attachment classifer for web application resources" />
   <property name="maven.attachment.fullcompiled" value="full" description="attachment classifer for fully compiled packages even if parts of the package are not meant to be compiled (e.g. client side code, which gets compiled to JavaScript)" />
   <property name="maven.attachment.distribute" value="distribute" description="attachment classifer for distributions, i.e. specially distributed sources" />
   <property name="maven.attachment.app" value="app" description="attachment classifer for application" />
@@ -971,7 +971,7 @@
               <mavenResolveSingleDependency groupid="@{groupid}" artifactid="@{artifactid}" version="@{version}" 
                                             type="@{type}" classifier="@{classifier}" fileset="maven.tmp.dependencies" />
               <resetLogLevel />
-                                            
+
               <copy todir="@{dir}">
                 <fileset refid="maven.tmp.dependencies" />
                 <mapper type="flatten" />
