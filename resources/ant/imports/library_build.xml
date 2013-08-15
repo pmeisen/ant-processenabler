@@ -905,16 +905,15 @@
   </macrodef>
   
   <macrodef name="buildMoveResource">
-    <attribute name="resourceFolder" />
-    <attribute name="resourceFileName" default="" />
     <attribute name="resource" />
     <attribute name="resourceType" />
+    <attribute name="rootFolder" />
     <attribute name="defaultLocation" default="" />
     <attribute name="defaultClean" default="false" />
-    <attribute name="rootFolder" />
     <attribute name="basedir" default="" />
     
     <sequential>
+      <setLogLevel loglevel="warn" />
     
       <!-- reset the properties of the mapper -->
       <var name="resMapper.location" value="" unset="true"/>
@@ -934,12 +933,19 @@
       
       <!-- set some properties which can be used by the resourceMapper instance to set values -->
       <var name="resMapper.rootFolder" value="@{rootFolder}" />
-    
-      <!-- get the new location -->
-      <resourceMapper resourceFolder="@{resourceFolder}" resource="@{resource}" resourceFileName="@{resourceFileName}" resourceType="@{resourceType}" />
 
-      <!-- check if the file is a directory -->
+      <!-- get the file information -->
       <fileInfo file="@{resource}" />
+      
+      <!-- set the basedir if we don't have one -->
+      <if>
+        <equals arg1="@{basedir}" arg2="" />
+        <then><var name="fileInfo.basedir" value="${fileInfo.directory}" /></then>
+        <else><var name="fileInfo.basedir" value="@{basedir}" /></else>
+      </if>
+      
+      <!-- get the new location -->
+      <resourceMapper resourceFolder="${fileInfo.directory}" resource="@{resource}" resourceFileName="${fileInfo.name}" resourceType="@{resourceType}" />
 
       <!-- check if a skip is specified -->
       <if>
@@ -1048,13 +1054,9 @@
       
       <!-- check if overwrite is specified, per default everything is overwritten, but if not we have to add some special excludes -->
       <if>
-        <and>
-          <isset property="resMapper.overwrite" />
-          <equals arg1="${resMapper.overwrite}" arg2="false" />
-        </and>
+        <not><isset property="resMapper.overwrite" /></not>
         <then>
-          <fileCreateFileList dir="@{rootFolder}/${resMapper.location}" property="build.tmp.overwriteexludes" />
-          <var name="resMapper.excludeFiles" value="${resMapper.excludeFiles},${build.tmp.overwriteexludes}" />
+          <var name="resMapper.overwrite" value="true" />
         </then>
       </if>
       
@@ -1073,26 +1075,26 @@
           <equals arg1="@{resourceType}" arg2="${build.resource.resource}" />
           <equals arg1="${fileInfo.exist}" arg2="true" />
           <equals arg1="${fileInfo.dir}" arg2="false" />
-          <matches pattern=".*[\\/]\.jar(?:|(?:[\\/].*))" string="@{resourceFolder}" />
+          <matches pattern=".*[\\/]\.jar(?:|(?:[\\/].*))" string="${fileInfo.directory}" />
         </and>
         <then>
 
           <!-- determine the jar -->
-          <var name="rd.tmp.jarFile" value="" unset="true"/>
-          <propertyregex property="rd.tmp.jarFile" input="@{resourceFolder}" regexp=".*[\\/]\.jar[\\/]([^\\/]+\.jar)(?:|(?:[\\/].*))" select="\1" casesensitive="false" />
+          <var name="build.tmp.jarFile" value="" unset="true"/>
+          <propertyregex property="build.tmp.jarFile" input="${fileInfo.directory}" regexp=".*[\\/]\.jar[\\/]([^\\/]+\.jar)(?:|(?:[\\/].*))" select="\1" casesensitive="false" />
 
           <if>
-            <isset property="rd.tmp.jarFile" />
+            <isset property="build.tmp.jarFile" />
             <then>
-              <echo level="debug">The file '@{resourceFileName}' will be moved into the jar ${rd.tmp.jarFile}</echo>
+              <echo level="debug">The file '${fileInfo.name}' will be moved into the jar ${build.tmp.jarFile}</echo>
               
               <var name="resMapper.location" value="" />
               <var name="resMapper.flatten" value="false" />
-              <var name="resMapper.placeInJar" value="${rd.tmp.jarFile}" />
-              <var name="resMapper.removeFromFolderStructure" value=".jar/${rd.tmp.jarFile}" />
+              <var name="resMapper.placeInJar" value="${build.tmp.jarFile}" />
+              <var name="resMapper.removeFromFolderStructure" value=".jar/${build.tmp.jarFile}" />
             </then>
             <else>
-              <echo level="warn">The file '@{resourceFileName}' cannot be moved in any jar, because no jar is specified</echo>
+              <echo level="warn">The file '${fileInfo.name}' cannot be moved in any jar, because no jar is specified</echo>
               <var name="resMapper.skip" value="true" />
             </else>
           </if>
@@ -1113,21 +1115,53 @@
           </fileCleanUp>
         </then>
       </if>
-            
+
       <!-- execute mapping -->
       <if>
         <!-- skip if wished -->
         <equals arg1="${resMapper.skip}" arg2="true" />
-        <then><!-- do nothing --></then>
+        <then></then>
+        
+        <!-- we have a directory -->
         <elseif>
-          <and>
-            <equals arg1="${fileInfo.exist}" arg2="true" />
-            <equals arg1="${fileInfo.dir}" arg2="true" />
-          </and>
+          <or>
+            <!-- we have something to unzip -->
+            <and>
+              <equals arg1="${resMapper.unzip}" arg2="true" />
+              <equals arg1="${fileInfo.exist}" arg2="true" />
+              <equals arg1="${fileInfo.dir}" arg2="false" />
+            </and>
           
-          <!-- we have a directory -->
+            <!-- we have a directory -->
+            <and>
+              <equals arg1="${fileInfo.exist}" arg2="true" />
+              <equals arg1="${fileInfo.dir}" arg2="true" />
+            </and>
+          </or>
           <then>
-          
+            <if>
+              <equals arg1="${resMapper.unzip}" arg2="true" />
+              
+              <!-- unzip the files into a temporary directory -->
+              <then>
+                <fileCleanUp dir="${build.tmpdir}" />
+                
+                <!-- unzip the files -->
+                <unzip src="@{resource}" dest="${build.tmpdir}" overwrite="true">
+                  <patternset excludes="${resMapper.excludeFiles}" />
+                </unzip>
+                
+                <var name="build.tmp.folder" value="${build.tmpdir}" />
+                <var name="build.tmp.basedir" value="${build.tmpdir}" />
+              </then>
+              
+              <!-- just use the directory specified -->
+              <else>
+                <var name="build.tmp.folder" value="@{resource}" />
+                <var name="build.tmp.basedir" value="${fileInfo.basedir}" />
+              </else>
+            </if>
+            
             <!-- check if the destination should be cleaned -->
             <if>
               <equals arg1="${resMapper.clean}" arg2="true" />
@@ -1137,94 +1171,89 @@
               </then>
             </if>
             
-            <!-- copy the directory and replace properties if needed -->
-            <if>
-              <equals arg1="${resMapper.replaceProperties}" arg2="true" />
-              <!-- replace the properties -->
-              <then>
-                <!-- first copy the once with possibility to replace -->
-                <copy todir="@{rootFolder}/${resMapper.location}" failonerror="false" overwrite="true">
-                  <fileset dir="@{resource}" includes="**/*.xml,**/*.properties,**/*.html,**/*.txt,**/*.bat,**/*.mf" excludes="${resMapper.excludeFiles}" />
-                  <filterchain>
-                    <expandproperties/>
-                  </filterchain>
-                </copy>
-                <!-- now copy the rest -->
-                <copy todir="@{rootFolder}/${resMapper.location}" failonerror="false" overwrite="true">
-                  <fileset dir="@{resource}" excludes="${resMapper.excludeFiles},**/*.xml,**/*.properties,**/*.html,**/*.txt,**/*.bat,**/*.mf" />
-                </copy>
-              </then>
-              <!-- we don't replace any properties -->
-              <else>
-                <copy todir="@{rootFolder}/${resMapper.location}" failonerror="false" overwrite="true">
-                  <fileset dir="@{resource}" excludes="${resMapper.excludeFiles}" />
-                </copy>
-              </else>
-            </if>
-            
-            <!-- copy the folder to the destination -->
-            <copy todir="@{rootFolder}/${resMapper.location}" failonerror="false" overwrite="true">
-              <fileset dir="@{resource}" excludes="${resMapper.excludeFiles}" />
-            </copy>
+            <!-- handle file by file -->
+            <for param="file">
+              <path><fileset dir="${build.tmp.folder}" excludes="${resMapper.excludeFiles}" /></path>
+              <sequential>
+                <fileGetSubPath basedir="${build.tmp.basedir}" file="@{file}" property="build.tmp.subdir" removePrefix="${resMapper.removeFromFolderStructure}" />
+                <fileInfo file="@{file}" propertyPrefix="build.tmp.folderFile" />
+                <var name="build.tmp.file" value="@{rootFolder}/${resMapper.location}/${build.tmp.subdir}/${build.tmp.folderFile.name}" />
+
+                <if>
+                  <and>
+                    <equals arg1="${resMapper.overwrite}" arg2="false" />
+                    <available file="${build.tmp.file}" />
+                  </and>
+                  
+                  <!-- do nothing it's like skipping -->
+                  <then></then>
+                  
+                  <!-- replace the properties in the file -->
+                  <elseif>
+                    <equals arg1="${resMapper.replaceProperties}" arg2="true" />
+                    <then>
+                      <fileReplaceAllProperties file="@{file}" destFile="${build.tmp.file}" />
+                    </then>
+                  </elseif>
+                  <!-- handle the file normally -->
+                  <else>
+                    <copy file="@{file}" tofile="${build.tmp.file}" failonerror="false" overwrite="true" />
+                  </else>
+                </if>
+              </sequential>
+            </for>
           </then>
         </elseif>
+        
+         <!-- we have a file -->
         <elseif>
           <and>
             <equals arg1="${fileInfo.exist}" arg2="true" />
             <equals arg1="${fileInfo.dir}" arg2="false" />
           </and>
-          
-          <!-- we have a file -->
           <then>
+          
+            <!-- determine the new destination of the file -->
             <if>
-              <equals arg1="${resMapper.unzip}" arg2="true" />
-              <!-- try to unzip -->
+              <or>
+                <not><isset property="resMapper.flatten" /></not>
+                <equals arg1="${resMapper.flatten}" arg2="true" />
+              </or>
               <then>
-              
-                <!-- unzip does not support the filterchain -->
-                <if>
-                  <equals arg1="${resMapper.replaceProperties}" arg2="true" />
-                  <!-- replace the properties -->
-                  <then>
-                    <fileReplaceAllPropertiesInZip file="@{resource}" dest="@{rootFolder}/${resMapper.location}" rezip="false" excludes="${resMapper.excludeFiles}" />
-                  </then>
-                  <!-- we don't replace any properties -->
-                  <else>
-                    <unzip src="@{resource}" dest="@{rootFolder}/${resMapper.location}" overwrite="true">
-                      <patternset excludes="${resMapper.excludeFiles}" />
-                    </unzip>
-                  </else>
-                </if>
+                <var name="build.tmp.destResource" value="${resMapper.location}/${resMapper.rename}" />
+              </then>
+              <!-- we don't want to flatten so copy with keeping the relative path -->
+              <else>
+                <fileGetSubPath basedir="${fileInfo.basedir}" file="@{resource}" property="build.tmp.subdir" removePrefix="${resMapper.removeFromFolderStructure}" />
+                <var name="build.tmp.destResource" value="${resMapper.location}/${build.tmp.subdir}/${resMapper.rename}" />
+              </else>
+            </if>
+            
+            <!-- define the base directory for the process -->
+            <if>
+              <isset property="resMapper.placeInJar" />
+              <then>
+                <fileCleanUp dir="${build.tmpdir}" />
+                <var name="build.tmp.destBaseFolder" value="${build.tmpdir}" />
               </then>
               <else>
-                <!-- check if we flatten and get the location into ${build.tmp.destResource} -->
-                <if>
-                  <or>
-                    <not><isset property="resMapper.flatten" /></not>
-                    <equals arg1="${resMapper.flatten}" arg2="true" />
-                    <equals arg1="@{basedir}" arg2="" />
-                  </or>
-                  <then>
-                    <var name="build.tmp.destResource" value="${resMapper.location}/${resMapper.rename}" />
-                  </then>
-                  <!-- we don't want to flatten so copy with keeping the relative path -->
-                  <else>
-                    <fileGetSubPath basedir="@{basedir}" file="@{resource}" property="build.tmp.subdir" removePrefix="${resMapper.removeFromFolderStructure}" />
-                    <var name="build.tmp.destResource" value="${resMapper.location}/${build.tmp.subdir}/${resMapper.rename}" />
-                  </else>
-                </if>
-                
-                <!-- define the base directory for the process -->
-                <if>
-                  <isset property="resMapper.placeInJar" />
-                  <then>
-                    <fileCleanUp dir="${build.tmpdir}" />
-                    <var name="build.tmp.destBaseFolder" value="${build.tmpdir}" />
-                  </then>
-                  <else>
-                    <var name="build.tmp.destBaseFolder" value="@{rootFolder}" />
-                  </else>
-                </if>
+                <var name="build.tmp.destBaseFolder" value="@{rootFolder}" />
+              </else>
+            </if>
+            
+            <!-- check if the file exists and if we are allowed to override -->
+            <if>
+            
+              <!-- do nothing it's like skipping -->
+              <and>
+                <equals arg1="${resMapper.overwrite}" arg2="false" />
+                <available file="${build.tmp.destBaseFolder}/${build.tmp.destResource}" />
+              </and>
+              <then>
+              </then>
+              
+              <!-- handle the simple file -->
+              <else>
 
                 <!-- copy the file and replace properties if needed -->
                 <if>
@@ -1312,7 +1341,6 @@
                     </if>
                   </then>
                 </if>
-
               </else>
             </if>
           </then>
@@ -1333,6 +1361,8 @@
           </fileCleanUp>
         </then>
       </if>
+      
+      <resetLogLevel />
     </sequential>
   </macrodef>
     

@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testAppendList">
+  <property name="file.replacement.default.pattern" value="\.dat|\.xml|\.properties|\.htm|\.html|\.txt|\.bat|\.mf|\.project|\.classpath|\.template|\.sh" />
+  <property name="project.test.tmpDir" location="_tmp" />
+
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+    
+  <!-- helper method to shorten each call for the buildMoveResource -->
+  <macrodef name="wrapper">
+    <attribute name="resourceType" />
+    <attribute name="pattern" />
+    <attribute name="patternIsDir" default="false" />
+    <attribute name="clean" default="true" />
+    
+    <sequential>
+      <if>
+        <equals arg1="@{clean}" arg2="true" />
+        <then>
+          <fileCleanUp dir="${project.test.tmpDir}" recreate="true" />
+        </then>
+      </if>
+
+      <!-- call the buildMoveResource -->
+      <if>
+        <equals arg1="@{patternIsDir}" arg2="true" />
+        <then>
+          <buildMoveResource resource="${build.resourcedir}/@{pattern}" resourceType="@{resourceType}" rootFolder="${project.test.tmpDir}/@{pattern}" />
+        </then>
+        <else>
+          <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[@{resourceType}]];rootFolder=[[${project.test.tmpDir}]];">
+            <fileset dir="${build.resourcedir}">
+              <include name="@{pattern}" />
+            </fileset>
+          </fileCallMacroForEach>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <!-- helper to compare file content -->
+  <macrodef name="compare">
+    <attribute name="file" />
+    <attribute name="expected" />
+    
+    <sequential>
+      <var name="project.test.tmp.fileContent" unset="true" />
+      <loadfile property="project.test.tmp.fileContent" quiet="true" srcfile="@{file}"/>
+
+      <!-- check if the file is available -->
+      <if>
+        <not><available file="@{file}" /></not>
+        <then><fail>The file '@{file}' isn't available.</fail></then>
+      </if>
+      
+      <!-- empty files lead to a not set property -->
+      <if>
+        <not><isset property="project.test.tmp.fileContent" /></not>
+        <then>
+          <var name="project.test.tmp.fileContent" value="" />
+        </then>
+      </if>
+      
+      <!-- compare the content -->
+      <if>
+        <and>
+          <not><equals arg1="${project.test.tmp.fileContent}" arg2="@{expected}" /></not>
+          <not><matches string="${project.test.tmp.fileContent}" pattern="^@{expected}$" multiline="true" singleline="true" /></not>
+        </and>
+        <then><fail>The file '@{file}' didn't match the pattern '@{expected}', see: '${project.test.tmp.fileContent}'</fail></then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="resourceMapper">
+    <attribute name="resourceFolder" />
+    <attribute name="resourceFileName" />
+    <attribute name="resource" />
+    <attribute name="resourceType" />
+    
+    <sequential>
+      <if>
+        <!-- replace properties -->
+        <equals arg1="@{resourceType}" arg2="testPropertyReplacement" />
+        <then><var name="resMapper.replaceProperties" value="true" /></then>
+        <!-- move the file -->
+        <elseif>
+          <equals arg1="@{resourceType}" arg2="testMovement" />
+          <then><var name="resMapper.location" value="testMovement" /></then>
+        </elseif>
+        <!-- rename the file -->
+        <elseif>
+          <equals arg1="@{resourceType}" arg2="testRenaming" />
+          <then><var name="resMapper.rename" value="renamedTestMovement.properties" /></then>
+        </elseif>
+        <!-- unzip a file -->
+        <elseif>
+          <equals arg1="@{resourceType}" arg2="testUnzipping" />
+          <then><var name="resMapper.unzip" value="true" /></then>
+        </elseif>
+        <!-- unzip a file and replace properties -->
+        <elseif>
+          <equals arg1="@{resourceType}" arg2="testUnzippingWithReplacement" />
+          <then>
+            <var name="resMapper.unzip" value="true" />
+            <var name="resMapper.replaceProperties" value="true" />
+          </then>
+        </elseif>
+        <!-- remove a prefix from a folder-structure -->
+        <elseif>
+          <equals arg1="@{resourceType}" arg2="testRemoveFromFolderStructure" />
+          <then>
+            <var name="resMapper.removeFromFolderStructure" value="\testRemoveFromFolderStructure\" />
+          </then>
+        </elseif>
+        <!-- remove the folder-structure from a zip-archive -->
+        <elseif>
+          <equals arg1="@{resourceType}" arg2="testRemoveFromFolderStructureInZip" />
+          <then>
+            <var name="resMapper.unzip" value="true" />
+            <var name="resMapper.flatten" value="false" />
+            <var name="resMapper.removeFromFolderStructure" value="testRemoveFromFolderStructureInZip\" />
+          </then>
+        </elseif>
+        <!-- copy a whole folder -->
+        <elseif>
+          <equals arg1="@{resourceType}" arg2="testCopyFolder" />
+          <then>
+            <var name="resMapper.flatten" value="false" />
+          </then>
+        </elseif>
+        <!-- copy a whole folder with replacement -->
+        <elseif>
+          <equals arg1="@{resourceType}" arg2="testCopyFolderWithReplacement" />
+          <then>
+            <var name="resMapper.flatten" value="false" />
+            <var name="resMapper.replaceProperties" value="true" />
+          </then>
+        </elseif>
+        <!-- copy a whole folder whereby a prefix-folder is removed -->
+        <elseif>
+          <equals arg1="@{resourceType}" arg2="testCopyFolderWithRemoveFromFolderStructure" />
+          <then>
+            <var name="resMapper.flatten" value="false" />
+            <var name="resMapper.removeFromFolderStructure" value="subFolder\" />
+          </then>
+        </elseif>
+        <!-- unzip without overwriting existing files -->
+        <elseif>
+          <equals arg1="@{resourceType}" arg2="testUnzippingWithoutOverwrite" />
+          <then>
+            <var name="resMapper.unzip" value="true" />
+            <var name="resMapper.flatten" value="false" />
+            <var name="resMapper.overwrite" value="false" />
+          </then>
+        </elseif>
+        <!-- fail if it came so far -->
+        <else><fail>Undefined test behaviour used '@{resourceType}'</fail></else>
+      </if>
+    </sequential>
+  </macrodef>
+    
+  <macrodef name="testPropertyReplacement">
+    <sequential>
+      <var name="project.testPropertyReplacement.value" value="theReplacement" />
+      
+      <!-- call the buildMoveResource -->
+      <wrapper resourceType="testPropertyReplacement" pattern="testPropertyReplacement.xml" />
+      
+      <!-- compare if no error, done -->
+      <compare file="${project.test.tmpDir}\testPropertyReplacement.xml" expected="\Q&lt;file&gt;${project.testPropertyReplacement.value}&lt;/file&gt;\E" />
+      <echo>testPropertyReplacement was successful!</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testMovement">
+    <sequential>
+
+      <!-- call the buildMoveResource -->
+      <wrapper resourceType="testMovement" pattern="testMovement.txt" />
+      
+      <!-- compare if no error, done -->
+      <compare file="${project.test.tmpDir}\testMovement\testMovement.txt" expected="\QJustSomeData\E" />
+      <echo>testMovement was successful!</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testRenaming">
+    <sequential>
+
+      <!-- call the buildMoveResource -->
+      <wrapper resourceType="testRenaming" pattern="testRenaming.txt" />
+      
+      <!-- compare if no error, done -->
+      <compare file="${project.test.tmpDir}\renamedTestMovement.properties" expected="\QIWillBeRenamed\E" />
+      <echo>testRenaming was successful!</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testUnzipping">
+    <sequential>
+
+      <!-- call the buildMoveResource -->
+      <wrapper resourceType="testUnzipping" pattern="testUnzipping.zip" />
+      
+      <!-- compare if no error, done -->
+      <compare file="${project.test.tmpDir}\zipContent1.txt" expected="\QI am no 1... I was zipped once\E" />
+      <compare file="${project.test.tmpDir}\zipContent2.txt" expected="\QI am no 2... I was zipped once... and I have a msg: ${project.tmp.testUnzippingWithReplacement.value}\E" />
+      <echo>testUnzipping was successful!</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testUnzippingWithReplacement">
+    <sequential>
+      <var name="project.tmp.testUnzippingWithReplacement.value" value="replacedInZip" />
+
+      <!-- call the buildMoveResource -->
+      <wrapper resourceType="testUnzippingWithReplacement" pattern="testUnzipping.zip" />
+      
+      <!-- compare if no error, done -->
+      <compare file="${project.test.tmpDir}\zipContent1.txt" expected="\QI am no 1... I was zipped once\E" />
+      <compare file="${project.test.tmpDir}\zipContent2.txt" expected="\QI am no 2... I was zipped once... and I have a msg: replacedInZip\E" />
+      <echo>testUnzippingWithReplacement was successful!</echo>
+      
+      <var name="property.tmp.testUnzippingWithReplacement.value" unset="true" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testRemoveFromFolderStructure">
+    <sequential>
+
+      <!-- call the buildMoveResource -->
+      <wrapper resourceType="testRemoveFromFolderStructure" pattern="testRemoveFromFolderStructure/**" />
+      
+      <!-- compare if no error, done -->
+      <compare file="${project.test.tmpDir}\subFile1.txt" expected="\QI am located in testRemoveFromFolderStructure\E" />
+      <compare file="${project.test.tmpDir}\subFile2.txt" expected="\QI am located in testRemoveFromFolderStructure\E" />
+      <echo>testRemoveFromFolderStructure was successful!</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testRemoveFromFolderStructureInZip">
+    <sequential>
+
+      <!-- call the buildMoveResource -->
+      <wrapper resourceType="testRemoveFromFolderStructureInZip" pattern="testRemoveFromFolderStructureInZip.zip" />
+      
+      <!-- compare if no error, done -->
+      <compare file="${project.test.tmpDir}\subFile1.txt" expected="\QI am located in testRemoveFromFolderStructureInZip\E" />
+      <compare file="${project.test.tmpDir}\subFile2.txt" expected="\QI am located in testRemoveFromFolderStructureInZip\E" />
+      <echo>testRemoveFromFolderStructureInZip was successful!</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testCopyFolder">
+    <sequential>
+    
+      <!-- call the buildMoveResource -->
+      <wrapper resourceType="testCopyFolder" pattern="testCopyFolder" patternIsDir="true" />
+      
+      <!-- compare if no error, done -->
+      <compare file="${project.test.tmpDir}\testCopyFolder\subFolder\subFolderContent.txt" expected="" />
+      <compare file="${project.test.tmpDir}\testCopyFolder\subFolder\subFolderContentWithProperty.dat" expected="\QThis is the value: ${property.tmp.testCopyFolder.value}\E" />
+      <compare file="${project.test.tmpDir}\testCopyFolder\subFolder\subSubFolder\subSubFolderContent.txt" expected="" />
+      <compare file="${project.test.tmpDir}\testCopyFolder\subFolder\subSubFolder\subSubFolderContentWithProperty.txt" expected="\QThis is the value: ${property.tmp.testCopyFolder.value}\E" />
+      
+      <echo>testCopyFolder was successful!</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testCopyFolderWithReplacement">
+    <sequential>
+      <var name="property.tmp.testCopyFolder.value" value="myValueIs=TestCopyFolderWithReplacement" />
+    
+      <!-- call the buildMoveResource -->
+      <wrapper resourceType="testCopyFolderWithReplacement" pattern="testCopyFolder" patternIsDir="true" />
+      
+      <!-- compare if no error, done -->
+      <compare file="${project.test.tmpDir}\testCopyFolder\subFolder\subFolderContent.txt" expected="" />
+      <compare file="${project.test.tmpDir}\testCopyFolder\subFolder\subFolderContentWithProperty.dat" expected="\QThis is the value: myValueIs=TestCopyFolderWithReplacement\E" />
+      <compare file="${project.test.tmpDir}\testCopyFolder\subFolder\subSubFolder\subSubFolderContent.txt" expected="" />
+      <compare file="${project.test.tmpDir}\testCopyFolder\subFolder\subSubFolder\subSubFolderContentWithProperty.txt" expected="\QThis is the value: myValueIs=TestCopyFolderWithReplacement\E" />
+      
+      <echo>testCopyFolderWithReplacement was successful!</echo>
+      
+      <var name="property.tmp.testCopyFolder.value" unset="true" />
+    </sequential>
+  </macrodef>
+
+  <macrodef name="testCopyFolderWithRemoveFromFolderStructure">
+    <sequential>
+    
+      <!-- call the buildMoveResource -->
+      <wrapper resourceType="testCopyFolderWithRemoveFromFolderStructure" pattern="testCopyFolder" patternIsDir="true" />
+      
+      <!-- compare if no error, done -->
+      <compare file="${project.test.tmpDir}\testCopyFolder\subFolderContent.txt" expected="" />
+      <compare file="${project.test.tmpDir}\testCopyFolder\subFolderContentWithProperty.dat" expected="\QThis is the value: ${property.tmp.testCopyFolder.value}\E" />
+      <compare file="${project.test.tmpDir}\testCopyFolder\subSubFolder\subSubFolderContent.txt" expected="" />
+      <compare file="${project.test.tmpDir}\testCopyFolder\subSubFolder\subSubFolderContentWithProperty.txt" expected="\QThis is the value: ${property.tmp.testCopyFolder.value}\E" />
+      
+      <echo>testCopyFolderWithRemoveFromFolderStructure was successful!</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testUnzippingWithoutOverwrite">
+    <sequential>
+      <fileCleanUp dir="${project.test.tmpDir}" recreate="true" />
+      <echo file="${project.test.tmpDir}\zipContent1.txt">ThisIsMyDesign</echo>
+    
+      <!-- call the buildMoveResource -->
+      <wrapper resourceType="testUnzippingWithoutOverwrite" pattern="testUnzippingWithoutOverwrite.zip" clean="false" />
+      
+      <!-- compare if no error, done -->
+      <compare file="${project.test.tmpDir}\zipContent1.txt" expected="\QThisIsMyDesign\E" />
+      <compare file="${project.test.tmpDir}\zipContent2.txt" expected="\QzipContext2 content...\E" />
+      
+      <echo>testUnzippingWithoutOverwrite was successful!</echo>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest">
+    <testPropertyReplacement />
+    <testMovement />
+    <testRenaming />
+    <testUnzipping />
+    <testUnzippingWithReplacement />
+    <testRemoveFromFolderStructure />
+    <testRemoveFromFolderStructureInZip />
+    <testCopyFolder />
+    <testCopyFolderWithReplacement />
+    <testCopyFolderWithRemoveFromFolderStructure />
+    <testUnzippingWithoutOverwrite />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${project.test.tmpDir}" recreate="false" />
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>

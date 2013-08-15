@@ -450,7 +450,7 @@
       <fileCleanUp dir="${build.tmpdir}" recreate="true" />
  
       <!-- copy the resources files -->
-      <buildMoveResource rootFolder="${build.tmpdir}" resourceFolder="${build.resourcedir}" resource="${build.resourcedir}" resourceType="${gwt.resource.local}" />
+      <buildMoveResource rootFolder="${build.tmpdir}" resource="${build.resourcedir}" resourceType="${gwt.resource.local}" />
 
       <!-- make sure we have something to pack -->
       <if>
@@ -461,7 +461,7 @@
         <then>
         
           <!-- copy the gwt compiled files -->
-          <buildMoveResource rootFolder="${build.tmpdir}" resourceFolder="${gwt.binDir}" resource="${gwt.binDir}" resourceType="${gwt.resource.bin}" />
+          <buildMoveResource rootFolder="${build.tmpdir}" resource="${gwt.binDir}" resourceType="${gwt.resource.bin}" />
         </then>
         <else>
           <echo level="warn">No GWT build found - therefore only resources will be packed</echo>
@@ -1101,7 +1101,7 @@
         </copy>
         
         <!-- copy the resources files -->
-        <buildMoveResource rootFolder="${gwt.tmp.warDir}" resourceFolder="${build.resourcedir}" resource="${build.resourcedir}" resourceType="${gwt.resource.local}" />
+        <buildMoveResource rootFolder="${gwt.tmp.warDir}" resource="${build.resourcedir}" resourceType="${gwt.resource.local}" />
         
         <!-- get the data of the web-application -->
         <gwtWebAppRes rootFolder="${gwt.tmp.warDir}" />        

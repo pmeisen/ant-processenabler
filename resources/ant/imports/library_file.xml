@@ -508,13 +508,15 @@
   
   <scriptdef name="fileInfo" language="javascript">
     <attribute name="file" />
+    <attribute name="propertyPrefix" />
     
     <![CDATA[   
       var fileName = attributes.get("file");
       var file = new java.io.File(fileName);
+      var propertyPrefix = attributes.containsKey("propertyprefix") ? attributes.get("propertyprefix") : "fileInfo";
       
       var setFileName = project.createTask("var");
-      setFileName.setName("fileInfo.name");
+      setFileName.setName(propertyPrefix + ".name");
       setFileName.setValue(file.getName());
       setFileName.execute();
       
@@ -526,22 +528,22 @@
         ext = "";
       }
       var setFileExtension = project.createTask("var");
-      setFileExtension.setName("fileInfo.extension");
+      setFileExtension.setName(propertyPrefix + ".extension");
       setFileExtension.setValue(ext);
       setFileExtension.execute();
       
       var setFileType = project.createTask("var");
-      setFileType.setName("fileInfo.dir");
+      setFileType.setName(propertyPrefix + ".dir");
       setFileType.setValue(file.isDirectory());
       setFileType.execute();
       
       var setFileExists = project.createTask("var");
-      setFileExists.setName("fileInfo.exist");
+      setFileExists.setName(propertyPrefix + ".exist");
       setFileExists.setValue(file.exists());
       setFileExists.execute();
       
       var setFileDir = project.createTask("var");
-      setFileDir.setName("fileInfo.directory");
+      setFileDir.setName(propertyPrefix + ".directory");
       setFileDir.setValue(file.isDirectory() ? file.getAbsolutePath() : file.getParent());
       setFileDir.execute();
     ]]>
