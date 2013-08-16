@@ -151,7 +151,7 @@
         <sequential>
           <unzip src="@{javascript.tmp.dependency}" dest="${javascript.tmp.scriptsDir}">
             <patternset>
-              <exclude name="META-INF/**/*"/>
+              <exclude name="META-INF,META-INF/**/*"/>
             </patternset>
           </unzip>
         </sequential>
