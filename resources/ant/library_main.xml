@@ -123,9 +123,7 @@
       </if>
       
       <!-- the default location of the configuration -->
-      <echo>++++> ${main.config.location}</echo>
       <property name="main.config.location" location="${main.root}/ant/" />
-      <echo>++++> ${main.config.location}</echo>
       
       <!-- load further properties -->
       <property name="main.config.user.default" location="${main.config.location}/config.properties" />
