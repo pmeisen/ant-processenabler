@@ -261,7 +261,6 @@
               <fileset refid="${build.tmp.refid}" />
             </classpath>
           </compile>
-
         </then>
         <else>
           <fileCleanUp dir="${build.tmp.binDir}" />

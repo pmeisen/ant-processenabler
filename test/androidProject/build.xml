@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!-- version-tag: custom -->
+<project name="testAndroidProject">
+  <property name="maven.artifactory.source.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.repository.source.local" value="repo" />
+  <property name="maven.repository.target.local" value="repo" />
+  
+  <property name="main.import.library.android" value="true" />
+
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+  
+  <!-- test the post-conditions -->
+  <target name="-testCreateDevEnv" depends="createDevEnv">
+    
+    <transformPackagesToPath property="test.tmp.testCreateDevEnv.sourceFile" packages="${build.launcher.mainClass}" suffix=".java" packageSeparatore="/" separatore="" />
+    
+    <!-- check some files -->
+    <for list=".classpath,.project,${android.file.projectfile},${android.file.projectproperties},ant.properties,local.properties,${build.srcdir}/${test.tmp.testCreateDevEnv.sourceFile}" param="file">
+      <sequential>
+        <if>
+          <not><available file="@{file}" type="file" /></not>
+          <then><fail>The file '@{file}' wasn't created.</fail></then>
+          <else><echo>Checked file '@{file}'...</echo></else>
+        </if>
+      </sequential>
+    </for>
+    
+    <!-- check some directories -->
+    <for list="${android.dir.bin},${android.dir.assets},${android.dir.res},${android.dir.libs}" param="dir">
+      <sequential>
+        <if>
+          <not><available file="@{dir}" type="dir" /></not>
+          <then><fail>The directory '@{dir}' wasn't created.</fail></then>
+          <else><echo>Checked directory '@{dir}'...</echo></else>
+        </if>
+      </sequential>
+    </for>
+    
+    <!-- check the ${android.file.projectfile} -->
+    <xmlproperty file="${android.file.projectfile}" prefix="test.tmp.testCreateDevEnv.projectFile" />
+    
+    <if>
+      <not><equals arg1="${test.tmp.testCreateDevEnv.projectFile.manifest(package)}" arg2="net.meisen" /></not>
+      <then><fail>The package wasn't set correctly: '${test.tmp.testCreateDevEnv.projectFile.manifest(package)}'</fail></then>
+      <else><echo>Checked the package of '${android.file.projectfile}'...</echo></else>
+    </if>
+    
+    <if>
+      <not><equals arg1="${test.tmp.testCreateDevEnv.projectFile.manifest.application.activity(android:name)}" arg2="DefaultActivity" /></not>
+      <then><fail>The activity wasn't set correctly: '${test.tmp.testCreateDevEnv.projectFile.manifest.application.activity(android:name)}'</fail></then>
+      <else><echo>Checked the activity of '${android.file.projectfile}'...</echo></else>
+    </if>
+    
+    <propertyset id="test.tmp.testCreateDevEnv.projectFile.properties">
+      <propertyref prefix="test.tmp.testCreateDevEnv.projectFile."/>
+    </propertyset>
+    <unsetProperties propertySetId="test.tmp.testCreateDevEnv.projectFile.properties" />
+    
+    <!-- check the classpath -->
+    <xmlproperty file=".classpath" prefix="test.tmp.testCreateDevEnv.classpathFile" />
+    
+    <if>
+      <not><contains string="${test.tmp.testCreateDevEnv.classpathFile.classpath.classpathentry(path)}" 
+                     substring="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK" /></not>
+      <then><fail>The path doesn't contain the ANDROID_FRAMEWORK: '${test.tmp.testCreateDevEnv.classpathFile.classpath.classpathentry(path)}'</fail></then>
+      <else><echo>Checked the ANDROID_FRAMEWORK of '.classpath'...</echo></else>
+    </if>
+    <if>
+      <not><contains string="${test.tmp.testCreateDevEnv.classpathFile.classpath.classpathentry(path)}" 
+                     substring="com.android.ide.eclipse.adt.LIBRARIES" /></not>
+      <then><fail>The path doesn't contain the LIBRARIES: '${test.tmp.testCreateDevEnv.classpathFile.classpath.classpathentry(path)}'</fail></then>
+      <else><echo>Checked the LIBRARIES of '.classpath'...</echo></else>
+    </if>
+    <if>
+      <not><contains string="${test.tmp.testCreateDevEnv.classpathFile.classpath.classpathentry(path)}" 
+                     substring="com.android.ide.eclipse.adt.DEPENDENCIES" /></not>
+      <then><fail>The path doesn't contain the DEPENDENCIES: '${test.tmp.testCreateDevEnv.classpathFile.classpath.classpathentry(path)}'</fail></then>
+      <else><echo>Checked the DEPENDENCIES of '.classpath'...</echo></else>
+    </if>
+    <if>
+      <not><contains string="${test.tmp.testCreateDevEnv.classpathFile.classpath.classpathentry(path)}" 
+                     substring="${android.loc.eclipseclasses}" /></not>
+      <then><fail>The path doesn't contain the eclipseclasses: '${test.tmp.testCreateDevEnv.classpathFile.classpath.classpathentry(path)}'</fail></then>
+      <else><echo>Checked the eclipseclasses of '.classpath'...</echo></else>
+    </if>
+    
+    <propertyset id="test.tmp.testCreateDevEnv.classpathFile.properties">
+      <propertyref prefix="test.tmp.testCreateDevEnv.classpathFile."/>
+    </propertyset>
+    <unsetProperties propertySetId="test.tmp.testCreateDevEnv.classpathFile.properties" />
+    
+    <!-- check the project -->
+    <xmlproperty file=".project" prefix="test.tmp.testCreateDevEnv.projectFile" />
+    
+    <if>
+      <not><contains string="${test.tmp.testCreateDevEnv.projectFile.projectDescription.natures.nature}" 
+                     substring="com.android.ide.eclipse.adt.AndroidNature" /></not>
+      <then><fail>The nature doesn't contain the AndroidNature: '${test.tmp.testCreateDevEnv.projectFile.projectDescription.natures.nature}'</fail></then>
+      <else><echo>Checked the AndroidNature of '.project'...</echo></else>
+    </if>
+        
+    <propertyset id="test.tmp.testCreateDevEnv.projectFile.properties">
+      <propertyref prefix="test.tmp.testCreateDevEnv.projectFile."/>
+    </propertyset>
+    <unsetProperties propertySetId="test.tmp.testCreateDevEnv.projectFile.properties" />
+  </target>
+  
+  <target name="-testReCreateDevEnvEmptyMain">
+    
+    <!-- create the env -->
+    <androidRefreshProject />
+
+    <!-- modify the mainClass and force an update -->
+    <var name="build.launcher.mainClass" value="" />
+    <var name="android.force" value="true" />
+    
+    <!-- recreate the env -->
+    <androidRefreshProject />
+
+    <!-- check the ${android.file.projectfile} -->
+    <xmlproperty file="${android.file.projectfile}" prefix="test.tmp.testReCreateDevEnvEmptyMain.projectFile" />
+    
+    <if>
+      <not><equals arg1="${test.tmp.testReCreateDevEnvEmptyMain.projectFile.manifest(package)}" arg2="net.meisen.antprocessenabler.tests.antandroidtest" /></not>
+      <then><fail>The package wasn't set correctly: '${test.tmp.testReCreateDevEnvEmptyMain.projectFile.manifest(package)}'</fail></then>
+      <else><echo>Checked the package of '${android.file.projectfile}'...</echo></else>
+    </if>
+    <if>
+      <not><equals arg1="${test.tmp.testReCreateDevEnvEmptyMain.projectFile.manifest.application.activity(android:name)}" arg2="BUILD_LAUNCHER_MAINCLASS" /></not>
+      <then><fail>The activity wasn't set correctly: '${test.tmp.testReCreateDevEnvEmptyMain.projectFile.manifest.application.activity(android:name)}'</fail></then>
+      <else><echo>Checked the activity of '${android.file.projectfile}'...</echo></else>
+    </if>
+    <transformPackagesToPath property="test.tmp.testReCreateDevEnvEmptyMain.sourceFile" packages="net.meisen.antprocessenabler.tests.antandroidtest.BUILD_LAUNCHER_MAINCLASS" suffix=".java" packageSeparatore="/" separatore="" />
+    <if>
+      <not><available file="${build.srcdir}/${test.tmp.testReCreateDevEnvEmptyMain.sourceFile}" type="file" /></not>
+      <then><fail>The file '${build.srcdir}/${test.tmp.testReCreateDevEnvEmptyMain.sourceFile}' wasn't created.</fail></then>
+      <else><echo>Checked file '${build.srcdir}/${test.tmp.testReCreateDevEnvEmptyMain.sourceFile}'...</echo></else>
+    </if>
+    
+    <propertyset id="test.tmp.testReCreateDevEnvEmptyMain.projectFile.properties">
+      <propertyref prefix="test.tmp.testReCreateDevEnvEmptyMain.projectFile."/>
+    </propertyset>
+    <unsetProperties propertySetId="test.tmp.testReCreateDevEnvEmptyMain.projectFile.properties" />
+ 
+    <!-- cleanUp -->
+    <var name="android.force" value="false" />
+  </target>
+  
+  <target name="-testReCreateDevEnv">
+    
+    <!-- create the env -->
+    <androidRefreshProject />
+
+    <!-- modify the mainClass and force an update -->
+    <var name="build.launcher.mainClass" value="net.meisen.new.MyMain" />
+    <var name="android.force" value="true" />
+    
+    <!-- recreate the env -->
+    <androidRefreshProject />
+
+    <!-- check the ${android.file.projectfile} -->
+    <xmlproperty file="${android.file.projectfile}" prefix="test.tmp.testReCreateDevEnv.projectFile" />
+    
+    <if>
+      <not><equals arg1="${test.tmp.testReCreateDevEnv.projectFile.manifest(package)}" arg2="net.meisen.new" /></not>
+      <then><fail>The package wasn't set correctly: '${test.tmp.testReCreateDevEnv.projectFile.manifest(package)}'</fail></then>
+      <else><echo>Checked the package of '${android.file.projectfile}'...</echo></else>
+    </if>
+    <if>
+      <not><equals arg1="${test.tmp.testReCreateDevEnv.projectFile.manifest.application.activity(android:name)}" arg2="MyMain" /></not>
+      <then><fail>The activity wasn't set correctly: '${test.tmp.testReCreateDevEnv.projectFile.manifest.application.activity(android:name)}'</fail></then>
+      <else><echo>Checked the activity of '${android.file.projectfile}'...</echo></else>
+    </if>
+    <transformPackagesToPath property="test.tmp.testReCreateDevEnv.sourceFile" packages="${build.launcher.mainClass}" suffix=".java" packageSeparatore="/" separatore="" />
+    <if>
+      <not><available file="${build.srcdir}/${test.tmp.testReCreateDevEnv.sourceFile}" type="file" /></not>
+      <then><fail>The file '${build.srcdir}/${test.tmp.testReCreateDevEnv.sourceFile}' wasn't created.</fail></then>
+      <else><echo>Checked file '${build.srcdir}/${test.tmp.testReCreateDevEnv.sourceFile}'...</echo></else>
+    </if>
+    
+    <propertyset id="test.tmp.testReCreateDevEnv.projectFile.properties">
+      <propertyref prefix="test.tmp.testReCreateDevEnv.projectFile."/>
+    </propertyset>
+    <unsetProperties propertySetId="test.tmp.testReCreateDevEnv.projectFile.properties" />
+ 
+    <!-- cleanUp -->
+    <var name="android.force" value="false" />
+  </target>
+  
+  <target name="-testCleanUpProject">
+    <delete includeemptydirs="true">
+      <fileset dir=".">
+        <include name="**/*"/>
+        <exclude name="${eclipse.eclipse.dir}"/>
+        <exclude name="${build.build.dir}"/>
+        <exclude name="${test.test.dir}"/>
+        <exclude name="repo/**/*"/>
+        <exclude name="build.xml" />
+        <exclude name="config.properties" />
+        <exclude name="pom.xml" />
+        <exclude name="project.properties" />
+      </fileset>
+    </delete>
+    
+    <fileCleanUp dir="${build.srcdir}" recreate="true" />
+  </target>
+  
+  <target name="antTest" depends="-testCleanUpProject,
+                                  -testCreateDevEnv,-testCleanUpProject,
+                                  -testReCreateDevEnvEmptyMain,-testCleanUpProject,
+                                  -testReCreateDevEnv,-testCleanUpProject" />
+  
+  <target name="antTestCleanUp" depends="-testCleanUpProject,cleanUp">
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${eclipse.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+    <fileCleanUp dir="${build.srcdir}" recreate="false" />
+  </target>
+</project>

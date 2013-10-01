@@ -1041,7 +1041,15 @@
     <attribute name="classProperty" default="misc.tmp.class" />
     
     <sequential>
-
+      <var name="misc.tmp.regex" value="^(?:([^ \-]*)\.)?([a-z_][^\. \-]*)$" />
+      
+      <!-- reset the propeties -->
+      <var name="@{packageProperty}" unset="true" />
+      <var name="@{classProperty}" unset="true" />
+      
+      <!-- set them again -->
+      <propertyregex property="@{packageProperty}" input="@{qualifiedName}" regexp="${misc.tmp.regex}" select="\1" casesensitive="false" />
+      <propertyregex property="@{classProperty}" input="@{qualifiedName}" regexp="${misc.tmp.regex}" select="\2" casesensitive="false" />
     </sequential>
   </macrodef>
 </project>

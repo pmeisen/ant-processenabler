@@ -127,16 +127,15 @@
       <!-- create the files -->
       <if>
         <equals arg1="${build.launcher.mainClass}" arg2="" />
-        <then>
+        <then>       
           <var name="android.tmp.project.activity" value="BUILD_LAUNCHER_MAINCLASS" />
-          <var name="android.tmp.project.package" value="${android.tmp.pom.groupId}.${android.tmp.project.name}" />
+          <var name="android.tmp_tmp.project.package" value="${android.tmp.pom.groupId}.${android.tmp.project.name}" />
+          
+          <var name="android.tmp.project.package" unset="true" />
+          <propertyregex property="android.tmp.project.package" input="${android.tmp_tmp.project.package}" regexp="[^a-zA-Z_0-9\.]" replace="" global="true" defaultValue="${android.tmp_tmp.project.package}" />
         </then>
         <else>
-        
-          ${build.launcher.mainClass}
-        
-          <var name="android.tmp.project.activity" value="" />
-          <var name="android.tmp.project.package" value="" />
+          <getPackageAndClass qualifiedName="${build.launcher.mainClass}" packageProperty="android.tmp.project.package" classProperty="android.tmp.project.activity" />
         </else>
       </if>
       
@@ -168,17 +167,18 @@
         <and>
           <isset property="android.tmp.pom.name" />
           <not><equals arg1="${android.tmp.pom.name}" arg2="" /></not>
+          <not><matches string="${android.tmp.pom.name}" pattern="^Unnamed -"/></not>
         </and>
         <then>
-          <var name="android.tmp.projectName" value="${android.tmp.pom.name}" />
+          <var name="android.tmp_tmp.projectName" value="${android.tmp.pom.name}" />
         </then>
         <else>
-          <var name="android.tmp.projectName" value="${android.tmp.pom.artifactId}" />
+          <var name="android.tmp_tmp.projectName" value="${android.tmp.pom.artifactId}" />
         </else>
       </if>
-
+      
       <!-- modify the name to be valid -->
-      <propertyregex property="@{property}" input="${android.tmp.projectName}" regexp="[^a-zA-Z_0-9]" replace="" global="true" defaultValue="${android.tmp.projectName}" />
+      <propertyregex property="@{property}" input="${android.tmp_tmp.projectName}" regexp="[^a-zA-Z_0-9]" replace="" global="true" defaultValue="${android.tmp_tmp.projectName}" />
     </sequential>
   </macrodef>
   
@@ -482,16 +482,21 @@
    
   <target name="build" depends="-androidRemoveCrunch,-androidSetLibraryProjectType,-androidSetSDK,androidSDK.debug,-androidSetContrib">
     
-    <!-- determine what was build -->
-    <var name="build.buildFile" value="${out.library.jar.file}" />
-    
     <!-- make sure the file was build -->
     <if>
-      <not><available file="${build.buildFile}" /></not>
+      <not><available file="${out.library.jar.file}" /></not>
       <then>
-        <fail>The file '${build.buildFile}' should have been build, but cannot be found.</fail>
+        <fail>The file '${out.library.jar.file}' should have been build, but cannot be found.</fail>
       </then>
     </if>
+    
+    <!-- get the pom settings -->
+    <mavenSetPom />
+    <var name="build.buildFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}.jar" />
+    
+    <!-- copy the built file -->
+    <delete file="${build.buildFile}" />
+    <copy file="${out.library.jar.file}" tofile="${build.buildFile}" />
   </target>
   
   <target name="assemble" depends="-androidCheckAssemblyPreConditions,-androidRemoveCrunch,-androidSetAppProjectType,-androidSetSDK,androidSDK.debug,-androidSetContrib">

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="testGetPackageAndClass">
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="checkGetPackageAndClassWithBoth">
+    <sequential>
+      <getPackageAndClass qualifiedName="net.meisen.TestClass" />
+      <if>
+        <or>
+          <not><equals arg1="${misc.tmp.package}" arg2="net.meisen" /></not>
+          <not><equals arg1="${misc.tmp.class}" arg2="TestClass" /></not>
+        </or>
+        <then><fail>checkGetPackageAndClassWithBoth failed, expected 'net.meisen' == '${misc.tmp.package}' and 'TestClass' == '${misc.tmp.class}'</fail></then>
+      </if>
+      
+      <getPackageAndClass qualifiedName="net.TestClass" />
+      <if>
+        <or>
+          <not><equals arg1="${misc.tmp.package}" arg2="net" /></not>
+          <not><equals arg1="${misc.tmp.class}" arg2="TestClass" /></not>
+        </or>
+        <then><fail>checkGetPackageAndClassWithBoth failed, expected 'net' == '${misc.tmp.package}' and 'TestClass' == '${misc.tmp.class}'</fail></then>
+      </if>
+      
+      <echo>checkGetPackageAndClassWithBoth successful</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkGetPackageAndClassWithEmpty">
+    <sequential>
+      <getPackageAndClass qualifiedName="" />
+      <if>
+        <or>
+          <isset property="misc.tmp.package" />
+          <isset property="misc.tmp.class" />
+        </or>
+        <then><fail>checkGetPackageAndClassWithEmpty failed, expected '${misc.tmp.package}' and '${misc.tmp.class}' not to be set</fail></then>
+      </if>
+      
+      <echo>checkGetPackageAndClassWithEmpty successful</echo>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="checkGetPackageAndClassWithInvalid">
+    <sequential>
+      <getPackageAndClass qualifiedName="net-meisen.Test-Class" />
+      <if>
+        <or>
+          <isset property="misc.tmp.package" />
+          <isset property="misc.tmp.class" />
+        </or>
+        <then><fail>checkGetPackageAndClassWithInvalid failed, expected '${misc.tmp.package}' and '${misc.tmp.class}' not to be set</fail></then>
+      </if>
+      
+      <getPackageAndClass qualifiedName="net.meisen.test-Class.TestClass" />
+      <if>
+        <or>
+          <isset property="misc.tmp.package" />
+          <isset property="misc.tmp.class" />
+        </or>
+        <then><fail>checkGetPackageAndClassWithInvalid failed, expected '${misc.tmp.package}' and '${misc.tmp.class}' not to be set</fail></then>
+      </if>
+      
+      <getPackageAndClass qualifiedName="net.meisen.testClass.Test-Class" />
+      <if>
+        <or>
+          <isset property="misc.tmp.package" />
+          <isset property="misc.tmp.class" />
+        </or>
+        <then><fail>checkGetPackageAndClassWithInvalid failed, expected '${misc.tmp.package}' and '${misc.tmp.class}' not to be set</fail></then>
+      </if>
+      
+      <echo>checkGetPackageAndClassWithInvalid successful</echo>
+    </sequential>
+  </macrodef>
+ 
+  <macrodef name="checkGetPackageAndClassWithClassOnly">
+    <sequential>
+      <getPackageAndClass qualifiedName="MyClass" />
+      <if>
+        <or>
+          <not><equals arg1="${misc.tmp.package}" arg2="" /></not>
+          <not><equals arg1="${misc.tmp.class}" arg2="MyClass" /></not>
+        </or>
+        <then><fail>checkGetPackageAndClassWithClassOnly failed, expected '${misc.tmp.package}' to be empty and '${misc.tmp.class}' == 'MyClass'</fail></then>
+      </if>
+      
+      <echo>checkGetPackageAndClassWithClassOnly successful</echo>
+    </sequential>
+  </macrodef>
+ 
+  <target name="antTest">
+    <checkGetPackageAndClassWithBoth />
+    <checkGetPackageAndClassWithEmpty />
+    <checkGetPackageAndClassWithInvalid />
+    <checkGetPackageAndClassWithClassOnly />
+  </target>
+  
+  <target name="antTestCleanUp">
+
+    <!-- do the default cleanup -->
+    <antcall target="cleanUp" inheritAll="true" inheritRefs="true" />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+  </target>
+</project>
