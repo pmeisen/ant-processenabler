@@ -45,6 +45,12 @@
         <var name="tmp.parameters" value="-Dmain.logLevel=INFO" />
       </else>
     </if>
+    <if>
+      <isset property="main.config.location"/>
+      <then>
+        <var name="tmp.parameters" value="-Dmain.config.location=&quot;${main.config.location}&quot; ${tmp.parameters}" />
+      </then>
+    </if>
     
     <!-- get the excludes -->
     <if>
@@ -59,9 +65,10 @@
   
     <!-- make sure we do a antTestCleanUp -->
     <createList property="tmp.targetListWithCleanUp" list="${tmp.targetList}" value="antTestCleanUp" separatore="," />
-
+    
     <!-- run each test -->
-    <doTargetForEachFolder excludes="${tmp.excludes}" targets="${tmp.targetListWithCleanUp}" parameters="${tmp.parameters}" 
+    <doTargetForEachFolder excludes="${tmp.excludes}" targets="${tmp.targetListWithCleanUp}" 
+                           parameters="${tmp.parameters}" 
                            dirPattern="${tmp.dirPattern}" projectSubDirectories="" />
   </target>
 </project>
