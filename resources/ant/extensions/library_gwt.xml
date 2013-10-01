@@ -25,16 +25,6 @@
     add the antcontrib library
     -->
   <taskdef resource="net/sf/antcontrib/antlib.xml" />
-  
-  <!--
-    Load the user-specific override.properties of the project 
-    -->
-  <property file="${basedir}/override.properties" />
-  <!--
-    Load the config.properties of the project the main will include it later again... 
-    but its needed to overwrite the gwt-properties now
-    -->
-  <property file="${basedir}/config.properties" />
     
   <property name="gwt.init" value="false" description="For internal usage only, please do not modify this property by a file" />
   
