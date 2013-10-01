@@ -4,6 +4,8 @@
   <import file="..\resources\ant\imports\library_file.xml" />
   <import file="..\resources\ant\imports\library_misc.xml" />
   
+  <property file="..\marked.properties" />
+  
   <!-- 
     runs all files like:
       -> ant -DdirPattern=replace.*
