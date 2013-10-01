@@ -138,6 +138,36 @@
     ]]>
   </scriptdef>
   
+  <scriptdef name="executeSimpleMacroByName" language="javascript">
+    <attribute name="task" />
+    
+    <![CDATA[
+    var tn = attributes.get("task");
+    var t = project.createTask(tn);
+
+    var execute = true;
+    
+    if (t instanceof org.apache.tools.ant.taskdefs.MacroInstance) {    
+      var tAttributes = t.getMacroDef().getAttributes();
+           
+      // check if all attributes are optional
+      for (var i = 0; i < tAttributes.size(); ++i) {
+        var tAttribute = tAttributes.get(i);
+        if (tAttribute.getDefault() == null) {
+        
+          // it's not a simple task
+          execute = false;
+        }
+      }
+    } else {
+      execute = false;
+    }
+    
+    if (execute) {
+      t.execute();
+    }
+    ]]>
+  </scriptdef>
   
   <scriptdef name="checkTarget" language="javascript" description="">
     <attribute name="property" />
@@ -674,7 +704,7 @@
             <then>
               <echo level="debug">Importing library: ${misc.tmp.relfile}</echo>
               <var name="misc.tmp.file" value="${library_main.basedir}/${misc.tmp.relfile}" />
-              <import file="${misc.tmp.file}" />
+              <import file="${misc.tmp.file}" as="@{misc.tmp.library}" />
             </then>
           </if>
         </sequential>
@@ -686,12 +716,12 @@
     <attribute name="filesetid" />
   
     <sequential>
-      <var name="misc.tmp.libraries" value="main,${main.import.order.core},${main.import.order.extension},${main.import.order.general},${main.import.order.proxy}" />
-      
+     
       <fileset id="@{filesetid}" dir="${main.root}">
         <exclude name="**/*" />
       </fileset>
-     
+      
+      <mainGetLibraries property="misc.tmp.libraries" />
       <for list="${misc.tmp.libraries}" param="misc.tmp.library">
         <sequential>
           <propertycopy name="misc.tmp.import" from="main.import.library.@{misc.tmp.library}" silent="true" />
@@ -927,7 +957,12 @@
     
     <sequential>
       <var name="@{property}" value="" unset="true" />
-      <propertycopy name="@{property}" from="@{name}" />
+      <if>
+        <isset property="@{name}" />
+        <then>
+          <propertycopy name="@{property}" from="@{name}" />
+        </then>
+      </if>
       <var name="@{name}" value="@{value}" />
     </sequential>
   </macrodef>
@@ -973,7 +1008,6 @@
       <property name="@{property}" location="@{value}" />
     </sequential>
   </macrodef>
-
   
   <macrodef name="varNormalizeBoolean">
     <attribute name="property" />
@@ -998,6 +1032,16 @@
         <then><var name="@{property}" value="true" /></then>
         <else><var name="@{property}" value="false" /></else>
       </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="getPackageAndClass">
+    <attribute name="qualifiedName" />
+    <attribute name="packageProperty" default="misc.tmp.package" />
+    <attribute name="classProperty" default="misc.tmp.class" />
+    
+    <sequential>
+
     </sequential>
   </macrodef>
 </project>

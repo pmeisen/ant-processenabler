@@ -18,8 +18,8 @@
   <property name="gwt.library.resfile.template.webXml" value="${library_gwt.basedir}/web.xml.template" />
   <property name="gwt.library.resfile.template.plugin" value="${library_gwt.basedir}/com.google.gdt.eclipse.core.prefs.gwt.settings.template" />
   <property name="gwt.library.resfile.template.index" value="${library_gwt.basedir}/index.html.template" />
-  <property name="gwt.library.resfile.template.project" value="${library_gwt.basedir}/library_eclipse_project.template" description="The name of the project template" />
-  <property name="gwt.library.resfile.template.classpath" value="${library_gwt.basedir}/library_eclipse_classpath.template" description="The name of the classpath template" />
+  <property name="gwt.library.resfile.template.project" value="${library_gwt.basedir}/library_gwt_eclipse_project.template" description="The name of the project template" />
+  <property name="gwt.library.resfile.template.classpath" value="${library_gwt.basedir}/library_gwt_eclipse_classpath.template" description="The name of the classpath template" />
   
   <!--
     add the antcontrib library

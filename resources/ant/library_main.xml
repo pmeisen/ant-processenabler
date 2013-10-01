@@ -97,7 +97,7 @@
           <var name="main.core.library.file" value="${main.root}/ant/${main.core.library.relfile}" />
           
           <echo level="debug">Importing core library: ${main.core.library.relfile}</echo>
-          <import file="${main.core.library.file}" />
+          <import file="${main.core.library.file}" as="@{main.core.library}" />
         </sequential>
       </for>
       
@@ -197,10 +197,22 @@
   
   <!-- target which cleans all steps run prior -->
   <target name="cleanUp">
-    <if><typefound name="mavenCleanUp"/><then><mavenCleanUp /></then></if>
-    <if><typefound name="buildCleanUp"/><then><buildCleanUp /></then></if>
-    <if><typefound name="testCleanUp"/><then><testCleanUp /></then></if>
-    <if><typefound name="updateCleanUp"/><then><updateCleanUp /></then></if>
+    <mainGetLibraries property="main.tmp.libraries" />
+  
+    <for list="${main.tmp.libraries}" param="main.tmp.library">
+      <sequential>
+        <var name="main.tmp.cleanUpTask" value="@{main.tmp.library}CleanUp" />
+
+        <if>
+          <typefound name="${main.tmp.cleanUpTask}"/>
+          <then>
+            <executeSimpleMacroByName task="${main.tmp.cleanUpTask}" />
+          </then>
+        </if>
+      </sequential>
+    </for>
+    
+    <executeSimpleMacroByName task="executeSimpleMacroByName" />
     
     <!-- delete the session temporary folder -->
     <delete dir="${main.tmpdir}" failonerror="false" />

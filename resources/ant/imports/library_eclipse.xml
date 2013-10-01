@@ -21,8 +21,8 @@
   <property name="eclipse.template.project" value="${eclipse.library.resfile.template.project}" />
   <property name="eclipse.template.classpath" value="${eclipse.library.resfile.template.classpath}" />
   
-  <property name="eclipse.eclipse.dir" value="_eclipse" description="Project binary directory" />
-  <property name="eclipse.lib.dir" value="lib" description="Project binary directory" />
+  <property name="eclipse.eclipse.dir" value="_eclipse" description="Eclipse main directory" />
+  <property name="eclipse.lib.dir" value="lib" description="Project library directory" />
   <property name="eclipse.src.dir" value="src" description="Project source directory" />
   <property name="eclipse.javadoc.dir" value="javadoc" description="Project JavaDoc directory" />
   <property name="eclipse.settings.dir" value=".settings" description="Settings dir of eclipse" />
