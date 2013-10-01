@@ -40,18 +40,6 @@
   <property file="${main.config.project.marked}" />
   <!-- Load the config.properties of the project the main is used in -->
   <property file="${main.config.project}" />
-  
-  <!-- the default location of the configuration -->
-  <property name="main.config.location" location="${main.root}/ant/" />
-  
-  <!-- load further properties -->
-  <property name="main.config.user.default" location="${main.config.location}/config.properties" />
-  <property name="main.config.general.default" location="${main.config.location}/scriptconfig.properties" />
-  
-  <!-- Load the user properties for the main library which might be specified -->
-  <property file="${main.config.user.default}" />
-  <!-- Load the general properties for the main library which might be specified -->
-  <property file="${main.config.general.default}" />
 
   <!--
     set some properties which are globally of interest and can be used by all libraries
@@ -133,6 +121,18 @@
                             setPropertiesWithoutPrefix="true" unsetProperties="true" />
         </then>
       </if>
+      
+      <!-- the default location of the configuration -->
+      <property name="main.config.location" location="${main.root}/ant/" />
+      
+      <!-- load further properties -->
+      <property name="main.config.user.default" location="${main.config.location}/config.properties" />
+      <property name="main.config.general.default" location="${main.config.location}/scriptconfig.properties" />
+      
+      <!-- Load the user properties for the main library which might be specified -->
+      <property file="${main.config.user.default}" />
+      <!-- Load the general properties for the main library which might be specified -->
+      <property file="${main.config.general.default}" />
       
       <!-- replace the loaded properties, e.g. if nested properties are used somewhere -->
       <propertyset id="main.tmp.propertiesSet">
