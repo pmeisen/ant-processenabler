@@ -66,6 +66,8 @@
     <!-- make sure we do a antTestCleanUp -->
     <createList property="tmp.targetListWithCleanUp" list="${tmp.targetList}" value="antTestCleanUp" separatore="," />
     
+    <echo>ooooooooo> ${tmp.parameters}</echo>
+    
     <!-- run each test -->
     <doTargetForEachFolder excludes="${tmp.excludes}" targets="${tmp.targetListWithCleanUp}" 
                            parameters="${tmp.parameters}" 
