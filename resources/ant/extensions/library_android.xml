@@ -70,8 +70,9 @@
       <if>
         <os family="windows" />
         <then>
+        <echo>---> ${sdk.dir}/tools/${android.sdk.executable}.bat</echo>
           <exec dir="." executable="cmd" failonerror="@{failonerror}" errorproperty="tmp.androidExec.error">
-            <arg line="/c ${android.sdk.executable} @{command} @{arguments}"/>
+            <arg line="/c ${sdk.dir}/tools/${android.sdk.executable}.bat @{command} @{arguments}"/>
           </exec>
         </then>
         <else>
