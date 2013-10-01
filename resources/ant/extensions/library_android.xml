@@ -341,7 +341,6 @@
         if sdk.dir was not set from one of the property file, then get it from the ANDROID_HOME env var.
         This must be done before we load project.properties since the proguard config can use sdk.dir 
         -->
-        <echo>----> ${android.sdk.dir}</echo>
       <property environment="env" />
       <if>
         <and><isset property="sdk.dir" /><not><equals arg1="${sdk.dir}" arg2="" /></not></and>
