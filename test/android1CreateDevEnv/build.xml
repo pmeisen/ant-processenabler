@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
 <!-- version-tag: custom -->
-<project name="testAndroidProject">
+<project name="testAndroidCreateDevEnvProject">
   <property name="maven.artifactory.source.url" value="http://localhost:6666/notavailable" />
   <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
   <property name="maven.repository.source.local" value="repo" />
@@ -192,30 +192,37 @@
     <var name="android.force" value="false" />
   </target>
   
-  <target name="-testCleanUpProject">
-    <delete includeemptydirs="true">
-      <fileset dir=".">
-        <include name="**/*"/>
-        <exclude name="${eclipse.eclipse.dir}"/>
-        <exclude name="${build.build.dir}"/>
-        <exclude name="${test.test.dir}"/>
-        <exclude name="repo/**/*"/>
-        <exclude name="build.xml" />
-        <exclude name="config.properties" />
-        <exclude name="pom.xml" />
-        <exclude name="project.properties" />
-      </fileset>
-    </delete>
-    
-    <fileCleanUp dir="${build.srcdir}" recreate="true" />
+  <macrodef name="testCleanUpProject">
+    <sequential>
+      <delete includeemptydirs="true">
+        <fileset dir=".">
+          <include name="**/*"/>
+          <exclude name="${eclipse.eclipse.dir}"/>
+          <exclude name="${build.build.dir}"/>
+          <exclude name="${test.test.dir}"/>
+          <exclude name="repo/**/*"/>
+          <exclude name="build.xml" />
+          <exclude name="config.properties" />
+          <exclude name="pom.xml" />
+          <exclude name="project.properties" />
+        </fileset>
+      </delete>
+      
+      <fileCleanUp dir="${build.srcdir}" recreate="true" />
+    </sequential>
+  </macrodef>
+  
+  <target name="-testSetup">
+    <testCleanUpProject />
   </target>
   
-  <target name="antTest" depends="-testCleanUpProject,
-                                  -testCreateDevEnv,-testCleanUpProject,
-                                  -testReCreateDevEnvEmptyMain,-testCleanUpProject,
-                                  -testReCreateDevEnv,-testCleanUpProject" />
+  <target name="antTest" depends="-testSetup,
+                                  -testCreateDevEnv,
+                                  -testReCreateDevEnvEmptyMain,
+                                  -testReCreateDevEnv" />
   
-  <target name="antTestCleanUp" depends="-testCleanUpProject,cleanUp">
+  <target name="antTestCleanUp" depends="cleanUp">
+    <testCleanUpProject />
     
     <!-- remove additional files -->
     <fileCleanUp dir="${build.dir}" recreate="false" />

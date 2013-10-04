@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!-- version-tag: custom -->
+<project name="testAndroidBuildProject">
+  <property name="maven.artifactory.source.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.repository.source.local" value="repo" />
+  <property name="maven.repository.target.local" value="repo" />
+  
+  <property name="main.import.library.android" value="true" />
+
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+  
+  <target name="-testBuild" depends="createDevEnv,build">
+    <if>
+      <not><available file="${build.buildFile}" type="file" /></not>
+      <then><fail>The file '${build.buildFile}' wasn't created.</fail></then>
+      <else><echo>Checked build-file '${build.buildFile}'...</echo></else>
+    </if>
+  </target>
+  
+  <macrodef name="testCleanUpProject">
+    <sequential>
+      <delete includeemptydirs="true">
+        <fileset dir=".">
+          <include name="**/*"/>
+          <exclude name="${eclipse.eclipse.dir}"/>
+          <exclude name="${build.build.dir}"/>
+          <exclude name="${test.test.dir}"/>
+          <exclude name="repo/**/*"/>
+          <exclude name="build.xml" />
+          <exclude name="config.properties" />
+          <exclude name="pom.xml" />
+          <exclude name="project.properties" />
+        </fileset>
+      </delete>
+      
+      <fileCleanUp dir="${build.srcdir}" recreate="true" />
+    </sequential>
+  </macrodef>
+  
+  <target name="-testSetup">
+    <testCleanUpProject />
+  </target>
+  
+  <target name="antTest" depends="-testSetup,
+                                  -testBuild" />
+  
+  <target name="antTestCleanUp" depends="cleanUp">
+    <testCleanUpProject />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${eclipse.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+    <fileCleanUp dir="${build.srcdir}" recreate="false" />
+  </target>
+</project>
