@@ -56,6 +56,8 @@
   <property name="build.startbatch.create" value="true" description="Defines if a start batch file should be created, this property is always true if a launcher is created (i.e. if build.launcher.create is true, this setting is ignored)" />
   
   <property name="build.assembly.create" value="false" description="set this attribute to true to create an assembly of the project" />
+  <property name="build.assembly.maven.type" value="zip" description="the type of the file created during assembling" />
+  <property name="build.build.maven.type" value="jar" description="the type of the file created during building" />
   
   <property name="build.init" value="false" description="For internal usage only, please do not modify this property by a file" />
   
@@ -400,11 +402,11 @@
       <switch value="@{type}">
         <case value="build">
           <var name="build.tmp.artifactClassifier" value="" />
-          <var name="build.tmp.artifactExtension" value="jar" />
+          <var name="build.tmp.artifactExtension" value="${build.build.maven.type}" />
         </case>
         <case value="app">
           <var name="build.tmp.artifactClassifier" value="${maven.attachment.app}" />
-          <var name="build.tmp.artifactExtension" value="zip" />
+          <var name="build.tmp.artifactExtension" value="${build.assembly.maven.type}" />
         </case>
         <case value="src">
           <var name="build.tmp.artifactClassifier" value="${maven.attachment.sources}" />
@@ -1398,11 +1400,9 @@
     </sequential>
   </macrodef>
   
-  <!--
-    buildDeployLatestAssembly - deployes the latest assembly to the reponsible repository
-    -->
-  <macrodef name="buildDeployLatestAssembly">
+  <macrodef name="buildInstallLatestAssembly">
     <attribute name="classifier" default="" />
+    <attribute name="type" default="${build.assembly.maven.type}" />
     
     <sequential>
       <if>
@@ -1417,17 +1417,17 @@
           <mavenSetPom pomid="build.tmp.pomAssembly" />
           
           <!-- create the pom-file -->
-          <mavenCreateIndependentPom pomid="build.tmp.pomApp" groupid="${build.applications.groupId}" name="${build.tmp.pomAssembly.name}" packaging="zip"
+          <mavenCreateIndependentPom pomid="build.tmp.pomApp" groupid="${build.applications.groupId}" name="${build.tmp.pomAssembly.name}" packaging="@{type}"
                                      artifactid="${build.tmp.pomAssembly.artifactId}" version="${build.tmp.pomAssembly.version}" />
                                      
-          <!-- deploy as attachment or just deploy -->
+          <!-- install as attachment or just install -->
           <if>
             <equals arg1="@{classifier}" arg2="" />
             <then>
-              <mavenDeploy file="${build.appFile}" pomid="build.tmp.pomApp" />              
+              <mavenInstall file="${build.appFile}" pomid="build.tmp.pomApp" />              
             </then>
             <else>
-              <mavenDeployAttachment file="${build.appFile}" classifier="@{classifier}" pomid="build.tmp.pomApp" type="zip" />
+              <mavenInstallAttachment file="${build.appFile}" classifier="@{classifier}" pomid="build.tmp.pomApp" type="@{type}" />
             </else>
           </if>
         </else>
@@ -1438,6 +1438,41 @@
   <!--
     buildDeployLatestAssembly - deployes the latest assembly to the reponsible repository
     -->
+  <macrodef name="buildDeployLatestAssembly">
+    <attribute name="classifier" default="" />
+    <attribute name="type" default="${build.assembly.maven.type}" />
+    
+    <sequential>
+      <if>
+        <or>
+          <not><isset property="build.appFile"/></not>
+          <equals arg1="${build.appFile}" arg2="" />
+        </or>
+        <then>
+          <fail>No latest assembly found, nothing is deployed</fail>
+        </then>
+        <else>
+          <mavenSetPom pomid="build.tmp.pomAssembly" />
+          
+          <!-- create the pom-file -->
+          <mavenCreateIndependentPom pomid="build.tmp.pomApp" groupid="${build.applications.groupId}" name="${build.tmp.pomAssembly.name}" packaging="@{type}"
+                                     artifactid="${build.tmp.pomAssembly.artifactId}" version="${build.tmp.pomAssembly.version}" />
+                                     
+          <!-- deploy as attachment or just deploy -->
+          <if>
+            <equals arg1="@{classifier}" arg2="" />
+            <then>
+              <mavenDeploy file="${build.appFile}" pomid="build.tmp.pomApp" />              
+            </then>
+            <else>
+              <mavenDeployAttachment file="${build.appFile}" classifier="@{classifier}" pomid="build.tmp.pomApp" type="@{type}" />
+            </else>
+          </if>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
   <macrodef name="buildCheckReleaseConditions">
    
     <sequential>    
@@ -1512,6 +1547,10 @@
     <buildZip />
   </target>
   
+  <target name="installAssembly" depends="install, assemble">
+    <buildInstallLatestAssembly />
+  </target>
+
   <target name="deployAssembly" depends="deploy, assemble">
     <buildDeployLatestAssembly />
   </target>

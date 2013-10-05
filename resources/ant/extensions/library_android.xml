@@ -32,30 +32,116 @@
   <property name="android.file.projectfile" value="AndroidManifest.xml" description="Name of the file which indicates a android project" />
   <property name="android.file.projectproperties" value="project.properties" description="Property file for the android project" />
   <property name="android.force" value="false" description="Property to define if the project should always be completely updated, i.e. newly created" />
+  <property name="android.build.maven.type" value="jar" description="maven-type of the build of an Android project." />
+  <property name="android.assembly.maven.type" value="apk" description="maven-type of the assembly of an Android project." />
+  
+  <property name="android.library.location" value="${android.dir.bin}/library.${android.build.maven.type}" description="The location the library will be created at by the adk build script" />
+  <property name="android.assembly.location" value="${android.dir.bin}/assemble.${android.assembly.maven.type}" description="The location the assembly will be created at by the adk build script" />
   
   <property name="android.default.target" value="" description="The default target to be used" />
   
   <!-- override some properties -->
   <property name="build.project.resources.dir" value="${android.dir.res}" description="Change the name of the resource folder" />
   <property name="build.binary.dir" value="${android.dir.bin}" description="Change the name of the binary folder" />
+  <property name="build.build.maven.type" value="${android.build.maven.type}" description="the type of the file created during assembling" />
+  <property name="build.assembly.maven.type" value="${android.assembly.maven.type}" description="the type of the file created during assembling" />
   <property name="eclipse.libdir" value="${android.dir.libs}" description="Change the folder to keep the dependent libraries" />
-  
-  <macrodef name="androidSetSdk">
-    <sequential>
-      <setLogLevel logLevel="error" />
+
+  <!--
+    initialize - do some things that has to be done
+    -->
+  <if>
+    <equals arg1="${android.init}" arg2="false" />
+    <then>
+            
+      <!-- load some properties of the adk -->
+      <property file="local.properties" />
+      <property file="ant.properties" />
+      
+      <!-- 
+        if sdk.dir was not set from one of the property file, then get it from the ANDROID_HOME env var.
+        This must be done before we load project.properties since the proguard config can use sdk.dir 
+        -->
+      <property environment="env" />
+      <if>
+        <and><isset property="sdk.dir" /><not><equals arg1="${sdk.dir}" arg2="" /></not></and>
+        <then>
+          <!-- nothing to do -->
+        </then>
+        <elseif>
+          <and><isset property="android.sdk.dir" /><not><equals arg1="${android.sdk.dir}" arg2="" /></not></and>
+          <then>  
+            <var name="sdk.dir" value="${android.sdk.dir}" />
+          </then>
+        </elseif>
+        <elseif>
+          <and><isset property="env.ANDROID_HOME" /><not><equals arg1="${env.ANDROID_HOME}" arg2="" /></not></and>
+          <then>  
+            <var name="sdk.dir" value="${env.ANDROID_HOME}" />
+          </then>
+        </elseif>
+      </if>
+      
+      <!-- validate settings of sdk.dir -->
+      <if>
+        <not><isset property="sdk.dir" /></not>
+        <then>
+          <fail>sdk.dir is missing. Make sure to generate local.properties using 'android update project' or to inject it through the ANDROID_HOME environment variable.</fail>
+        </then>
+        <elseif>
+          <not><available file="${sdk.dir}/tools/ant/build.xml" /></not>
+          <then>
+            <fail>Cannot find the build of the SDK at '${sdk.dir}/tools/ant/build.xml'.</fail>
+          </then>
+        </elseif>
+        <else>
+          <echo level="info">Using sdk.dir: ${sdk.dir}</echo>
+        </else>
+      </if>
+      
+      <!-- load project properties of the adk -->
+      <if>
+        <available file="${android.file.projectproperties}" />
+        <then>
+          <loadproperties srcFile="${android.file.projectproperties}" />
+        </then>
+      </if>
+      
+      <!-- load the additional tasks -->
+      <path id="android.antlibs">
+        <pathelement path="${sdk.dir}/tools/lib/ant-tasks.jar" />
+      </path>
       <taskdef resource="anttasks.properties" classpathref="android.antlibs" />
-      <resetLogLevel />
+      <taskdef resource="net/sf/antcontrib/antlib.xml" />
+      
+      <!-- 
+        Check if we have a AndroidManifest.xml and no local.properties, if so the 
+        project was probably checked out and the file has to be created.
+        -->
+      <if>
+        <and>
+          <available file="${android.file.projectfile}" />
+          <not><available file="local.properties" /></not>
+        </and>
+        <then>
+          <androidRefreshProject />
+        </then>
+      </if>
+    </then>
+  </if>
+  
+  <macrodef name="androidTarget">
+    <attribute name="target" />
+    
+    <sequential>
+      <ant antfile="${sdk.dir}/tools/ant/build.xml" dir="${basedir}" target="@{target}" useNativeBasedir="false" inheritAll="true" inheritRefs="true">
+        <property name="out.dir" value="${android.dir.bin}"/>
+        <property name="out.library.jar.file" value="${android.library.location}"/>
+        <property name="out.final.file" value="${android.assembly.location}"/>
+      </ant>
     </sequential>
   </macrodef>
   
-  <macrodef name="androidSetContrib">
-    <sequential>
-      <setLogLevel logLevel="error" />
-      <taskdef resource="net/sf/antcontrib/antlib.xml" />
-      <resetLogLevel />
-    </sequential>
-  </macrodef>
-   
   <macrodef name="androidExec">
     <attribute name="command" />
     <attribute name="arguments" default="" />
@@ -326,117 +412,62 @@
     </sequential>
   </macrodef>
     
-  <!--
-    initialize - do some things that has to be done
-    -->
-  <if>
-    <equals arg1="${android.init}" arg2="false" />
-    <then>
-            
-      <!-- load some properties of the adk -->
-      <property file="local.properties" />
-      <property file="ant.properties" />
-      
-      <!-- 
-        if sdk.dir was not set from one of the property file, then get it from the ANDROID_HOME env var.
-        This must be done before we load project.properties since the proguard config can use sdk.dir 
-        -->
-      <property environment="env" />
-      <if>
-        <and><isset property="sdk.dir" /><not><equals arg1="${sdk.dir}" arg2="" /></not></and>
-        <then>
-          <!-- nothing to do -->
-        </then>
-        <elseif>
-          <and><isset property="android.sdk.dir" /><not><equals arg1="${android.sdk.dir}" arg2="" /></not></and>
-          <then>  
-            <var name="sdk.dir" value="${android.sdk.dir}" />
-          </then>
-        </elseif>
-        <elseif>
-          <and><isset property="env.ANDROID_HOME" /><not><equals arg1="${env.ANDROID_HOME}" arg2="" /></not></and>
-          <then>  
-            <var name="sdk.dir" value="${env.ANDROID_HOME}" />
-          </then>
-        </elseif>
-      </if>
-      
-      <!-- validate settings of sdk.dir -->
-      <if>
-        <not><isset property="sdk.dir" /></not>
-        <then>
-          <fail>sdk.dir is missing. Make sure to generate local.properties using 'android update project' or to inject it through the ANDROID_HOME environment variable.</fail>
-        </then>
-        <elseif>
-          <not><available file="${sdk.dir}/tools/ant/build.xml" /></not>
-          <then>
-            <fail>Cannot find the build of the SDK at '${sdk.dir}/tools/ant/build.xml'.</fail>
-          </then>
-        </elseif>
-        <else>
-          <echo level="info">Using sdk.dir: ${sdk.dir}</echo>
-        </else>
-      </if>
-      
-      <!-- load project properties of the adk -->
-      <if>
-        <available file="${android.file.projectproperties}" />
-        <then>
-          <loadproperties srcFile="${android.file.projectproperties}" />
-        </then>
-      </if>
-            
-      <!--
-        Import per project custom build rules if present at the root of the project.
-        This is the place to put custom intermediary targets such as:
-            -pre-build
-            -pre-compile
-            -post-compile (This is typically used for code obfuscation.
-                           Compiled code location: ${out.classes.absolute.dir}
-                           If this is not done in place, override ${out.dex.input.absolute.dir})
-            -post-package
-            -post-build
-            -pre-clean
-        -->
-      <import file="custom_rules.xml" optional="true" />
-      
-      <!-- import the targets etc. of the SDK -->
-      <import file="${sdk.dir}/tools/ant/build.xml" as="androidSDK" />
-      
-      <!-- 
-        Activate the contrib tasks (i.e. if) again. The SDK overrides
-        the definition of the if-task, therefore it is necessary to reactivate
-        contrib again. Each target call of the SDK must be wrapped:
-        
-        -androidSetSDK androidSDK.target -androidSetContrib
-        -->
-      <androidSetContrib />
-      
-      <!-- 
-        Check if we have a AndroidManifest.xml and no local.properties, if so the 
-        project was probably checked out and the file has to be created.
-        -->
+  <macrodef name="androidFinalizeBuild">
+    <attribute name="buildResult" />
+    
+    <sequential>
+
+      <!-- make sure the file was build -->
       <if>
         <and>
-          <available file="${android.file.projectfile}" />
-          <not><available file="local.properties" /></not>
+          <not><available file="@{buildResult}" type="file" /></not>
+          <not><equals arg1="" arg2="@{buildResult}" /></not>
         </and>
         <then>
-          <androidRefreshProject />
+          <fail>The file '@{buildResult}' should have been build, but cannot be found.</fail>
         </then>
       </if>
-    </then>
-  </if>
+      
+      <!-- get the pom settings -->
+      <mavenSetPom />
+      <var name="build.buildFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}.${android.build.maven.type}" />
+      
+      <!-- copy the built file -->
+      <delete file="${build.buildFile}" />
+      <copy file="@{buildResult}" tofile="${build.buildFile}" />
+    </sequential>
+  </macrodef>
   
-  <target name="-androidSetSDK">
-    <androidSetSdk />
-  </target>
+  <macrodef name="androidFinalizeAssembly">
+    <attribute name="assembleResult" />
+    
+    <sequential>
+
+      <!-- make sure the file was assembled -->
+      <if>
+        <not><available file="@{assembleResult}" /></not>
+        <then>
+          <fail>The file '@{assembleResult}' should have been assembled, but cannot be found.</fail>
+        </then>
+      </if>
+      
+      <!-- get the pom settings -->
+      <mavenSetPom />
+      <var name="build.appFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}-${maven.attachment.app}.${android.assembly.maven.type}" />
+      
+      <!-- copy the assembled file -->
+      <delete file="${build.appFile}" />
+      <copy file="@{assembleResult}" tofile="${build.appFile}" />
+    </sequential>
+  </macrodef>
   
-  <target name="-androidSetContrib">
-    <androidSetContrib />
-  </target>
+  <macrodef name="androidRemoveCrunch">
+    <sequential>
+      <delete dir="${android.dir.bin}/res/crunch" includeemptydirs="true" />
+    </sequential>
+  </macrodef>
   
-  <target name="-androidAdditionalHelp">
+  <target name="help">
     <!-- displays starts at col 13
               |13                                                              80| -->
     <echo>Some android SDK targets are wrapped, to ensure functionality with</echo>
@@ -447,32 +478,31 @@
     <echo>   androidSDK.clean</echo>
     <echo>   androidSDK.debug</echo>
     <echo>   androidSDK.help</echo>
+    
+    <androidTarget target="help" />
   </target>
   
-  <target name="-androidRemoveCrunch">
-    <delete dir="${android.dir.bin}/res/crunch" includeemptydirs="true" />
+  <target name="run">
+    <androidRemoveCrunch />
+    <androidSetAndroidLibrary isLibrary="false" />
+    <androidTarget target="install" />
   </target>
   
-  <target name="help" depends="-androidAdditionalHelp,-androidSetSDK,androidSDK.help,-androidSetContrib" />
-  
-  <target name="clean" depends="-androidSetSDK,androidSDK.clean,-androidSetContrib" />
-  
-  <target name="run" depends="-androidRemoveCrunch,-androidSetSDK,androidSDK.debug,androidSDK.install,-androidSetContrib" />
-  
-  <target name="removePreBuilds" depends="clean">
+  <target name="removePreBuilds">
+    <androidTarget target="clean" />
     <buildRemovePreBuilds />
   </target>
   
-  <target name="-androidSetLibraryProjectType">
+  <target name="build">
+    <androidRemoveCrunch />
     <androidSetAndroidLibrary isLibrary="true" />
+    <androidTarget target="debug" />
+    
+    <androidFinalizeBuild buildResult="${android.library.location}" />
   </target>
   
-  <target name="-androidSetAppProjectType">
-    <androidSetAndroidLibrary isLibrary="false" />
-  </target>
-  
-  <target name="-androidCheckAssemblyPreConditions">
-  
+  <target name="assemble">
+
     <!-- make sure we have a main -->
     <if>
       <not><equals arg1="${build.assembly.create}" arg2="true" /></not>
@@ -486,37 +516,12 @@
         </then>
       </elseif>
     </if>
-  </target>
-   
-  <target name="build" depends="-androidRemoveCrunch,-androidSetLibraryProjectType,-androidSetSDK,androidSDK.debug,-androidSetContrib">
     
-    <!-- make sure the file was build -->
-    <if>
-      <not><available file="${out.library.jar.file}" /></not>
-      <then>
-        <fail>The file '${out.library.jar.file}' should have been build, but cannot be found.</fail>
-      </then>
-    </if>
+    <androidRemoveCrunch />
+    <androidSetAndroidLibrary isLibrary="false" />
+    <androidTarget target="debug" />
     
-    <!-- get the pom settings -->
-    <mavenSetPom />
-    <var name="build.buildFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}.jar" />
-    
-    <!-- copy the built file -->
-    <delete file="${build.buildFile}" />
-    <copy file="${out.library.jar.file}" tofile="${build.buildFile}" />
-  </target>
-  
-  <target name="assemble" depends="-androidCheckAssemblyPreConditions,-androidRemoveCrunch,-androidSetAppProjectType,-androidSetSDK,androidSDK.debug,-androidSetContrib">
-    <var name="build.appFile" value="${out.final.file}" />
-    
-    <!-- make sure the file was assembled -->
-    <if>
-      <not><available file="${build.appFile}" /></not>
-      <then>
-        <fail>The file '${build.appFile}' should have been assembled, but cannot be found.</fail>
-      </then>
-    </if>
+    <androidFinalizeAssembly assembleResult="${android.assembly.location}" />
   </target>
     
   <target name="javadoc">
@@ -540,11 +545,7 @@
     <buildJavaDoc addClassPathFileSet="android.tmp.android.jar.fileset" />
     <buildPackJavaDoc />
   </target>
-  
-  <target name="install" depends="build.install" />
-  
-  <target name="deploy" depends="build.deploy" />
-  
+
   <target name="createDevEnv">
     <eclipseCreateDirectories />
     <eclipseCreateProject template="${android.library.resfile.template.project}" />

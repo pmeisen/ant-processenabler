@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!-- version-tag: custom -->
+<project name="testAndroidInstallAssemblyProject">
+  <property name="maven.artifactory.source.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.repository.source.local" value="repo" />
+  <property name="maven.repository.target.local" value="repo" />
+  
+  <property name="main.import.library.android" value="true" />
+  
+  <property name="build.applications.groupId" value="my.applications" />
+
+  <!-- use the default settings 
+  <property name="main.config.location" value="./../../../_settings/ant" />
+  -->
+	<import file="..\..\resources\ant\library_main.xml"/>
+  
+  <target name="-testInstallAssembly" depends="createDevEnv,installAssembly">
+    <!-- check if everything is deployed correctly -->
+    <if>
+      <not><available file="${maven.repository.target.local}/my/applications/ant-android-test/TRUNK-SNAPSHOT/ant-android-test-TRUNK-SNAPSHOT.apk" type="file" /></not>
+      <then><fail>The assembly wasn't deployed.</fail></then>
+    </if>
+    <if>
+      <not><available file="${maven.repository.target.local}/net/meisen/ant-processenabler/tests/ant-android-test/TRUNK-SNAPSHOT/ant-android-test-TRUNK-SNAPSHOT.jar" type="file" /></not>
+      <then><fail>The build wasn't deployed.</fail></then>
+    </if>
+    <if>
+      <not><available file="${maven.repository.target.local}/net/meisen/ant-processenabler/tests/ant-android-test/TRUNK-SNAPSHOT/ant-android-test-TRUNK-SNAPSHOT-sources.jar" type="file" /></not>
+      <then><fail>The source-file wasn't deployed.</fail></then>
+    </if>
+    <if>
+      <not><available file="${maven.repository.target.local}/net/meisen/ant-processenabler/tests/ant-android-test/TRUNK-SNAPSHOT/ant-android-test-TRUNK-SNAPSHOT-javadoc.jar" type="file" /></not>
+      <then><fail>The javadoc wasn't deployed.</fail></then>
+    </if>
+    
+    <echo>The deployment was successful</echo>
+  </target>
+  
+  <macrodef name="testCleanUpProject">
+    <sequential>
+      <delete includeemptydirs="true">
+        <fileset dir=".">
+          <include name="**/*"/>
+          <exclude name="${eclipse.eclipse.dir}"/>
+          <exclude name="${build.build.dir}"/>
+          <exclude name="${test.test.dir}"/>
+          <exclude name="${maven.repository.source.local}/mavenrepo.txt"/>
+          <exclude name="${maven.repository.target.local}/mavenrepo.txt"/>
+          <exclude name="build.xml" />
+          <exclude name="config.properties" />
+          <exclude name="pom.xml" />
+          <exclude name="project.properties" />
+        </fileset>
+      </delete>
+      
+      <fileCleanUp dir="${build.srcdir}" recreate="true" />
+    </sequential>
+  </macrodef>
+  
+  <target name="-testSetup">
+    <testCleanUpProject />
+  </target>
+  
+  <target name="antTest" depends="-testSetup,
+                                  -testInstallAssembly" />
+  
+  <target name="antTestCleanUp" depends="cleanUp">
+    <testCleanUpProject />
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${eclipse.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+    <fileCleanUp dir="${build.srcdir}" recreate="false" />
+  </target>
+</project>

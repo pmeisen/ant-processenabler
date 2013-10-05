@@ -9,8 +9,8 @@
   <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
   <property name="maven.repository.source.local" value="_testRepoSource" />
   <property name="maven.repository.target.local" value="_testRepoTarget" />
-  <property name="maven.mapped.net.meisen.test.mapping" value=" net.meisen.test.mapped" />
-  <property name="maven.mapped.net.meisen.test.mapping|mappingSingle" value=" net.meisen.test.mapped|mappedSingle" />
+  <property name="maven.mapped.net.meisen.test.mapping" value="net.meisen.test.mapped" />
+  <property name="maven.mapped.net.meisen.test.mapping|mappingSingle" value="net.meisen.test.mapped|mappedSingle" />
   
   <!-- now import the main-library -->
 	<import file="..\..\resources\ant\library_main.xml"/>
