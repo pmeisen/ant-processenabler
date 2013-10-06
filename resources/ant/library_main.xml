@@ -45,14 +45,21 @@
     set some properties which are globally of interest and can be used by all libraries
     -->
   <property name="main.markedProperties.prefix" value="" description="A prefix can be defined which marks a property to be loaded without the prefix, e.g. myPrefix.sample.property=5 should be known by the system with sample.property=5" />
-  <property name="main.vendor" value="" description="The vendor used for compiled/build versions" />
   <property name="main.tmpIndicatorFile" value="created.tmp" description="File which is created in the temporary directory for this ant-call" />
   <property name="main.tmplocation" location="${java.io.tmpdir}/ant-processenabler" description="The temporary folder which contains all session, use 'main.tmpdir'-property for all temporary data of a session" />
   <property name="main.tmpdir" value="" description="The temporary folder which should be used by all libraries when generating temporary content" />
   <property name="main.timeoutCreationInDays" value="1" description="Defines when a creation process should be assumed as timed-out, i.e. when the process should be cleanup" />
-  <property name="main.logLevel" value="error" description="The logging level to be used can be error, warn, info, verbose, debug" />
   <property name="main.addExtensionsByDefault" value="false" description="Adds all defined extension automatically if set to true, otherwise extensions have to be explicitly added" />
-
+  
+  <!-- 
+    the following properties define defaults for commonly used properties, which can be defined using the scriptconfig.properties, 
+    config.properties or any project property-file:
+    - main.vendor   (is set to main.default.vendor if not specified so far)
+    - main.logLevel (is set to main.default.logLevel if not specified so far)
+    -->
+  <property name="main.default.vendor" value="" description="The vendor used for compiled/build versions" />
+  <property name="main.default.logLevel" value="error" description="The logging level to be used can be error, warn, info, verbose, debug" />
+  
   <property name="main.init" value="false" description="For internal usage only, please do not modify this property by a file" />
   
   <!--
@@ -122,10 +129,10 @@
         </then>
       </if>
       
-      <!-- the default location of the configuration -->
+      <!-- the default location of the configuration will only be set if not set so far -->
       <property name="main.config.location" location="${main.root}/ant/" />
       
-      <!-- load further properties -->
+      <!-- load further properties, main properties are not overloaded -->
       <property name="main.config.user.default" location="${main.config.location}/config.properties" />
       <property name="main.config.general.default" location="${main.config.location}/scriptconfig.properties" />
       
@@ -133,6 +140,10 @@
       <property file="${main.config.user.default}" />
       <!-- Load the general properties for the main library which might be specified -->
       <property file="${main.config.general.default}" />
+      
+      <!-- set some defaults -->
+      <property name="main.vendor" location="${main.default.vendor}" />
+      <property name="main.logLevel" location="${main.default.logLevel}" />
       
       <!-- replace the loaded properties, e.g. if nested properties are used somewhere -->
       <propertyset id="main.tmp.propertiesSet">
