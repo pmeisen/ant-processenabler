@@ -276,6 +276,29 @@
           <updateUpdate srcFile="${build.appFile}" destLocations="${distribute.assembly.to}" execute="${update.executeUpdate}" />
         </then>
       </elseif>
+      <else>
+        <echo level="warn">Nothing is updated, because there is no distribution defined using the property 'distribute.assembly.to'</echo>
+      </else>
+    </if>
+  </target>
+  
+  <target name="updateSnapshot">
+    <if>
+      <isset property="distribute.update.to" />
+      <then>
+        <var name="update.tmp.download" value="${main.tmpdir}/ant-processenabler.zip" />
+      
+        <!-- get the file from the url -->
+        <get src="http://ant-processenabler.meisen.net/downloads/ant-processenabler-TRUNK-SNAPSHOT.zip" dest="${update.tmp.download}" />
+        
+        <!-- do the update -->
+        <updateCreateBackUp srcLocations="${distribute.update.to}" backUpLocation="${update.dir}" backUpFilename="backup" />
+        <updateCleanUpBackUp backUpLocation="${update.dir}" backUpFilePattern="*backup*.zip" />
+        <updateUpdate srcFile="${update.tmp.download}" destLocations="${distribute.update.to}" execute="${update.executeUpdate}" />
+      </then>
+      <else>
+        <echo level="warn">Nothing is updated, because there is no distribution defined using the property 'distribute.update.to'</echo>
+      </else>
     </if>
   </target>
 </project>
