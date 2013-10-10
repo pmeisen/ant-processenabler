@@ -22,6 +22,8 @@
   <property name="update.executeUpdate" value="true" description="true if the project should be updated automatically" />
   <property name="update.isUpdatable" value="false" description="true if the project is updatable" />
   
+  <property name="distribute.update.to" value="${ant.home}" />
+    
   <property name="update.init" value="false" description="For internal usage only, please do not modify this property by a file" />
   
   <!--
@@ -269,7 +271,10 @@
         <fail>The project is not updatable, please set update.isUpdatable to true to create backups.</fail>
       </then>
       <elseif>
-        <isset property="distribute.assembly.to" />
+        <and>
+          <not><equals arg1="${distribute.assembly.to}" arg2="" /></not>
+          <isset property="distribute.assembly.to" />
+        </and>
         <then>        
           <updateCreateBackUp srcLocations="${distribute.assembly.to}" backUpLocation="${update.dir}" backUpFilename="backup" />
           <updateCleanUpBackUp backUpLocation="${update.dir}" backUpFilePattern="*backup*.zip" />
@@ -284,7 +289,10 @@
   
   <target name="updateSnapshot">
     <if>
-      <isset property="distribute.update.to" />
+      <and>
+        <not><equals arg1="${distribute.update.to}" arg2="" /></not>
+        <isset property="distribute.update.to" />
+      </and>
       <then>
         <var name="update.tmp.download" value="${main.tmpdir}/ant-processenabler.zip" />
       
