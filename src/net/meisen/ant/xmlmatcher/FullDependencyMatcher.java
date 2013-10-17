@@ -3,7 +3,7 @@ package net.meisen.ant.xmlmatcher;
 import org.jdom.Element;
 
 /**
- * A matcher which check a dependency completly, i.e. group, artifact, type,
+ * A matcher which check a dependency completely, i.e. group, artifact, type,
  * classifier and version
  * 
  * @author pmeisen

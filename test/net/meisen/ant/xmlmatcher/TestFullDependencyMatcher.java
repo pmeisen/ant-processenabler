@@ -22,7 +22,7 @@ public class TestFullDependencyMatcher extends ClassPathBuildFileTest {
 	 * Tests the simple full dependency matching
 	 * 
 	 * @throws IOException
-	 *           if one of the files needed by the build cannot be copied
+	 *             if one of the files needed by the build cannot be copied
 	 */
 	@Test
 	public void testSimple() throws IOException {
@@ -86,6 +86,7 @@ public class TestFullDependencyMatcher extends ClassPathBuildFileTest {
 	 * Tests the merging with equal, but differently written types.
 	 * 
 	 * @throws IOException
+	 *             if one of the files needed by the build cannot be copied
 	 */
 	@Test
 	public void testType() throws IOException {
@@ -135,6 +136,72 @@ public class TestFullDependencyMatcher extends ClassPathBuildFileTest {
 
 		final String result = Files.readFromFile(new File(getTmpDir(),
 				"tmpMerged.xml"));
+
+		final Matcher m = p.matcher(result);
+		assertTrue(result, m.matches());
+	}
+
+	/**
+	 * Tests the merging of eclipse dependencies used by the processenabler
+	 * 
+	 * @throws IOException
+	 *             if one of the files needed by the build cannot be copied
+	 */
+	@Test
+	public void testEclipse() throws IOException {
+		// copy the needed files
+		copyProjectFile("build/fullDependencyMatcher/eclipsePom.xml");
+		copyProjectFile("build/fullDependencyMatcher/eclipsePomMerge.xml");
+		copyProjectFile("build/fullDependencyMatcher/eclipseXmlMerge.properties");
+
+		// initialize Ant
+		configureProject("build/fullDependencyMatcher/eclipseTest.xml");
+
+		// execute the test-target
+		executeTarget("test");
+
+		// write the log to the test's log
+		System.out.println(this.getOutput());
+		System.out.println(this.getError());
+
+		// get the output
+		final File output = new File(getTmpDir(), "tmpEclipse.xml");
+
+		// check if the file is created
+		assertTrue(output.exists());
+		assertTrue(output.isFile());
+
+		// get the expected regular expression
+		String expected = "";
+		expected += "^";
+		expected += "\\s*\\Q<?xml version=\"1.0\" encoding=\"UTF-8\"?>\\E";
+		expected += "\\s*\\Q<project>\\E";
+		expected += ".*";
+		expected += "\\s*\\Q<dependencies>\\E";
+		expected += "\\s*\\Q<dependency>\\E";
+		expected += "\\s*\\Q<groupId>net.meisen.general</groupId>\\E";
+		expected += "\\s*\\Q<artifactId>net-meisen-general-gen-dummy</artifactId>\\E";
+		expected += "\\s*\\Q<version>TRUNK-SNAPSHOT</version>\\E";
+		expected += "\\s*\\Q</dependency>\\E";
+		expected += "\\s*\\Q<dependency>\\E";
+		expected += "\\s*\\Q<groupId>net.meisen.web</groupId>\\E";
+		expected += "\\s*\\Q<artifactId>net-meisen-web-cbwaf-share</artifactId>\\E";
+		expected += "\\s*\\Q<version>TRUNK-SNAPSHOT</version>\\E";
+		expected += "\\s*\\Q</dependency>\\E";
+		expected += "\\s*\\Q<dependency>\\E";
+		expected += "\\s*\\Q<groupId>net.meisen.web</groupId>\\E";
+		expected += "\\s*\\Q<artifactId>net-meisen-web-cbwaf-api</artifactId>\\E";
+		expected += "\\s*\\Q<version>TRUNK-SNAPSHOT</version>\\E";
+		expected += "\\s*\\Q<classifier>${maven.attachment.fullcompiled}</classifier>\\E";
+		expected += "\\s*\\Q</dependency>\\E";
+		expected += "\\s*\\Q</dependencies>\\E";
+		expected += "\\s*\\Q</project>\\E";
+		expected += "\\s*$";
+		final Pattern p = Pattern.compile(expected, Pattern.MULTILINE
+				| Pattern.DOTALL);
+
+		final String result = Files.readFromFile(new File(getTmpDir(),
+				"tmpEclipse.xml"));
 
 		final Matcher m = p.matcher(result);
 		assertTrue(result, m.matches());

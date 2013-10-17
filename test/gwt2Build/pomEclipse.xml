@@ -1,6 +1,6 @@
 <project>
 
-	<dependencies>
+  <dependencies>
   
     <dependency>
       <groupId>net.meisen.web</groupId>
@@ -9,6 +9,6 @@
       <classifier>${maven.attachment.fullcompiled}</classifier>
     </dependency>
     
-	</dependencies>
-	
+  </dependencies>
+  
 </project>

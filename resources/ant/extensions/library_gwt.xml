@@ -76,21 +76,6 @@
         <then>
           <fail>You have to specify a GWT version to be used with ant</fail>
         </then>
-        <!-- mavenResolveDependencies is not known currently
-        <else>
-           
-          
-          <trycatch property="gwt.tmp.error" reference="gwt.tmp.errReference">
-            <try>
-              <mavenResolveDependencies fileset="gwt.tmp.toolsLibs" pomid="gwt.tmp.pomToolsLibs" pomfile="${gwt.library.resfile.maven.gwtPom}" />
-            </try>
-            <catch>
-              <fail>The GWT version ${gwt.version} couldn't be found on in the repository</fail>
-            </catch>
-            <finally />
-          </trycatch>
-        </else>
-        -->
       </if>
       
       <!-- use the right template directory -->
@@ -145,18 +130,11 @@
       <!-- set the directory -->
       <var name="gwt.addBinDir" value="${build.dir}/${gwt.add.binary.dir}" />
       <mkdir dir="${gwt.addBinDir}" />
-
-      <!-- get the dependencies defined within the pomEclipse.xml -->
-      <eclipseResolveDependencies fileset="gwt.tmp.eclipse.dependencies" />
-      <!-- get the generally defined GWT dependencies for compilation -->
-      <mavenResolveDependencies fileset="gwt.tmp.gwtLibs" pomid="gwt.tmp.pomGWTLibs" pomfile="${gwt.library.resfile.maven.gwtPom}" />
-
-      <!-- combine the dependencies -->
-      <fileCombineFilesets filesetid="gwt.tmp.buildAdd.dependencies">
-        <fileset refid="gwt.tmp.eclipse.dependencies" />
-        <fileset refid="gwt.tmp.gwtLibs" />
-      </fileCombineFilesets>
       
+      <!-- get the dependencies -->
+      <gwtFullServerBuildDependencies filesetid="gwt.tmp.buildAdd.dependencies" />
+      
+      <!-- build it -->
       <buildBuild dest="${gwt.addBinDir}" cpfileset="gwt.tmp.buildAdd.dependencies" addExcludes="${gwt.server.defaultExcludedFiles}" />
     </sequential>
   </macrodef>
@@ -294,6 +272,24 @@
                 tofile="${gwt.binDir}\app.nocache.js" />
         </then>
       </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="gwtFullServerBuildDependencies">
+    <attribute name="filesetid" default="gwt.dependencies.fullServerBuild" />
+    
+    <sequential>
+    
+      <!-- get the dependencies defined within the pomEclipse.xml -->
+      <eclipseResolveDependencies fileset="gwt.tmp.eclipse.dependencies" />
+      <!-- get the generally defined GWT dependencies for compilation -->
+      <mavenResolveDependencies fileset="gwt.tmp.gwtLibs" pomid="gwt.tmp.pomGWTLibs" pomfile="${gwt.library.resfile.maven.gwtPom}" />
+
+      <!-- combine the dependencies -->
+      <fileCombineFilesets filesetid="@{filesetid}">
+        <fileset refid="gwt.tmp.eclipse.dependencies" />
+        <fileset refid="gwt.tmp.gwtLibs" />
+      </fileCombineFilesets>
     </sequential>
   </macrodef>
   
@@ -440,7 +436,9 @@
       <fileCleanUp dir="${build.tmpdir}" recreate="true" />
  
       <!-- copy the resources files -->
-      <buildMoveResource rootFolder="${build.tmpdir}" resource="${build.resourcedir}" resourceType="${gwt.resource.local}" />
+      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${gwt.resource.local}]];rootFolder=[[${build.tmpdir}]]">
+        <fileset dir="${build.resourcedir}" />
+      </fileCallMacroForEach>
 
       <!-- make sure we have something to pack -->
       <if>
@@ -794,8 +792,9 @@
   
   <target name="javadoc">
     <!-- add the eclipse specific classes -->
-    <eclipseResolveDependencies fileset="gwt.tmp.addClassPath" />
-    <buildJavaDoc addClassPathFileSet="gwt.tmp.addClassPath" />
+    <gwtFullServerBuildDependencies filesetid="gwt.tmp.javadocClassPath" />
+    
+    <buildJavaDoc addClassPathFileSet="gwt.tmp.javadocClassPath" />
     <buildPackJavaDoc />
   </target>
   
@@ -826,13 +825,8 @@
   </target>
   
   <target name="setUpTomCatOnlyServer" depends="serverUseTomCat, distributeServer, serverStart" />
-
-  <!-- target to distribute to a TomCat server and start it -->
   <target name="setUpTomCat" depends="serverUseTomCat, distribute, serverStart" />
-  
-  <!-- target to distribute to a GS BIS Server and start it -->
-  <target name="setUpBisServer" depends="serverUseBisServer, distribute, serverStart" />
-  
+    
   <target name="cleanUp">
     <mavenCleanUp />
     <buildCleanUp />

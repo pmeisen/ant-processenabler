@@ -39,7 +39,6 @@ public class DependencyMatcher implements Matcher {
 
 	@Override
 	public boolean matches(final Element original, final Element patch) {
-
 		final boolean returnValue;
 		if (matchedArtifacts(original, patch) && matchedVersion(original, patch)) {
 			returnValue = true;

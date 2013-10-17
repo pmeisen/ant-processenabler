@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="TestGwtBuild">
+  <property name="maven.artifactory.source.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.repository.source.local" value="../gwtRepo" />
+  <property name="maven.repository.target.local" value="../gwtRepo" />
+  
+  <property name="maven.repository.local" value="repo" />
+  
+  <property name="main.config.location" value="." />
+  <property name="main.import.library.gwt" value="true" />
+	<import file="..\..\resources\ant\library_main.xml"/>
+  
+  <!-- define some resourceMapper for the test -->
+  <macrodef name="resourceMapper">
+    <attribute name="resourceFolder" />
+    <attribute name="resourceFileName" />
+    <attribute name="resource" />
+    <attribute name="resourceType" />
+    
+    <sequential>    
+      <if>
+        
+        <!-- the juli dependency must be named tomcat-juli.jar and must be located in the bin directory -->
+        <and>
+          <equals arg1="@{resourceType}" arg2="${gwt.resource.local}" />
+          <matches pattern=".*[\\/]sampleResource.properties" string="@{resource}"/>
+        </and>
+        <then>
+          <var name="resMapper.location" value="properties" />
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testCheckRes">
+    <attribute name="res" />
+    <attribute name="type" default="" />
+    <attribute name="not" default="false" />
+    
+    <sequential>
+    
+      <!-- get the resource to look for -->
+      <mavenSetPom />
+      <var name="test.tmp.resource" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}" />
+      <if>
+        <not><equals arg1="@{type}" arg2="" /></not>
+        <then>
+          <var name="test.tmp.resource" value="${test.tmp.resource}-@{type}" />
+        </then>
+      </if>
+      
+      <var name="test.tmp.resource" value="${test.tmp.resource}.jar" />
+      
+      <!-- check if everything is created correctly -->
+      <var name="test.tmp.resource.found" unset="true" />
+      <whichresource resource="@{res}" property="test.tmp.resource.found">
+        <classpath><path path="${test.tmp.resource}"/></classpath>
+      </whichresource>
+      
+      <!-- check the result -->
+      <if>
+        <equals arg1="@{not}" arg2="false" />
+        <then>
+      
+          <if>
+            <isset property="test.tmp.resource.found" />
+            <then>
+              <echo>Found resource @{res} at ${test.tmp.resource.found}</echo>
+            </then>
+            <else>
+              <fail>Could not find the resource @{res} in ${test.tmp.resource}</fail>
+            </else>
+          </if>
+        </then>
+        <else>
+        
+          <if>
+            <isset property="test.tmp.resource.found" />
+            <then>
+              <fail>Found resource @{res} at ${test.tmp.resource.found}</fail>
+            </then>
+            <else>
+              <echo>Didn't find the resource @{res} in ${test.tmp.resource}</echo>
+            </else>
+          </if>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testCheckClass">
+    <attribute name="class" />
+    <attribute name="type" default="" />
+    <attribute name="not" default="false" />
+    
+    <sequential>
+    
+      <!-- get the resource to look for -->
+      <mavenSetPom />
+      <var name="test.tmp.resource" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}" />
+      <if>
+        <not><equals arg1="@{type}" arg2="" /></not>
+        <then>
+          <var name="test.tmp.resource" value="${test.tmp.resource}-@{type}" />
+        </then>
+      </if>
+      
+      <var name="test.tmp.resource" value="${test.tmp.resource}.jar" />
+      
+      <!-- check if everything is created correctly -->
+      <var name="test.tmp.resource.found" unset="true" />
+      <whichresource class="@{class}" property="test.tmp.resource.found">
+        <classpath><path path="${test.tmp.resource}"/></classpath>
+      </whichresource>
+      
+      <!-- check the result -->
+      <if>
+        <equals arg1="@{not}" arg2="false" />
+        <then>
+      
+          <if>
+            <isset property="test.tmp.resource.found" />
+            <then>
+              <echo>Found class @{class} in ${test.tmp.resource.found}</echo>
+            </then>
+            <else>
+              <fail>Could not find the class @{class} in ${test.tmp.resource}</fail>
+            </else>
+          </if>
+        </then>
+        <else>
+        
+          <if>
+            <isset property="test.tmp.resource.found" />
+            <then>
+              <fail>Found class @{class} in ${test.tmp.resource.found}</fail>
+            </then>
+            <else>
+              <echo>Didn't find the class @{class} in ${test.tmp.resource}</echo>
+            </else>
+          </if>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest" depends="fullBuild,javadoc,sources">
+    <!-- test the created resource which contains the resources of the web-application -->
+    <testCheckRes res="/app.nocache.js" type="${maven.attachment.webappresources}" />
+    <testCheckRes res="/properties/sampleResource.properties" type="${maven.attachment.webappresources}" />
+    
+    <!-- test the full compiled resource -->
+    <testCheckClass class="net.meisen.gwt.cbwaf.client.entry.CoreEntryPoint" type="${maven.attachment.fullcompiled}" />
+    <testCheckClass class="net.meisen.gwt.cbwaf.server.ServerUtil" type="${maven.attachment.fullcompiled}" />
+    <testCheckClass class="net.meisen.gwt.cbwaf.share.ShareUtil" type="${maven.attachment.fullcompiled}" />
+    <testCheckRes not="true" res="net/meisen/gwt/cbwaf/CBWAF.gwt.xml" type="${maven.attachment.fullcompiled}" />
+    <testCheckRes not="true" res="net/meisen/gwt/cbwaf/CBWAF_ENTRYPOINT.gwt.xml" type="${maven.attachment.fullcompiled}" />
+    
+    <!-- test the resource used for distribution -->
+    <testCheckRes res="net/meisen/gwt/cbwaf/CBWAF.gwt.xml" type="${maven.attachment.distribute}" />
+    <testCheckRes res="net/meisen/gwt/cbwaf/CBWAF_ENTRYPOINT.gwt.xml" type="${maven.attachment.distribute}" />
+    <testCheckRes res="net/meisen/gwt/cbwaf/client/entry/CoreEntryPoint.java" type="${maven.attachment.distribute}" />
+    <testCheckRes res="net/meisen/gwt/cbwaf/share/ShareUtil.java" type="${maven.attachment.distribute}" />
+    <testCheckClass not="true" class="net.meisen.gwt.cbwaf.client.entry.CoreEntryPoint" type="${maven.attachment.distribute}" />
+    <testCheckClass not="true" class="net.meisen.gwt.cbwaf.server.ServerUtil" type="${maven.attachment.distribute}" />
+    
+    <!-- test the server resource -->
+    <testCheckClass not="true" class="net.meisen.gwt.cbwaf.client.entry.CoreEntryPoint" />
+    <testCheckClass class="net.meisen.gwt.cbwaf.server.ServerUtil" />
+    <testCheckClass class="net.meisen.gwt.cbwaf.share.ShareUtil" />
+    
+    <!-- check the javadoc -->
+    <testCheckRes res="/index.html" type="${maven.attachment.javadoc}" />
+    <testCheckRes res="/net/meisen/gwt/cbwaf/client/entry/CoreEntryPoint.html" type="${maven.attachment.javadoc}" />
+    <testCheckRes res="/net/meisen/gwt/cbwaf/server/ServerUtil.html" type="${maven.attachment.javadoc}" />
+    <testCheckRes res="/net/meisen/gwt/cbwaf/share/ShareUtil.html" type="${maven.attachment.javadoc}" />
+    
+    <!-- check the sources -->
+    <testCheckRes res="net/meisen/gwt/cbwaf/CBWAF.gwt.xml" type="${maven.attachment.sources}" />
+    <testCheckRes res="net/meisen/gwt/cbwaf/CBWAF_ENTRYPOINT.gwt.xml" type="${maven.attachment.sources}" />
+    <testCheckRes res="net/meisen/gwt/cbwaf/share/ShareUtil.java" type="${maven.attachment.sources}" />
+    <testCheckRes res="net/meisen/gwt/cbwaf/client/entry/CoreEntryPoint.java" type="${maven.attachment.sources}" />
+    <testCheckRes res="net/meisen/gwt/cbwaf/server/ServerUtil.java" type="${maven.attachment.sources}" />
+    <testCheckClass not="true" class="net.meisen.gwt.cbwaf.client.entry.CoreEntryPoint" type="${maven.attachment.sources}" />
+    <testCheckClass not="true" class="net.meisen.gwt.cbwaf.server.ServerUtil" type="${maven.attachment.sources}" />
+    <testCheckClass not="true" class="net.meisen.gwt.cbwaf.share.ShareUtil" type="${maven.attachment.sources}" />
+    
+  </target>
+  
+  <target name="antTestCleanUp" depends="cleanUp">
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${eclipse.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+    
+    <delete includeemptydirs="true">
+      <fileset dir=".">
+        <include name=".classpath"/>
+        <include name=".project"/>
+        <include name=".launcher/**/*"/>
+        <include name=".launcher"/>
+        <include name=".settings"/>
+        <include name=".settings/**/*"/>
+      </fileset>
+    </delete>
+    
+    <fileCleanUp dir="repo" recreate="false" />
+  </target>
+  
+</project>
