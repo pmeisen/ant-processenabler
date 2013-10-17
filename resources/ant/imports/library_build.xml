@@ -275,6 +275,7 @@
     <attribute name="srcdir" />
     <attribute name="destdir" />
     <attribute name="debug" />
+    <attribute name="includes" default="**/*.java" />
     <attribute name="excludes" />
   
     <element name="classpath" implicit="true" />
@@ -289,7 +290,7 @@
     
       <!-- compile -->
       <javac sourcepath="" srcdir="@{srcdir}" destdir="@{destdir}" debug="@{debug}" deprecation="true"
-             includes="**/*.java" excludes="@{excludes}"
+             includes="@{includes}" excludes="@{excludes}"
              includeantruntime="false" source="${build.javac.source}" target="${build.javac.target}">
         <classpath />
 

@@ -880,7 +880,7 @@
         
         <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" />
         
-        <!-- we cannot exclude the excludeSourcePattern="${gwt.client.excludedFiles}", because 
+        <!-- we cannot exclude the excludes="${gwt.client.excludedFiles}", because 
              otherwise the AllTest could not be compiled -->
         <testTest classPathFileSetId="gwt.tmp.fullTestDependencies" includeSources="true" />
         
@@ -934,7 +934,7 @@
   <target name="test" depends="buildServer, buildAdditionals">
     <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" />
         
-    <!-- we cannot exclude the excludeSourcePattern="${gwt.client.excludedFiles}", because 
+    <!-- we cannot exclude the excludes="${gwt.client.excludedFiles}", because 
          otherwise the AllTest could not be compiled -->
     <testTest classPathFileSetId="gwt.tmp.fullTestDependencies" includeSources="true" />
   </target>
@@ -942,7 +942,7 @@
   <target name="testBuild" depends="buildServer, buildAdditionals">
     <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" />
     
-    <!-- we cannot exclude the excludeSourcePattern="${gwt.client.excludedFiles}", because 
+    <!-- we cannot exclude the excludes="${gwt.client.excludedFiles}", because 
          otherwise the AllTest could not be compiled -->
     <testBuild classPathFileSetId="gwt.tmp.fullTestDependencies" />
   </target>

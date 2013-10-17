@@ -19,6 +19,11 @@
   <property name="test.bindir" location="${test.test.dir}/${test.binary.dir}" description="Project test's binary directory" />
   <property name="test.report.file" value="report" description="Name of the report which should be created (will be .txt file)" />
   <property name="test.suite.class" value="" description="The test-suite class started for the test" />
+  
+  <property name="test.include.whenTest" value="**/*" description="Source files to be included when testing" />
+  <property name="test.exclude.whenTest" value="" description="Source files to be excluded when testing" />
+  <property name="test.include.whenPack" value="**/*" description="Source files to be included when packing the test" />
+  <property name="test.exclude.whenPack" value="" description="Source files to be excluded when packing the test" />
 
   <property name="test.init" value="false" description="For internal usage only, please do not modify this property by a file" />
             
@@ -45,7 +50,8 @@
   
   <macrodef name="testBuild">
     <attribute name="classPathFileSetId" default="test.classpath" />
-    <attribute name="excludeSourcePattern" default="" />
+    <attribute name="includes" default="${test.include.whenTest}" />
+    <attribute name="excludes" default="${test.exclude.whenTest}" />
   
     <sequential>
 
@@ -65,7 +71,7 @@
       </if>
 
       <!-- lets build the test-files -->
-      <compile srcdir="${test.srcdir}" destdir="${test.bindir}" debug="${build.tmp.debug}" excludes="@{excludeSourcePattern}">
+      <compile srcdir="${test.srcdir}" destdir="${test.bindir}" debug="${build.tmp.debug}" includes="@{includes}" excludes="@{excludes}">
         <classpath>
           <fileset dir="${ant.home}/lib" includes="junit-*.jar" />
           <fileset refid="@{classPathFileSetId}" />
@@ -99,13 +105,14 @@
   </macrodef>
   
   <macrodef name="testPackSource">
-    <attribute name="excludeSourcePattern" default="" />
+    <attribute name="includes" default="${test.include.whenPack}" />
+    <attribute name="excludes" default="${test.exclude.whenPack}" />
     
     <sequential>
       <mavenSetPom pomid="test.tmp.pomBuild" />
       
       <jar destfile="${test.dir}/${test.tmp.pomBuild.artifactId}-${test.tmp.pomBuild.version}-${maven.attachment.testsources}.jar" basedir="${test.srcdir}" 
-           includes="**/*.java" excludes="@{excludeSourcePattern}">
+           includes="@{includes}" excludes="@{excludes}">
 
         <!-- write the manifest -->
         <manifest>
@@ -131,7 +138,10 @@
     <attribute name="classPathFileSetId" default="test.classpath" />
     <attribute name="failOnError" default="true" />
     <attribute name="includeSources" default="false" />
-    <attribute name="excludeSourcePattern" default="" />
+    <attribute name="includeWhenTest" default="${test.include.whenTest}" />
+    <attribute name="excludeWhenTest" default="${test.exclude.whenTest}" />
+    <attribute name="includeWhenPack" default="${test.include.whenPack}" />
+    <attribute name="excludeWhenPack" default="${test.exclude.whenPack}" />
   
     <sequential>
     
@@ -151,7 +161,7 @@
           </then>
         </elseif>
         <else>
-          <testBuild classPathFileSetId="@{classPathFileSetId}" excludeSourcePattern="@{excludeSourcePattern}" />
+          <testBuild classPathFileSetId="@{classPathFileSetId}" includes="@{includeWhenTest}" excludes="@{excludeWhenTest}" />
           
           <!-- check if the sources should be on the class-path -->
           <if>
@@ -161,7 +171,7 @@
               <equals arg1="@{includeSources}" arg2="true" />
             </or>
             <then>
-              <testPackSource excludeSourcePattern="@{excludeSourcePattern}" />
+              <testPackSource includes="@{includeWhenPack}" excludes="@{excludeWhenPack}" />
               <var name="test.tmp.testSourceFile" value="${test.testSourceFile}" />
             </then>
             <else>
