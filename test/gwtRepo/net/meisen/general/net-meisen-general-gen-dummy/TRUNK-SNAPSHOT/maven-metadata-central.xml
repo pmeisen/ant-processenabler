@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>net.meisen.general</groupId>
+  <artifactId>net-meisen-general-gen-dummy</artifactId>
+  <version>TRUNK-SNAPSHOT</version>
+  <versioning>
+    <snapshot>
+      <buildNumber>1</buildNumber>
+    </snapshot>
+    <lastUpdated>20130813115712</lastUpdated>
+  </versioning>
+</metadata>

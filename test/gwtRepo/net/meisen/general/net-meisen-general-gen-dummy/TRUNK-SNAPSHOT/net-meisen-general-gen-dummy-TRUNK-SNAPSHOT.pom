@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>net.meisen.general</groupId>
+  <artifactId>net-meisen-general-gen-dummy</artifactId>
+  <!-- when merged add the SNAPSHOT -->
+  <version>TRUNK-SNAPSHOT</version>
+  <name>gen-dummy</name>
+  <description>Dummy class which is only needed for testing purposes</description>
+  <packaging>jar</packaging>
+  <dependencies />
+</project>
+

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>net.meisen.web</groupId>
+  <artifactId>net-meisen-web-cbwaf-api</artifactId>
+  <version>TRUNK-SNAPSHOT</version>
+  <versioning>
+    <snapshot>
+      <localCopy>true</localCopy>
+    </snapshot>
+    <lastUpdated>20131017095322</lastUpdated>
+  </versioning>
+</metadata>
