@@ -1,0 +1,14 @@
+<project>
+
+	<dependencies>
+  
+    <dependency>
+      <groupId>net.meisen.web</groupId>
+      <artifactId>net-meisen-web-cbwaf-api</artifactId>
+      <version>TRUNK-SNAPSHOT</version>
+      <classifier>${maven.attachment.fullcompiled}</classifier>
+    </dependency>
+    
+	</dependencies>
+	
+</project>

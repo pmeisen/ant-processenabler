@@ -1,0 +1,5 @@
+<module>
+
+  <!-- Inherit the api -->
+  <inherits name="net.meisen.gwt.cbwafapi.CBWAFAPI"/>
+</module>
