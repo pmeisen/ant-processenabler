@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project name="TestGwtBuild">
+  <property name="maven.artifactory.source.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
+  <property name="maven.repository.source.local" value="../gwtRepo" />
+  <property name="maven.repository.target.local" value="../gwtRepo" />
+  
+  <property name="maven.repository.local" value="repo" />
+  
+  <property name="gwt.eclipse.useGwtPlugIn" value="false" />
+  
+  <property name="main.config.location" value="." />
+  <property name="main.import.library.gwt" value="true" />
+    
+	<import file="..\..\resources\ant\library_main.xml"/>
+
+  <macrodef name="testFile">
+    <attribute name="file" />
+    <attribute name="not" default="false" />
+    
+    <sequential>
+      <if>
+        <equals arg1="@{not}" arg2="true" />
+        <then>
+        
+          <if>
+            <available file="@{file}" type="file" />
+            <then><fail>The file @{file} exists</fail></then>
+            <else><echo>The file @{file} doesn't exists</echo></else>
+          </if>
+        </then>
+        <else>
+          
+          <if>
+            <available file="@{file}" type="file" />
+            <then><echo>The file @{file} exists</echo></then>
+            <else><fail>The file @{file} doesn't exists</fail></else>
+          </if>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+  
+  <target name="antTest" depends="createDevEnv">
+    <testFile file="${eclipse.libdir}/gwt-dev-2.5.0.jar" />
+    <testFile file="${eclipse.libdir}/gwt-user-2.5.0.jar" />
+    <testFile file="${eclipse.libdir}/net-meisen-general-gen-dummy-TRUNK-SNAPSHOT.jar" />
+    <testFile file="${eclipse.libdir}/net-meisen-web-cbwaf-api-TRUNK-SNAPSHOT-distribute.jar" />
+    <testFile file="${eclipse.libdir}/net-meisen-web-cbwaf-api-TRUNK-SNAPSHOT-full.jar" />
+    <testFile file="${eclipse.libdir}/net-meisen-web-cbwaf-share-TRUNK-SNAPSHOT.jar" />
+    <testFile file="${eclipse.libdir}/net-meisen-web-cbwaf-share-TRUNK-SNAPSHOT-sources.jar" />
+    
+    <testFile file="${eclipse.javadocdir}/net-meisen-general-gen-dummy-TRUNK-SNAPSHOT-javadoc.jar" />
+    <testFile file="${eclipse.javadocdir}/net-meisen-web-cbwaf-api-TRUNK-SNAPSHOT-javadoc.jar" />
+    <testFile file="${eclipse.javadocdir}/net-meisen-web-cbwaf-share-TRUNK-SNAPSHOT-javadoc.jar" />
+    
+    <testFile file="${eclipse.srcdir}/net-meisen-general-gen-dummy-TRUNK-SNAPSHOT-sources.jar" />
+    <testFile file="${eclipse.srcdir}/net-meisen-web-cbwaf-api-TRUNK-SNAPSHOT-sources.jar" />
+    <testFile file="${eclipse.srcdir}/net-meisen-web-cbwaf-share-TRUNK-SNAPSHOT-sources.jar" />
+  </target>
+  
+  <target name="antTestCleanUp" depends="cleanUp">
+    
+    <!-- remove additional files -->
+    <fileCleanUp dir="${build.dir}" recreate="false" />
+    <fileCleanUp dir="${eclipse.dir}" recreate="false" />
+    <fileCleanUp dir="${test.dir}" recreate="false" />
+    
+    <fileCleanUp dir="${build.srcdir}" recreate="false" />
+    <fileCleanUp dir="${build.resourcedir}" recreate="false" />
+    <fileCleanUp dir="${test.srcdir}" recreate="false" />
+    
+    <delete includeemptydirs="true">
+      <fileset dir=".">
+        <include name=".classpath"/>
+        <include name=".project"/>
+        <include name=".launcher/**/*"/>
+        <include name=".launcher"/>
+        <include name=".settings"/>
+        <include name=".settings/**/*"/>
+      </fileset>
+    </delete>
+    
+    <fileCleanUp dir="repo" recreate="false" />
+  </target>
+  
+</project>

@@ -1,0 +1,22 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>net.meisen.ant-processenabler.tests</groupId>
+  <artifactId>ant-gwt-test</artifactId>
+  <version>TRUNK</version>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>net.meisen.general</groupId>
+      <artifactId>net-meisen-general-gen-dummy</artifactId>
+      <version>TRUNK-SNAPSHOT</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>net.meisen.web</groupId>
+      <artifactId>net-meisen-web-cbwaf-share</artifactId>
+      <version>TRUNK-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
+  
+</project>

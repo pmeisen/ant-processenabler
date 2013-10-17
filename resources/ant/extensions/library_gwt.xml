@@ -954,22 +954,32 @@
   </target>
   
   <target name="setupEclipseEnv">
+    
+    <!-- check which templates we have to use -->
+    <if>
+      <or><equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="y" /><equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="yes" /><equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="true" /></or>
+      <then>
+        <var name="gwt.tmp.template.project" value="${gwt.library.resfile.template.project}" />
+        <var name="gwt.tmp.template.classpath" value="${gwt.library.resfile.template.classpath}" />
+      </then>
+      <else>
+        <var name="gwt.tmp.template.project" value="" />
+        <var name="gwt.tmp.template.classpath" value="" />
+      </else>
+    </if>
+  
     <eclipseCreateDirectories />
-    <eclipseCreateProject template="${gwt.library.resfile.template.project}" />
+    <eclipseCreateProject template="${gwt.tmp.template.project}" />
     
     <!-- get the full test dependencies -->
     <gwtFullTestDependency addPomFile="${basedir}/pomGWT.xml" filesetid="gwt.tmp.fullTestDependencies" addAnyBuilds="false" />
-    <eclipseCreateClassPath addDependenciesFilesetId="gwt.tmp.fullTestDependencies" template="${gwt.library.resfile.template.classpath}" />
+    <eclipseCreateClassPath addDependenciesFilesetId="gwt.tmp.fullTestDependencies" template="${gwt.tmp.template.classpath}" />
   </target>
   
   <target name="copyGwtPlugInLibs" depends="setupEclipseEnv">
   
     <if>
-      <or>
-        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="y" />
-        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="yes" />
-        <equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="true" />
-      </or>
+      <or><equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="y" /><equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="yes" /><equals arg1="${gwt.eclipse.useGwtPlugIn}" arg2="true" /></or>
       <then>
         <mavenResolveDependencies fileset="gwt.tmp.pluginLibs" 
                                   pomid="gwt.tmp.pomPlugin" pomfile="${gwt.library.resfile.maven.gwtPlugInPom}" />
