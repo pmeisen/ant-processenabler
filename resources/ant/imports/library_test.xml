@@ -24,6 +24,8 @@
   <property name="test.exclude.whenTest" value="" description="Source files to be excluded when testing" />
   <property name="test.include.whenPack" value="**/*" description="Source files to be included when packing the test" />
   <property name="test.exclude.whenPack" value="" description="Source files to be excluded when packing the test" />
+  <property name="test.include.inTestJar" value="**/*" description="Source files to be added to the jar of the test" />
+  <property name="test.exclude.inTestJar" value="**/*.java" description="Source files to be excluded from the jar of the test" />
 
   <property name="test.init" value="false" description="For internal usage only, please do not modify this property by a file" />
             
@@ -52,7 +54,9 @@
     <attribute name="classPathFileSetId" default="test.classpath" />
     <attribute name="includes" default="${test.include.whenTest}" />
     <attribute name="excludes" default="${test.exclude.whenTest}" />
-  
+    <attribute name="includeInTest" default="${test.include.inTestJar}" />
+    <attribute name="excludeInTest" default="${test.exclude.inTestJar}" />
+    
     <sequential>
 
       <!-- set the classpath to be used -->
@@ -98,7 +102,7 @@
         </manifest>
 
         <!-- add the resources -->
-        <fileset dir="${test.srcdir}" excludes="**/*.java" />
+        <fileset dir="${test.srcdir}" includes="@{includeInTest}" excludes="@{excludeInTest}" />
       </jar>
     
     </sequential>
