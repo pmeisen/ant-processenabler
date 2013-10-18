@@ -627,7 +627,7 @@
         properties in another configuration, those wouldn't be resetted
         if called again
         -->
-      <serverLoadProperties serverType="@{gwt.tmp.release.server.type}" />
+      <serverLoadProperties serverType="@{serverType}" />
       <var name="gwt.tmp.serverLibraryDir" value="${build.library.dir}" />
             
       <!-- the directory the app should be assembled to -->
