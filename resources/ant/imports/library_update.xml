@@ -151,7 +151,7 @@
           </for>
           
           <echo file="${update.tmp.batchfile.file}" append="true">
-          set sleep=cscript //NoLogo ${misc.library.resfile.js.sleep}
+          set sleep=cscript //NoLogo "${misc.library.resfile.js.sleep}"
 
           ECHO.
           ECHO The update will start automatically in 10 seconds, please be patient...
