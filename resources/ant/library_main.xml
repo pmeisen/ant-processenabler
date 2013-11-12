@@ -129,7 +129,44 @@
         </then>
       </if>
       
-      <!-- the default location of the configuration will only be set if not set so far -->
+      <!-- 
+        determine the main.config.location, which can be set through
+          - a system variable, i.e. set ant-processenabler.main.config.location=mylocation
+          - a java property, i.e. -Dmain.config.location=mylocation
+          - a ant property in the build.xml, i.e. <property name="main.config.location" value="mylocation" />
+          - a marked property, i.e. using the marking system of the ant-processenabler
+        the order of setting the variable is:
+          - marked property, java property, ant property, system variable, default value
+        -->
+      <if>
+        <and>
+          <isset property="main.config.location" />
+          <not><equals arg1="${main.config.location}" arg2="" /></not>
+        </and>
+        <then>
+          <!-- it is set via a marked property, java property, or ant property already -->
+        </then>
+        <else>
+          <!-- check if we have a property from the system -->
+          <property environment="main.tmp.systemProperty"/>   
+          <if>
+            <and>
+              <isset property="main.tmp.systemProperty.ant-processenabler.main.config.location" />
+              <not><equals arg1="${main.tmp.systemProperty.ant-processenabler.main.config.location}" arg2="" /></not>
+            </and>
+            <then>
+              <var name="main.config.location" value="${main.tmp.systemProperty.ant-processenabler.main.config.location}" />
+            </then>
+            <else>
+            </else>
+          </if>
+
+          <!-- cleanUp -->
+          <modifyProperties prefix="main.tmp.systemProperty" propertySetId="main.tmp.systemProperties" setPropertiesWithoutPrefix="false" unsetProperties="true" />
+        </else>
+      </if>
+
+      <!-- set a default if none is set so far -->
       <property name="main.config.location" location="${main.root}/ant/" />
       
       <!-- load further properties, main properties are not overloaded -->
@@ -142,8 +179,8 @@
       <property file="${main.config.general.default}" />
       
       <!-- set some defaults -->
-      <property name="main.vendor" location="${main.default.vendor}" />
-      <property name="main.logLevel" location="${main.default.logLevel}" />
+      <property name="main.vendor" value="${main.default.vendor}" />
+      <property name="main.logLevel" value="${main.default.logLevel}" />
       
       <!-- replace the loaded properties, e.g. if nested properties are used somewhere -->
       <propertyset id="main.tmp.propertiesSet">

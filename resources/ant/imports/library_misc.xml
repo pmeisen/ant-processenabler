@@ -895,7 +895,7 @@
             var resultPropertySet = new org.apache.tools.ant.types.PropertySet();
             resultPropertySet.setProject(project);
             
-            // iteratore over the properties
+            // iterate over the properties
             if (properties != null && properties.size() > 0) {
               var iterator = properties.iterator();
 
