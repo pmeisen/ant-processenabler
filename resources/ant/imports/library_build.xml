@@ -62,6 +62,7 @@
   <property name="build.init" value="false" description="For internal usage only, please do not modify this property by a file" />
   
   <property name="build.resource.dependency" value="build.dependency" description="The resource type of a dependency" />
+  <property name="build.resource.builtLibrary" value="build.result" description="The resource that has been built" />
   <property name="build.resource.resource" value="build.resource" description="The resource type of a resource" />
   
   <property name="build.release.scopes" value="compile" description="List of scopes which should be checked for SNAPSHOT dependencies" />
@@ -803,7 +804,7 @@
       <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${build.tmp.appFolder}]];defaultLocation=[[${build.library.dir}]]">
         <fileset refid="build.tmp.appLibs" />
       </fileCallMacroForEach>
-      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${build.tmp.appFolder}]];defaultLocation=[[${build.library.dir}]]">
+      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.builtLibrary}]];rootFolder=[[${build.tmp.appFolder}]];defaultLocation=[[${build.library.dir}]]">
         <fileset file="${build.buildFile}" />
       </fileCallMacroForEach>
 
