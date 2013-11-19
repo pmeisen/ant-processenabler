@@ -186,7 +186,7 @@
           <chainedmapper>
             <globmapper from="${javascript.tmp.testdir}/*" to="'${javascript.server.scripts.dir}/*'" handledirsep="true" />
             <scriptmapper language="javascript">
-              self.addMappedName(source.replace('\\', '/'));
+              self.addMappedName(source.replace(/\\/g, '/'));
             </scriptmapper>
           </chainedmapper>
         </mapper>
@@ -201,7 +201,7 @@
           <chainedmapper>
             <globmapper from="${build.srcdir}/*" to="'${javascript.server.scripts.dir}/*'" handledirsep="true" />
             <scriptmapper language="javascript">
-              self.addMappedName(source.replace('\\', '/'));
+              self.addMappedName(source.replace(/\\/g, '/'));
             </scriptmapper>
           </chainedmapper>
         </mapper>
@@ -216,7 +216,7 @@
           <chainedmapper>
             <globmapper from="${test.srcdir}/*" to="'${javascript.server.scripts.dir}/${javascript.server.tests.dir}/*'" handledirsep="true" />
             <scriptmapper language="javascript">
-              self.addMappedName(source.replace('\\', '/'));
+              self.addMappedName(source.replace(/\\/g, '/'));
             </scriptmapper>
           </chainedmapper>
         </mapper>
