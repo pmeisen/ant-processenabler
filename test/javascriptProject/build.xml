@@ -85,7 +85,7 @@
       
       <!-- the expected sources -->
       <var name="test.tmp.regex" value="^.*" />
-      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q srcScriptList: ['${javascript.server.scripts.dir}/main.js','${javascript.server.scripts.dir}/source.js'],\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q srcScriptList: ['${javascript.server.scripts.dir}/main.js','${javascript.server.scripts.dir}/source.js','${javascript.server.scripts.dir}/subfolder/source.js'],\E" />
       <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
       <if>
         <matches string="${test.tmp.jsFileContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" />
