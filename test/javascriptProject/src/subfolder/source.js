@@ -2,6 +2,6 @@ define([], function() {
   return 'subfolder 2';
 });
 
-function gimmeATwo() {
+function gimmeASubFolderTwo() {
   return 'subfolder 2';
 };

@@ -93,6 +93,19 @@
         <else><fail>expectedSources failed - ${test.tmp.jsFileContent}!</fail></else>
       </if>
       
+      <!-- check if the server can be identifier -->
+      <if>
+        <isset property="javascript.test.currentId" />
+        <then><echo>javascript.test.currentId was set successfully!</echo></then>
+        <else><fail>javascript.test.currentId not set!</fail></else>
+      </if>
+      <if>
+        <not><available file="${test.js.tmp.envdir}/${javascript.test.dir}/${javascript.test.currentId}" /></not>
+        <then>
+          <fail>The expected generated file could not be found at '${test.js.tmp.envdir}/${javascript.test.dir}/${javascript.test.currentId}'.</fail>
+        </then>
+      </if>
+      
       <!-- cleanUp -->
       <fileCleanUp dir="${test.js.tmp.envdir}" recreate="false" />
     </sequential>
