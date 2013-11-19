@@ -89,12 +89,12 @@
         <serverGenericStart port="@{controlPort}" appPort="@{httpPort}" appServerSettings="${javascript.library.resfile.serverSettings}" />
         
         <sequential>
-        
+
           <!-- wait for the server -->
           <serverGenericWait port="@{controlPort}" />
 
           <task />
-                    
+             
           <!-- shutdown the server -->
           <serverGenericStop port="@{controlPort}" />
         </sequential>
@@ -224,6 +224,10 @@
 
       <!-- replace the properties in the file to be generated -->
       <fileReplaceAllProperties file="${javascript.library.resfile.testJs}" destFile="${javascript.tmp.testdir}/${javascript.test.js}" force="true" />
+      
+      <!-- create another file which identifies this server for this session, not that another server is running somewhere -->
+      <generateUUID property="javascript.test.currentId" />
+      <touch file="${javascript.tmp.testdir}/${javascript.test.currentId}"/>
     </sequential>
   </macrodef>
   
@@ -286,23 +290,63 @@
         </and>
         <!-- use the existing server, even if it might shutdown in between -->
         <then>
-          <javascriptRunTests />
+          
+          <!-- check if it's the correct server -->
+          <if>
+            <http url="http://localhost:${javascript.server.httpport}/${javascript.server.scripts.dir}/${javascript.test.currentId}" />
+            <then>
+              <javascriptRunTests resultProperty="javascript.tmp.result" outputProperty="javascript.tmp.output" />
+            </then>
+            <else>
+              <fail>The port ${javascript.server.httpport} and ${javascript.server.controlport} are used by a different test-environment or generally blocked.</fail>
+            </else>
+          </if>
         </then>
+        <!-- check if a port is blocked -->
+        <elseif>
+          <or>
+            <socket server="localhost" port="${javascript.server.httpport}"/>
+            <socket server="localhost" port="${javascript.server.controlport}"/>
+          </or>
+          <then>
+            <fail>The port ${javascript.server.httpport} or ${javascript.server.controlport} is blocked, the test-environment cannot be started.</fail>
+          </then>
+        </elseif>
         <!-- the server will be started for the tests only -->
         <else>
           <javascriptStartServer>
             <task>
-              <javascriptRunTests />
+              <javascriptRunTests resultProperty="javascript.tmp.result" outputProperty="javascript.tmp.output" />
             </task>
           </javascriptStartServer>
+        </else>
+      </if>
+
+      <!-- evaluate the tests -->
+      <if>
+        <and>
+          <isset property="javascript.tmp.result" />
+          <equals arg1="${javascript.tmp.result}" arg2="1" />
+        </and>
+        <then>
+          <fail>${javascript.tmp.output}</fail>
+        </then>
+        <else>
+          <echo>${javascript.tmp.output}</echo>
         </else>
       </if>
     </sequential>
   </macrodef>
   
   <macrodef name="javascriptRunTests">
+    <attribute name="resultProperty" default="javascript.tmp.result" />
+    <attribute name="outputProperty" default="javascript.tmp.output" />
+    
     <sequential>
-      <exec executable="${javascript.testbrowser.executable}" failonerror="true">
+      <var name="@{resultProperty}" unset="true" />
+      <var name="@{outputProperty}" unset="true" />
+    
+      <exec executable="${javascript.testbrowser.executable}" failonerror="false" outputproperty="@{outputProperty}" resultproperty="@{resultProperty}">
         <arg value="${javascript.testbrowser.arguments}" />
         <arg value="http://localhost:${javascript.server.httpport}/${javascript.server.runtest}" />
       </exec>
