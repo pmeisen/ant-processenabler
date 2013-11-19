@@ -9,7 +9,6 @@
   <version>TRUNK</version>
   <name>net-meisen-js-web-testsample</name>
   <description>A test sample used for testing purposes only</description>
-  <packaging>js</packaging>
   
   <!-- the projects dependencies -->
   <dependencies>
@@ -20,6 +19,18 @@
       <scope>test</scope>
     </dependency>
     
+    <!-- 
+         this is not needed, because it is used by default
+         we will add it for testing purposes, because it has
+         to be removed from dependencies
+      -->
+    <dependency>
+      <groupId>com.qunitjs</groupId>
+      <artifactId>qunit</artifactId>
+      <version>1.12.0</version>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.requirejs</groupId>
       <artifactId>require</artifactId>

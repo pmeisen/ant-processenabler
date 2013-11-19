@@ -67,7 +67,7 @@
 
       <!-- the expected dependencies -->
       <var name="test.tmp.regex" value="^.*" />
-      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q depScriptList: ['${javascript.server.scripts.dir}/jquery.js','${javascript.server.scripts.dir}/require.js'],\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q depScriptList: ['${javascript.server.scripts.dir}/jquery.js','${javascript.server.scripts.dir}/qunit.js','${javascript.server.scripts.dir}/require.js'],\E" />
       <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
       <if>
         <not><matches string="${test.tmp.jsFileContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" /></not>
