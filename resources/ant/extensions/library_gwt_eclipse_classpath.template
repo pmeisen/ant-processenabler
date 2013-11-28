@@ -2,7 +2,7 @@
 <classpath>
 	<classpathentry kind="src" excluding="${eclipse.tmp.srcExcludes}" path="${build.source.dir}"/>
   <!-- move the output of the tests, so that those aren't in the webapplications lib folder -->
-  <classpathentry kind="src" path="${test.source.dir}" output="${eclipse.eclipse.dir}/test/${build.binary.dir}" />
+  <classpathentry including="${test.include.whenTest}" excluding="${test.exclude.whenTest}" kind="src" path="${test.source.dir}" output="${eclipse.eclipse.dir}/test/${build.binary.dir}" />
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
   <classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
   <!--  <classpathentry kind="con" path="com.google.gwt.eclipse.core.GWT_CONTAINER"/> -->
