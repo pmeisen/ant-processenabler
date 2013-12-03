@@ -177,7 +177,7 @@
       <var name="test.tmp.regex" value="^.*" />
       <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpath&gt;\E" />
       <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;src&quot; excluding=&quot;${eclipse.tmp.srcExcludes}&quot; path=&quot;src&quot; /&gt;\E" />
-      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;src&quot; path=&quot;test&quot; /&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry including=&quot;**/*&quot; excluding=&quot;&quot; kind=&quot;src&quot; path=&quot;test&quot; /&gt;\E" />
       <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;con&quot; path=&quot;org.eclipse.jdt.launching.JRE_CONTAINER&quot; /&gt;\E" />
       <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;con&quot; path=&quot;org.eclipse.jdt.junit.JUNIT_CONTAINER/4&quot; /&gt;\E" />
       <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q&lt;classpathentry kind=&quot;lib&quot; path=&quot;${project.tmp.checkNotAvailableAspectJPathFile.aspectPrefix}.jar&quot; sourcepath=&quot;${project.tmp.checkNotAvailableAspectJPathFile.aspectPrefix}-sources.jar&quot;>\E" />
