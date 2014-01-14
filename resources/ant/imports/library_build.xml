@@ -1565,7 +1565,7 @@
     <buildDeployLatestBuild />
   </target>
   
-  <target name="fullDeploy" depends="build, javadoc, sources, deploy, testDeploy" />
+  <target name="fullDeploy" depends="deploy, testDeploy" />
     
   <target name="removePreBuilds">
     <buildRemovePreBuilds />
