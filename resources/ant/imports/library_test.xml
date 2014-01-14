@@ -103,24 +103,44 @@
       <var name="test.testFile" value="${test.dir}/${test.tmp.pomBuild.artifactId}-${test.tmp.pomBuild.version}-${maven.attachment.test}.jar" />
 
       <!-- wrap it all to a jar -->
-      <jar destfile="${test.testFile}" basedir="${test.bindir}">
+      <if>
+        <available file="${test.srcdir}" />
+        <then>
+          <jar destfile="${test.testFile}" basedir="${test.bindir}">
 
-        <!-- write the manifest -->
-        <manifest>
-          <attribute name="Built-By" value="${user.name}" />
-          <attribute name="Built-Date" value="${NOW}" />
-          
-          <attribute name="Implementation-Vendor" value="${main.vendor}" />
-          <attribute name="Implementation-Title" value="${test.tmp.pomBuild.name} (${maven.attachment.test})" />
-          <attribute name="Implementation-Version" value="${test.tmp.pomBuild.version}" />
-          
-          <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
-        </manifest>
+            <!-- write the manifest -->
+            <manifest>
+              <attribute name="Built-By" value="${user.name}" />
+              <attribute name="Built-Date" value="${NOW}" />
+              
+              <attribute name="Implementation-Vendor" value="${main.vendor}" />
+              <attribute name="Implementation-Title" value="${test.tmp.pomBuild.name} (${maven.attachment.test})" />
+              <attribute name="Implementation-Version" value="${test.tmp.pomBuild.version}" />
+              
+              <attribute name="SVN-Revision" value="${svn.info.lastRev}" /> 
+            </manifest>
 
-        <!-- add the resources -->
-        <fileset dir="${test.srcdir}" includes="@{includeInTest}" excludes="@{excludeInTest}" />
-      </jar>
-    
+            <!-- add the resources -->
+            <fileset dir="${test.srcdir}" includes="@{includeInTest}" excludes="@{excludeInTest}" />
+          </jar>
+        </then>
+        <else>
+          <jar destfile="${test.testFile}" basedir="${test.bindir}">
+            
+            <!-- write just the manifest -->
+            <manifest>
+              <attribute name="Built-By" value="${user.name}" />
+              <attribute name="Built-Date" value="${NOW}" />
+              
+              <attribute name="Implementation-Vendor" value="${main.vendor}" />
+              <attribute name="Implementation-Title" value="${test.tmp.pomBuild.name} (${maven.attachment.test})" />
+              <attribute name="Implementation-Version" value="${test.tmp.pomBuild.version}" />
+              
+              <attribute name="SVN-Revision" value="${svn.info.lastRev}" />         
+            </manifest>
+          </jar>
+        </else>
+      </if>
     </sequential>
   </macrodef>
   
