@@ -74,14 +74,30 @@
         </else>
       </if>
 
-      <!-- lets build the test-files -->
-      <compile srcdir="${test.srcdir}" destdir="${test.bindir}" debug="${build.tmp.debug}" includes="@{includes}" excludes="@{excludes}">
-        <classpath>
-          <fileset dir="${ant.home}/lib" includes="junit-*.jar" />
-          <fileset refid="@{classPathFileSetId}" />
-          <pathelement location="${build.buildFile}" />
-        </classpath>
-      </compile>
+      <!-- check if there are sources -->
+      <fileset dir="${test.srcdir}" id="test.tmp.sourceFileSet">
+        <include name="**/*.java"/> 
+      </fileset>
+      <var name="test.tmp.sourcesSize" value="" unset="true" />
+      <if><available file="${test.srcdir}"/><then><pathconvert refid="test.tmp.sourceFileSet" property="test.tmp.sourcesSize" setonempty="false"/></then></if>
+      
+      <if>
+        <isset property="test.tmp.sourcesSize" />
+        <then>
+
+          <!-- lets build the test-files -->
+          <compile srcdir="${test.srcdir}" destdir="${test.bindir}" debug="${build.tmp.debug}" includes="@{includes}" excludes="@{excludes}">
+            <classpath>
+              <fileset dir="${ant.home}/lib" includes="junit-*.jar" />
+              <fileset refid="@{classPathFileSetId}" />
+              <pathelement location="${build.buildFile}" />
+            </classpath>
+          </compile>
+        </then>
+        <else>
+          <fileCleanUp dir="${test.bindir}" />
+        </else>
+      </if>
 
       <!-- set the jar files -->
       <var name="test.testFile" value="${test.dir}/${test.tmp.pomBuild.artifactId}-${test.tmp.pomBuild.version}-${maven.attachment.test}.jar" />
