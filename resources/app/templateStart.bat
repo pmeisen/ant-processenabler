@@ -55,4 +55,12 @@ if exist "%curDir%jre\bin\%JAVA_EXEC%.exe" (
 REM ***************
 REM ** Run...    **
 REM ***************
-start /B /D"%curDir%" "${maven.pom.name}" "%JAVA_DIR%" ${build.tmp.jvmArgs} -jar "%curDir%${build.tmp.launcherJarPath}" -m ${build.tmp.mainClass} -f ${build.tmp.launcherProperties} -e ${build.tmp.cmdLineArgs} %CMD_LINE_ARGS%
+REM ***************
+REM ** Run...    **
+REM ***************
+if ""%JAVA_EXEC%""==""java"" (
+  cd "%curDir%"
+  "%JAVA_DIR%" ${build.tmp.jvmArgs} -jar "%curDir%${build.tmp.launcherJarPath}" -m ${build.tmp.mainClass} -f ${build.tmp.launcherProperties} -e ${build.tmp.cmdLineArgs} %CMD_LINE_ARGS%
+) else (
+  start /B /D"%curDir%" "${maven.pom.name}" "%JAVA_DIR%" ${build.tmp.jvmArgs} -jar "%curDir%${build.tmp.launcherJarPath}" -m ${build.tmp.mainClass} -f ${build.tmp.launcherProperties} -e ${build.tmp.cmdLineArgs} %CMD_LINE_ARGS%
+)
