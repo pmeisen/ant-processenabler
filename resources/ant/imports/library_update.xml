@@ -255,6 +255,13 @@
     </sequential>
   </macrodef>
   
+  <!--
+    This target is used to distribute the assembled version of the project to the destinations defined by 
+    <a href="#property_distribute.assembly.to">distribute.assembly.to</a>.
+
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <target name="distributeAssembly" depends="assemble">
     <if>
       <isset property="distribute.assembly.to" />
@@ -287,7 +294,14 @@
     </if>
   </target>
   
-  <target name="distributeSnapshot">
+  <!--
+    This target is used to update the currently used ant-version with the newest available snapshot version. The destination of the ant-version is 
+    specified by <a href="#property_distribute.update.to">distribute.update.to</a>.
+
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
+  <target name="updateAntProcessenabler">
     <if>
       <and>
         <not><equals arg1="${distribute.update.to}" arg2="" /></not>
