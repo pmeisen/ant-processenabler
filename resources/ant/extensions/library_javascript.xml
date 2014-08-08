@@ -36,7 +36,7 @@
   
   <!--
     This method is used to start a server which provides the files of the project to a browser. If the environment changes, 
-    i.e. the pom-file is modified, the <a href="#target_createDevEnv">createDevEnv</a> should be called.
+    i.e. the pom-file is modified, the <a href="#target_createDevEnv">createDevEnv</a> should be called. 
     
     @param httpPort
       the port of the http-server to be started
@@ -359,6 +359,13 @@
     </sequential>
   </macrodef>
   
+  <!--
+    This target starts the development-environment, i.e. a server which can be accessed via http://localhost:10000. 
+    The tests can be accessed using http://localhost:10000/runTests.
+    
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
   <target name="startDevEnv">
     <javascriptStartServer>
       <task>
