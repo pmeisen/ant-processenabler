@@ -34,13 +34,31 @@
       <var name="test.tmp.indexFileContent" unset="true" />
       <loadfile property="test.tmp.indexFileContent" srcfile="${test.js.tmp.envdir}/index.html"/>
 
-      <!-- the expected dependencies -->
+      <!-- the expected file -->
       <var name="test.tmp.regex" value="^.*" />
       <var name="test.tmp.regex" value="\Q&lt;title&gt;net-meisen-js-web-testsample (net-meisen-js-web-testsample)&lt;/title&gt;\E" />
       <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
       <if>
         <not><matches string="${test.tmp.indexFileContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" /></not>
         <then><fail>expected index.html failed - ${test.tmp.indexFileContent}!</fail></then>
+      </if>
+      
+      <!-- delete the file and create an empty file -->
+      <fileCleanUp file="${test.js.tmp.envdir}/index.html" recreate="false" />
+      <echo file="${test.js.tmp.envdir}/index.html" append="false"></echo>
+      
+      <!-- run again -->
+      <javascriptCopyIndexHtml resourcedir="${test.js.tmp.envdir}" />
+      
+      <!-- check the content of the file -->
+      <var name="test.tmp.indexFileContent" unset="true" />
+      <loadfile property="test.tmp.indexFileContent" srcfile="${test.js.tmp.envdir}/index.html"/>
+      
+      <!-- the expected file -->
+      <var name="test.tmp.regex" value="^\s*$" />
+      <if>
+        <not><matches string="${test.tmp.indexFileContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" /></not>
+        <then><fail>expected empty index.html failed - ${test.tmp.indexFileContent}!</fail></then>
       </if>
       
       <!-- cleanUp -->
