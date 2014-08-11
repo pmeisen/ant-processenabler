@@ -15,6 +15,39 @@
 
   <var name="test.js.tmp.envdir" value="_envTest" />
   
+  <macrodef name="testIndexHtmlCreation">
+    <sequential>
+      <fileCleanUp dir="${test.js.tmp.envdir}" recreate="false" />
+    
+      <!-- just run the default -->
+      <javascriptCopyIndexHtml resourcedir="${test.js.tmp.envdir}" />
+      
+      <!-- make sure the file was generated -->
+      <if>
+        <not><available file="${test.js.tmp.envdir}/index.html" /></not>
+        <then>
+          <fail>The 'index.html' was not created.</fail>
+        </then>
+      </if>
+      
+      <!-- check the content of the file -->
+      <var name="test.tmp.indexFileContent" unset="true" />
+      <loadfile property="test.tmp.indexFileContent" srcfile="${test.js.tmp.envdir}/index.html"/>
+
+      <!-- the expected dependencies -->
+      <var name="test.tmp.regex" value="^.*" />
+      <var name="test.tmp.regex" value="\Q&lt;title&gt;net-meisen-js-web-testsample (net-meisen-js-web-testsample)&lt;/title&gt;\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
+      <if>
+        <not><matches string="${test.tmp.indexFileContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" /></not>
+        <then><fail>expected index.html failed - ${test.tmp.indexFileContent}!</fail></then>
+      </if>
+      
+      <!-- cleanUp -->
+      <fileCleanUp dir="${test.js.tmp.envdir}" recreate="false" />
+    </sequential>
+  </macrodef>
+  
   <macrodef name="testGeneratedDependencies">
     <sequential>
     
@@ -112,6 +145,7 @@
   </macrodef>
     
   <target name="antTest">
+    <testIndexHtmlCreation />
     <testGeneratedDependencies />
     <testGeneratedTests />
   </target>

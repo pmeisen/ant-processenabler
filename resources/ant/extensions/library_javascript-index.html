@@ -1,0 +1,25 @@
+<!doctype html>
+
+<html>
+  <head>
+    <title>${maven.pom.name} (${maven.pom.artifactId})</title>
+    
+    <script src="scripts/require.js" type="text/javascript"></script>
+    
+    <script type="text/javascript">
+      // define the baseUrl
+      requirejs.config({
+        baseUrl: 'scripts'
+      });
+      
+      // now start the entry-point
+      require([], function() {
+        // TODO: add implementation
+      });  
+    </script>
+    
+  </head>
+  <body>
+    <!-- TODO: add html elements -->
+  </body>
+</html>

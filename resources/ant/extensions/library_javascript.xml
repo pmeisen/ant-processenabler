@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
 <project name="library_javascript" >
-  <property name="javascript.library.version" value="1.0.0" description="The current version of the library" />
+  <property name="javascript.library.version" value="1.0.1" description="The current version of the library" />
   <dirname property="library_javascript.basedir" file="${ant.file.library_javascript}" />
     
   <property name="javascript.library.resfile.serverSettings" location="${library_javascript.basedir}/library_javascript-serverSettings.xml" description="The settings for the server to be used" />
   <property name="javascript.library.resfile.testJs" location="${library_javascript.basedir}/library_javascript-test.js" description="JavaScript which is a template for the generated one, containing all tests defined for the project" />
+  <property name="javascript.library.resfile.indexHtml" location="${library_javascript.basedir}/library_javascript-index.html" description="Sample index.html, which can be used as entryPoint for an application" />
   <property name="javascript.library.resfile.testToolZip" location="${main.root}/qunit/qunit-1.12.0.zip" description="Default tool used to run tests for JavaScripts" />
   <property name="javascript.library.resfile.phantomJsTestScript" location="${main.root}/phantomjs/qunit-phantomjs-runner-2013.03.28.js" description="Default phantomjs script to test QUnit tests" />
   
@@ -31,8 +32,11 @@
   <property name="javascript.testtooldir" location="${javascript.srvdir}/${javascript.testtool.dir}" description="Directory for files of the test-tool" />
   
   <property name="javascript.dep.js" value="generated-depMap.js" description="The name of the file which is created containing definitions for all dependencies" />
+  
   <property name="javascript.test.js" value="generated-testMap.js" description="The name of the file which is created containing definitions for all dependencies" />
   <property name="javascript.test.var" value="antProcessenablerTest" description="The name of the global variable defined in the test script containing test information, i.e. the test scripts" />
+  
+  <property name="javascript.devenv.createIndexHtml" value="true" description="Defines if a sample index.html should be created, in the case that one does not exist so far." />
   
   <!--
     This method is used to start a server which provides the files of the project to a browser. If the environment changes, 
@@ -156,6 +160,39 @@
           </unzip>
         </sequential>
       </for>
+    </sequential>
+  </macrodef>
+  
+  <!--
+    This method is used to copy a sample index.html file into the resource directory of the project. The 
+    file is only copied if no index.html exists so far and if the 
+    <a href="#property_javascript.devenv.createIndexHtml">javascript.devenv.createIndexHtml</a> property
+    is set to true.
+    
+    @param resourcedir
+      the directory which is to be assumed the resource directory of the project
+            
+    @author Philipp Meisen
+    @since 1.0.1
+  -->
+  <macrodef name="javascriptCopyIndexHtml">
+    <attribute name="resourcedir" default="${build.resourcedir}" />
+    
+    <sequential>
+      <if>
+        <and>
+          <not><available file="@{resourcedir}/index.html" /></not>
+          <or>
+            <equals arg1="${javascript.devenv.createIndexHtml}" arg2="true" />
+            <equals arg1="${javascript.devenv.createIndexHtml}" arg2="y" />
+            <equals arg1="${javascript.devenv.createIndexHtml}" arg2="yes" />
+          </or>
+        </and>
+        <then>
+          <mavenSetPom />
+          <fileReplaceAllProperties file="${javascript.library.resfile.indexHtml}" destFile="@{resourcedir}/index.html" force="true" />
+        </then>
+      </if>
     </sequential>
   </macrodef>
   
@@ -376,6 +413,7 @@
   
   <target name="createDevEnv">
     <javascriptCreateDependenciesDir />
+    <javascriptCopyIndexHtml />
   </target>
   
   <target name="test">
