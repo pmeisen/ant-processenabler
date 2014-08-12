@@ -383,9 +383,7 @@
               <fileset refid="${build.tmp.addClasspath}" />
             </classpath>
             
-            <link href="http://download.oracle.com/javase/6/docs/api/" />
             <link href="http://google-web-toolkit.googlecode.com/svn/javadoc/2.0/" />
-            <link href="http://javadoc.pentaho.com/reporting/pentaho-reporting-engine-classic-core/" />
           </javadoc>
         </then>
       </if>

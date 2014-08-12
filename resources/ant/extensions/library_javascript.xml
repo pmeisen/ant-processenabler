@@ -8,11 +8,16 @@
   <property name="javascript.library.resfile.testJs" location="${library_javascript.basedir}/library_javascript-test.js" description="JavaScript which is a template for the generated one, containing all tests defined for the project" />
   <property name="javascript.library.resfile.indexHtml" location="${library_javascript.basedir}/library_javascript-index.html" description="Sample index.html, which can be used as entryPoint for an application" />
   <property name="javascript.library.resfile.testToolZip" location="${main.root}/qunit/qunit-1.12.0.zip" description="Default tool used to run tests for JavaScripts" />
+  <property name="javascript.library.resfile.optimizerZip" location="${main.root}/optimizer/r-2.1.11.zip" description="Default tool used to optimize the project" />
   <property name="javascript.library.resfile.phantomJsTestScript" location="${main.root}/phantomjs/qunit-phantomjs-runner-2013.03.28.js" description="Default phantomjs script to test QUnit tests" />
   
   <property name="javascript.testtool" value="${javascript.library.resfile.testToolZip}" description="The tool to be used for testing, has to be a zip-archive" />
   <property name="javascript.testbrowser.executable" value="phantomjs" description="The platform to execute the tests on" />
   <property name="javascript.testbrowser.arguments" value="${javascript.library.resfile.phantomJsTestScript}" description="Arguments passed to the executable" />
+  
+  <property name="javascript.optimizer" value="${javascript.library.resfile.optimizerZip}" description="The tool to be used for optimization, has to be a zip-archive" />
+  <property name="javascript.optimizer.executable" value="node" description="The executable used to optimize the project" />
+  <property name="javascript.optimizer.arguments" value="r.js -o vpi-webapp.build.js" description="Arguments passed to the executable" />
   
   <property name="javascript.server.controlport" value="9000" description="The port to start the control of the server on" />
   <property name="javascript.server.httpport" value="10000" description="The port to start the http server on" />
@@ -25,6 +30,7 @@
   <property name="javascript.scripts.dir" value="scripts" description="Directory on server side which contains all scripts (combines several directories on the file-systems)" />
   <property name="javascript.test.dir" value="test" description="Directory to keep generated information while testing" />
   <property name="javascript.testtool.dir" value="testtool" description="Directory to store stuff for testing" />
+  <property name="javascript.optimizer.dir" value="optimizer" description="Directory to store stuff for optimization" />
   
   <property name="javascript.srvdir" location="${javascript.srv.dir}" description="Directory for files only needed by the environment" />
   <property name="javascript.depdir" location="${javascript.srvdir}/${javascript.scripts.dir}" description="Directory for files only needed by the environment" />
@@ -306,6 +312,49 @@
       <fileReplaceAllPropertiesInZip file="${javascript.testtool}" dest="${javascript.tmp.testtooldir}" rezip="false" />
     </sequential>
   </macrodef>
+  
+  <macrodef name="javascriptCreateOptimizerDir">
+  
+    <sequential>
+      <var name="javascript.tmp.optimizerDir" value="${build.tmpdir}/${javascript.optimizer.dir}" />
+    
+      <!-- cleanUp the directory -->
+      <fileCleanUp dir="${javascript.tmp.optimizerDir}" recreate="true" />
+      
+      <!-- check for the optimizer -->
+      <if>
+        <not><available file="${javascript.optimizer}" /></not>
+        <then>
+          <fail>Cannot find or access the '${javascript.optimizer}' archive which is defined to be used as optimizer</fail>
+        </then>
+      </if>
+
+      <!-- unzip and replace the properties -->
+      <fileReplaceAllPropertiesInZip file="${javascript.optimizer}" dest="${javascript.tmp.optimizerDir}" rezip="false" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="javascriptCreateTestToolDir">
+    <attribute name="srvdir" default="${javascript.srvdir}" />
+  
+    <sequential>
+      <var name="javascript.tmp.testtooldir" value="@{srvdir}/${javascript.testtool.dir}" />
+    
+      <!-- cleanUp the directory -->
+      <fileCleanUp dir="${javascript.tmp.testtooldir}" recreate="true" />
+      
+      <!-- check for the test-tool -->
+      <if>
+        <not><available file="${javascript.testtool}" /></not>
+        <then>
+          <fail>Cannot find or access the '${javascript.testtool}' archive which is defined to be used as test-tool</fail>
+        </then>
+      </if>
+      
+      <!-- unzip and replace the properties -->
+      <fileReplaceAllPropertiesInZip file="${javascript.testtool}" dest="${javascript.tmp.testtooldir}" rezip="false" />
+    </sequential>
+  </macrodef>
     
   <macrodef name="javascriptTest">
     <sequential>
@@ -392,7 +441,30 @@
   
   <macrodef name="javascriptBuild">
     <sequential>
-      <!-- property="build.buildFile" -->
+      <mavenSetPom />
+      
+      <if>
+        <and>
+          <isset property="build.buildSrcFile" />
+          <not><equals arg1="${build.buildSrcFile}" arg2="" /></not>
+          <available file="${build.buildSrcFile}" />
+        </and>
+        <then>
+          
+          <!-- just copy the file -->
+          <buildGetArtifactName property="build.buildFile" />
+          <var name="build.buildFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}.jar" />
+          <copy file="${build.buildSrcFile}" tofile="${build.buildFile}" />
+        </then>
+        <else>
+          <buildPackSource />
+          
+          <!-- move the file to be the build result -->
+          <buildGetArtifactName property="build.buildFile" />
+          <move file="${build.buildSrcFile}" tofile="${build.buildFile}" />
+          <var name="build.buildSrcFile" unset="true" />
+        </else>
+      </if>
     </sequential>
   </macrodef>
   
@@ -421,24 +493,22 @@
   </target>
   
   <target name="build">
-    <mavenSetPom />
-    <buildPackSource />
-    
-    <!-- move the file to be the build result -->
-    <var name="build.buildFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}.jar" />
-    <move file="${build.buildSrcFile}" tofile="${build.buildFile}" />
+    <javascriptBuild />
   </target>
   
   <target name="javadoc">
-    <!-- property="build.buildJavaDocFile" -->
+    <buildJavaDoc addExcludes="**/*" />
   </target>
   
   <target name="sources">
-    <!-- property="build.buildSrcFile" -->
+    <mavenSetPom />
+    <buildPackSource />
   </target>
   
   <target name="assemble">
     <fail>Not available yet</fail>
+    
+    <javascriptCreateOptimizerDir />
     
     <mavenResolveDependencies fileset="javascript.tmp.deps" scope="runtime" />
   </target>
