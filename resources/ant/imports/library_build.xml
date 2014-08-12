@@ -442,9 +442,6 @@
     </sequential>
   </macrodef>
   
-  <!--
-    buildPack - wraps the bin directory in build in a jar
-    -->
   <macrodef name="buildPack">
     <attribute name="addExcludes" default="" />
     <attribute name="src" default="" />
@@ -482,9 +479,7 @@
         <then>
 
           <!-- get the pom settings -->
-          <mavenSetPom />
-          
-          <var name="build.tmp.buildFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}.jar" />
+          <buildGetArtifactName property="build.tmp.buildFile" type="build" />
           <var name="build.buildFile" value="${build.tmp.buildFile}" />
         </then>
         <else>
@@ -503,7 +498,7 @@
       <!-- check if sources are available -->
       <if>
         <available file="${build.srcdir}" />
-        <then>
+        <then>        
           <jar destfile="${build.tmp.buildFile}" basedir="${build.tmp.src}">
          
             <!-- add the resources -->
@@ -550,10 +545,7 @@
     <attribute name="excludesPattern" default="" />
     
     <sequential>
-    
-      <!-- get the pom settings -->
-      <mavenSetPom />
-    
+        
       <!-- set the jar files -->
       <buildGetArtifactName property="build.buildSrcFile" type="src" />
       
@@ -611,10 +603,7 @@
           <fail>No latest JavaDoc found, the JavaDoc cannot be packed</fail>
         </then>
       </if>
-    
-      <!-- get the pom settings -->
-      <mavenSetPom />
-    
+       
       <!-- set the jar files -->
       <buildGetArtifactName property="build.buildJavaDocFile" type="javadoc" />
 
@@ -911,11 +900,13 @@
     <attribute name="rootFolder" />
     <attribute name="defaultLocation" default="" />
     <attribute name="defaultClean" default="false" />
+    <attribute name="defaultUnzip" default="false" />
+    <attribute name="defaultExcludeFiles" default="" />
     <attribute name="basedir" default="" />
     
     <sequential>
       <setLogLevel loglevel="warn" />
-    
+          
       <!-- reset the properties of the mapper -->
       <var name="resMapper.location" value="" unset="true"/>
       <var name="resMapper.rename" value="" unset="true"/>
@@ -983,7 +974,7 @@
           </and>
         </or>
         <then>        
-          <var name="resMapper.unzip" value="false" />
+          <var name="resMapper.unzip" value="@{defaultUnzip}" />
         </then>
       </if>
       
@@ -1015,7 +1006,7 @@
       <if>
         <not><isset property="resMapper.excludeFiles" /></not>
         <then>
-          <var name="resMapper.excludeFiles" value="" />
+          <var name="resMapper.excludeFiles" value="@{defaultExcludeFiles}" />
         </then>
       </if>
       
@@ -1026,7 +1017,10 @@
         
           <!-- depends on the type -->
           <if>
-            <equals arg1="@{resourceType}" arg2="${build.resource.resource}" />
+            <or>
+              <equals arg1="@{resourceType}" arg2="${build.resource.resource}" />
+              <equals arg1="@{resourceType}" arg2="${build.resource.builtLibrary}" />
+            </or>
             <then>
               <var name="resMapper.flatten" value="false" />
             </then>
@@ -1391,8 +1385,6 @@
           <fail>No latest assembly found, the application cannot be packed</fail>
         </then>
       </if>
-      
-      <mavenSetPom />
       
       <!-- pack it -->
       <buildGetArtifactName property="build.appFile" type="app" />

@@ -40,6 +40,22 @@
     ]]>
   </scriptdef>
   
+  <scriptdef name="replaceAndSetProperty" language="javascript">
+    <attribute name="property" />
+    <attribute name="value" />
+    <attribute name="replace" />
+    <attribute name="replacement" />
+    
+    <![CDATA[
+      var property = attributes.get("property");
+      var value = attributes.get("value");
+      var replace = attributes.get("replace");
+      var replacement = attributes.get("replacement");
+      
+      project.setProperty(property, value.replace(replace, replacement));
+    ]]>
+  </scriptdef>
+  
   <scriptdef name="incProperty" language="javascript">
     <attribute name="property" />
     <![CDATA[

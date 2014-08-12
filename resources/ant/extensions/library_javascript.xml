@@ -6,9 +6,12 @@
     
   <property name="javascript.library.resfile.serverSettings" location="${library_javascript.basedir}/library_javascript-serverSettings.xml" description="The settings for the server to be used" />
   <property name="javascript.library.resfile.testJs" location="${library_javascript.basedir}/library_javascript-test.js" description="JavaScript which is a template for the generated one, containing all tests defined for the project" />
-  <property name="javascript.library.resfile.indexHtml" location="${library_javascript.basedir}/library_javascript-index.html" description="Sample index.html, which can be used as entryPoint for an application" />
+  <property name="javascript.library.resfile.lib_indexHtml" location="${library_javascript.basedir}/library_javascript_lib-index.html" description="Sample index.html for libraries, which can be used to test a library" />
+  <property name="javascript.library.resfile.app_indexHtml" location="${library_javascript.basedir}/library_javascript_app-index.html" description="Sample index.html for applications, which can be used as entry-point" />
   <property name="javascript.library.resfile.testToolZip" location="${main.root}/qunit/qunit-1.12.0.zip" description="Default tool used to run tests for JavaScripts" />
-  <property name="javascript.library.resfile.optimizerZip" location="${main.root}/optimizer/r-2.1.11.zip" description="Default tool used to optimize the project" />
+  <property name="javascript.library.resfile.optimizerZip" location="${main.root}/optimizerjs/r-2.1.11.zip" description="Default tool used to optimize the project" />
+  <property name="javascript.library.resfile.optimizerLibConfig" location="${main.root}/optimizerjs/defaultLibConfig.js" description="Default tool used to optimize the project" />
+  <property name="javascript.library.resfile.optimizerAppConfig" location="${main.root}/optimizerjs/defaultAppConfig.js" description="Default tool used to optimize the project" />
   <property name="javascript.library.resfile.phantomJsTestScript" location="${main.root}/phantomjs/qunit-phantomjs-runner-2013.03.28.js" description="Default phantomjs script to test QUnit tests" />
   
   <property name="javascript.testtool" value="${javascript.library.resfile.testToolZip}" description="The tool to be used for testing, has to be a zip-archive" />
@@ -16,8 +19,10 @@
   <property name="javascript.testbrowser.arguments" value="${javascript.library.resfile.phantomJsTestScript}" description="Arguments passed to the executable" />
   
   <property name="javascript.optimizer" value="${javascript.library.resfile.optimizerZip}" description="The tool to be used for optimization, has to be a zip-archive" />
+  <property name="javascript.optimizer.lib-config" value="${javascript.library.resfile.optimizerLibConfig}" description="The configuration file used to optimize the project" />
+  <property name="javascript.optimizer.app-config" value="${javascript.library.resfile.optimizerAppConfig}" description="The configuration file used to optimize the project" />
   <property name="javascript.optimizer.executable" value="node" description="The executable used to optimize the project" />
-  <property name="javascript.optimizer.arguments" value="r.js -o vpi-webapp.build.js" description="Arguments passed to the executable" />
+  <property name="javascript.optimizer.arguments" value="[[javascript.optimizer.tool]]/r.js -o [[javascript.optimizer.config]]" description="Arguments passed to the executable, the string [[javascript.optimizer.config]] will be replaced by the full location of the created configuration file, the string [[javascript.optimizer.tool]] will be replaced with the location of the optimizer-tool" />
   
   <property name="javascript.server.controlport" value="9000" description="The port to start the control of the server on" />
   <property name="javascript.server.httpport" value="10000" description="The port to start the http server on" />
@@ -31,6 +36,7 @@
   <property name="javascript.test.dir" value="test" description="Directory to keep generated information while testing" />
   <property name="javascript.testtool.dir" value="testtool" description="Directory to store stuff for testing" />
   <property name="javascript.optimizer.dir" value="optimizer" description="Directory to store stuff for optimization" />
+  <property name="javascript.optimizerDir" value="${build.dir}/${javascript.optimizer.dir}" description="The location of optimized files" />
   
   <property name="javascript.srvdir" location="${javascript.srv.dir}" description="Directory for files only needed by the environment" />
   <property name="javascript.depdir" location="${javascript.srvdir}/${javascript.scripts.dir}" description="Directory for files only needed by the environment" />
@@ -43,6 +49,8 @@
   <property name="javascript.test.var" value="antProcessenablerTest" description="The name of the global variable defined in the test script containing test information, i.e. the test scripts" />
   
   <property name="javascript.devenv.createIndexHtml" value="true" description="Defines if a sample index.html should be created, in the case that one does not exist so far." />
+  
+  <property name="build.pack.default.excludes" value="**/*.js" description="Defines whatever has to be excluded from a jar by default" />
   
   <!--
     This method is used to start a server which provides the files of the project to a browser. If the environment changes, 
@@ -196,7 +204,21 @@
         </and>
         <then>
           <mavenSetPom />
-          <fileReplaceAllProperties file="${javascript.library.resfile.indexHtml}" destFile="@{resourcedir}/index.html" force="true" />
+          
+          <if>
+            <and>
+              <isset property="build.launcher.mainClass" />
+              <not><equals arg1="${build.launcher.mainClass}" arg2="" /></not>
+            </and>
+            <then>
+              <transformPackagesToPath property="javascript.tmp.appPath" 
+                                       packages="${build.launcher.mainClass}" suffix="" packageSeparatore="/" separatore="," />
+              <fileReplaceAllProperties file="${javascript.library.resfile.app_indexHtml}" destFile="@{resourcedir}/index.html" force="true" />
+            </then>
+            <else>
+              <fileReplaceAllProperties file="${javascript.library.resfile.lib_indexHtml}" destFile="@{resourcedir}/index.html" force="true" />
+            </else>
+          </if>
         </then>
       </if>
     </sequential>
@@ -313,13 +335,31 @@
     </sequential>
   </macrodef>
   
-  <macrodef name="javascriptCreateOptimizerDir">
-  
-    <sequential>
-      <var name="javascript.tmp.optimizerDir" value="${build.tmpdir}/${javascript.optimizer.dir}" />
+  <!--
+    This method is used to create a directory for the optimization-tool. The created directory can than be read using the 
+    property javascript.tmp.optimizerToolDir.
+
+    @param basedir
+      the base directory to create a tool directory in and unzip the optimization tool to
     
+    @fails 
+      <ul>
+        <li>if the optimization-tool cannot be found</li>
+        <li>if the specified optimization-tool isn't a archive</li>
+        <li>if the location cannot be accessed</li>
+      </ul>
+            
+    @author Philipp Meisen
+    @since 1.0.1
+  -->
+  <macrodef name="javascriptCreateOptimizerToolDir">
+    <attribute name="basedir" default="${build.tmpdir}" />
+    
+    <sequential>
+        
       <!-- cleanUp the directory -->
-      <fileCleanUp dir="${javascript.tmp.optimizerDir}" recreate="true" />
+      <var name="javascript.tmp.optimizerToolDir" value="@{basedir}/tool" />
+      <fileCleanUp dir="${javascript.tmp.optimizerToolDir}" recreate="true" />
       
       <!-- check for the optimizer -->
       <if>
@@ -330,7 +370,107 @@
       </if>
 
       <!-- unzip and replace the properties -->
-      <fileReplaceAllPropertiesInZip file="${javascript.optimizer}" dest="${javascript.tmp.optimizerDir}" rezip="false" />
+      <fileReplaceAllPropertiesInZip file="${javascript.optimizer}" dest="${javascript.tmp.optimizerToolDir}" rezip="false" />
+    </sequential>
+  </macrodef>
+  
+  <!--
+    This method is used to create an optimized code. The method can build an application (i.e. code is wrapped to one
+    JavaScript file) or a library (the different files of the package are uglified). The option depends on the passed mainClass. 
+    If the mainClass is empty the method assumes that a library is build, otherwise an application is build. The final 
+    directory with the code is stored within the property javascript.tmp.optimizerResultDir.
+
+    @param basedir
+      the base directory to create the optimized code
+    @param mainClass
+      the class of an application, if left empty a library will be build
+                
+    @author Philipp Meisen
+    @since 1.0.1
+  -->
+  <macrodef name="javascriptOptimizer">
+    <attribute name="basedir" default="${javascript.optimizerDir}" />
+    <attribute name="mainClass" default="" />
+    
+    <sequential>
+      <mavenSetPom />
+    
+      <replaceAndSetProperty property="javascript.tmp.basedir" value="@{basedir}" replace="\" replacement="/" />
+      <fileCleanUp dir="${javascript.tmp.basedir}" recreate="true" />
+
+      <!-- create the directory for the optimizer -->
+      <javascriptCreateOptimizerToolDir basedir="${javascript.tmp.basedir}" />
+      
+      <!-- define some directories needed -->
+      <var name="javascript.tmp.optimizerSourcesDir" value="${javascript.tmp.basedir}/sources" />
+      <var name="javascript.tmp.optimizerResultDir" value="${javascript.tmp.basedir}/build" />
+            
+      <!-- decide if we have an application or a libraries to be optimized -->
+      <var name="javascript.tmp.optimizerConfig" value="${javascript.tmp.basedir}/optimizerConfig.file" />
+      <if>
+        <equals arg1="@{mainClass}" arg2="" />
+        <then>
+          <var name="javascript.tmp.appPath" value="" />
+          <var name="javascript.tmp.optimizer.config" value="${javascript.optimizer.lib-config}" />
+        </then>
+        <else>
+
+          <!-- copy the dependent files -->
+          <mavenResolveDependencies fileset="javascript.tmp.deps" scope="runtime" />
+          <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${javascript.tmp.optimizerSourcesDir}]];defaultLocation=[[${javascript.server.scripts.dir}]];defaultUnzip=[[true]];defaultExcludeFiles=[[META-INF,META-INF/**/*]]">
+            <fileset refid="javascript.tmp.deps" />
+          </fileCallMacroForEach>
+          
+          <!-- copy the resources -->
+          <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.resource}]];rootFolder=[[${javascript.tmp.optimizerSourcesDir}]]">
+            <fileset dir="${build.resourcedir}" />
+          </fileCallMacroForEach>
+      
+          <!-- define the application -->
+          <transformPackagesToPath property="javascript.tmp.appPath" 
+                                   packages="${build.launcher.mainClass}" suffix="" packageSeparatore="/" separatore="," />
+          <var name="javascript.tmp.optimizer.config" value="${javascript.optimizer.app-config}" />
+        </else>
+      </if>
+      <fileReplaceAllProperties file="${javascript.tmp.optimizer.config}" destFile="${javascript.tmp.optimizerConfig}" force="true" />
+      
+      <!-- copy the sources -->
+      <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.builtLibrary}]];rootFolder=[[${javascript.tmp.optimizerSourcesDir}]];defaultLocation=[[${javascript.server.scripts.dir}]]">
+        <fileset dir="${build.srcdir}" />
+      </fileCallMacroForEach>
+            
+      <!-- replace the values within the arguments -->
+      <replaceAndSetProperty property="javascript.tmp.optimizer.arguments" value="${javascript.optimizer.arguments}" 
+                             replace="[[javascript.optimizer.config]]" replacement="&quot;${javascript.tmp.optimizerConfig}&quot;" />
+      <replaceAndSetProperty property="javascript.tmp.optimizer.arguments" value="${javascript.tmp.optimizer.arguments}" 
+                             replace="[[javascript.optimizer.tool]]" replacement="&quot;${javascript.tmp.optimizerToolDir}&quot;" />
+
+      <!-- create a file for the optimizer to be executed -->
+      <echo file="${javascript.tmp.basedir}/optimize.bat" append="false">@echo off
+"${javascript.optimizer.executable}" ${javascript.tmp.optimizer.arguments}
+      </echo>
+            
+      <!-- run the optimization -->
+      <var name="javascript.tmp.output" unset="true" />
+      <var name="javascript.tmp.result" unset="true" />
+      <exec executable="${javascript.tmp.basedir}/optimize.bat" failonerror="false" outputproperty="javascript.tmp.output" resultproperty="javascript.tmp.result" />     
+      <echo>${javascript.tmp.output}</echo>
+      
+      <!-- now do some cleanup -->
+      <for param="javascript.tmp.logfile">
+        <path><fileset dir="${javascript.tmp.optimizerResultDir}" includes="build*.*,build,build_*.*,*.log" /></path>
+        <sequential>
+          <fileCleanUp file="@{javascript.tmp.logfile}" recreate="true" />
+        </sequential>
+      </for>
+
+      <!-- add the scripts folder to the result, if it's a library -->
+      <if>
+        <equals arg1="@{mainClass}" arg2="" />
+        <then>
+          <var name="javascript.tmp.optimizerResultDir" value="${javascript.tmp.optimizerResultDir}/${javascript.server.scripts.dir}" />
+        </then>
+      </if>      
     </sequential>
   </macrodef>
   
@@ -441,30 +581,43 @@
   
   <macrodef name="javascriptBuild">
     <sequential>
-      <mavenSetPom />
+      <javascriptOptimizer />
       
+      <!-- get the name of the build -->     
+      <buildGetArtifactName property="build.buildFile" type="build" />
+      
+      <!-- create the file -->
+      <fileCleanUp file="${build.buildFile}" recreate="false" />
+      <buildPack src="${javascript.tmp.optimizerResultDir}" dest="${build.buildFile}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="javascriptAssemble">
+    <attribute name="mainClass" default="${build.launcher.mainClass}" />
+    
+    <sequential>
+      <!-- make sure we have a build -->
       <if>
-        <and>
-          <isset property="build.buildSrcFile" />
-          <not><equals arg1="${build.buildSrcFile}" arg2="" /></not>
-          <available file="${build.buildSrcFile}" />
-        </and>
+        <not><equals arg1="${build.assembly.create}" arg2="true" /></not>
         <then>
-          
-          <!-- just copy the file -->
-          <buildGetArtifactName property="build.buildFile" />
-          <var name="build.buildFile" value="${build.dir}/${maven.pom.artifactId}-${maven.pom.version}.jar" />
-          <copy file="${build.buildSrcFile}" tofile="${build.buildFile}" />
+          <fail>You must set the build.assembly.create attribute to true so that the project can be assembled</fail>
         </then>
-        <else>
-          <buildPackSource />
-          
-          <!-- move the file to be the build result -->
-          <buildGetArtifactName property="build.buildFile" />
-          <move file="${build.buildSrcFile}" tofile="${build.buildFile}" />
-          <var name="build.buildSrcFile" unset="true" />
-        </else>
+        <elseif>
+          <equals arg1="@{mainClass}" arg2="" />
+          <then>
+            <fail>No main-class (build.launcher.mainClass) specified for application assembly</fail>
+          </then>
+        </elseif>
       </if>
+    
+      <javascriptOptimizer mainClass="@{mainClass}" />
+      
+      <!-- get the name of the build -->
+      <buildGetArtifactName property="build.appFile" type="app" />
+      
+      <!-- create the file -->
+      <fileCleanUp file="${build.appFile}" recreate="false" />
+      <zip basedir="${javascript.tmp.optimizerResultDir}" destfile="${build.appFile}" />
     </sequential>
   </macrodef>
   
@@ -501,15 +654,10 @@
   </target>
   
   <target name="sources">
-    <mavenSetPom />
     <buildPackSource />
   </target>
   
   <target name="assemble">
-    <fail>Not available yet</fail>
-    
-    <javascriptCreateOptimizerDir />
-    
-    <mavenResolveDependencies fileset="javascript.tmp.deps" scope="runtime" />
+    <javascriptAssemble />    
   </target>
 </project>
