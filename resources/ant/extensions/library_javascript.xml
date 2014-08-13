@@ -454,7 +454,15 @@
       <var name="javascript.tmp.output" unset="true" />
       <var name="javascript.tmp.result" unset="true" />
       <exec executable="${javascript.tmp.basedir}/optimize.bat" failonerror="false" outputproperty="javascript.tmp.output" resultproperty="javascript.tmp.result" />     
-      <echo>${javascript.tmp.output}</echo>
+
+      <!-- fail on exception -->
+      <if>
+        <or>
+          <not><equals arg1="${javascript.tmp.result}" arg2="0" /></not>
+          <contains string="${javascript.tmp.output}" substring="error:" casesensitive="false" />
+        </or>
+        <then><fail>${javascript.tmp.output}</fail></then>
+      </if>
       
       <!-- now do some cleanup -->
       <for param="javascript.tmp.logfile">
