@@ -220,7 +220,7 @@
         </then>
         <else>
           <fileInfo file="${eclipse.tmp.classpathentry}" />
-          <echo level="warn">The '${fileInfo.name}' is not available on the classpath, therefore the attribute cannot be added.</echo>
+          <echo level="warning">The '${fileInfo.name}' is not available on the classpath, therefore the attribute cannot be added.</echo>
         </else>
       </if>
     </sequential>

@@ -452,7 +452,7 @@
           <buildMoveResource rootFolder="${build.tmpdir}" resource="${gwt.binDir}" resourceType="${gwt.resource.bin}" />
         </then>
         <else>
-          <echo level="warn">No GWT build found - therefore only resources will be packed</echo>
+          <echo level="warning">No GWT build found - therefore only resources will be packed</echo>
         </else>
       </if>
            
@@ -928,7 +928,7 @@
     <!-- deploy the parents -->
     <mavenDeployParents />
 
-    <echo level="warn">Please modify the needed files now! Especially modify the version number in the pom.xml and/or your parent-poms, so that a new generation of this artifact can be developed</echo>
+    <echo level="warning">Please modify the needed files now! Especially modify the version number in the pom.xml and/or your parent-poms, so that a new generation of this artifact can be developed</echo>
   </target>
 
   <target name="test" depends="buildServer, buildAdditionals">
@@ -1000,7 +1000,7 @@
               </chainedmapper>
             </copy>
           </try>
-          <catch><echo level="warn">The GWT libraries of the project could not be placed at ${eclipse.dir}/${gwt.eclipse.pluginDir}. Please make sure that the GWT PlugIn used in this project uses the correct GWT version ${gwt.version}</echo></catch>
+          <catch><echo level="warning">The GWT libraries of the project could not be placed at ${eclipse.dir}/${gwt.eclipse.pluginDir}. Please make sure that the GWT PlugIn used in this project uses the correct GWT version ${gwt.version}</echo></catch>
           <finally />
         </trycatch>
       </then>
@@ -1068,7 +1068,7 @@
                 <equals arg1="gwt.module" arg2="" />
               </or>
               <then>
-                <echo level="warn">You have to set the gwt.module property, prior to creating the index.html. The creation will be skipped. The index.html will only be created if it doesn't exists, therefore keep in mind to delete it if you change the gwt.module property.</echo>
+                <echo level="warning">You have to set the gwt.module property, prior to creating the index.html. The creation will be skipped. The index.html will only be created if it doesn't exists, therefore keep in mind to delete it if you change the gwt.module property.</echo>
               </then>
               <else>
                 <fileReplaceAllProperties file="${gwt.library.resfile.template.index}" destFile="${gwt.tmp.warDir}/index.html" />

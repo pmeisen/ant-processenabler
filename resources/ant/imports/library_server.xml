@@ -13,6 +13,8 @@
 
   <property name="server.library.resfile.serverSettings" location="${library_server.basedir}/library_server-serverSettings.xml" description="The settings for the server to be used" />
   
+  <property name="server.renameSettings" value="true" description="true if the settings file should be renamed to fit the general requirements, otherwise false i.e. the file will be named as provided" />
+  <property name="server.generic.class" value="net.meisen.general.server.Server" description="The default generic server class used" />
   <property name="server.type" value="" description="The server type to be used, currently valid tomcat6" />
   <property name="server.dir" value="applicationServer" description="The name of the main-directory which contains application server specific resources" />
   
@@ -23,44 +25,131 @@
   
   <macrodef name="serverGenericStart">
     <attribute name="appPort" />
-    <attribute name="appListener" default="" />
-    <attribute name="appServerSettings" default="" />
     <attribute name="port" />
+    
+    <attribute name="appServerSettings" default="${server.library.resfile.serverSettings}" />
+    <attribute name="renameServerSettings" default="${server.renameSettings}" />
+    
+    <attribute name="serverClass" default="${server.generic.class}" />
+    <attribute name="serverResources" default="" />
+    <attribute name="classpathId" default="" />
     
     <sequential>
 
       <!-- define variables to be replaced in the settings -->
       <var name="server.tmp.generic.start.port" value="@{port}" />
       <var name="server.tmp.generic.main.port" value="@{appPort}" />
-    
+      
+      <!-- create a folder for the resources of the server -->
       <if>
-        <not><equals arg1="@{appServerSettings}" arg2="" /></not>
+        <equals arg1="@{serverResources}" arg2="" />
         <then>
-          <var name="server.tmp.server.sourceFile" value="@{appServerSettings}" />
+          <generateUUID property="server.tmp.uuid" />
+          <var name="server.tmp.resources" value="${main.tmpdir}/${server.tmp.uuid}" />
         </then>
-        <elseif>
-          <not><equals arg1="@{appListener}" arg2="" /></not>
-          <then>
-            <var name="server.tmp.generic.main.listener" value="@{appListener}" />
-            <var name="server.tmp.server.sourceFile" value="${server.library.resfile.serverSettings}" />     
-          </then>
-        </elseif>
+        <else><var name="server.tmp.resources" value="@{serverResources}" /></else>
+      </if>
+      <mkdir dir="${server.tmp.resources}" />
+      
+      <!-- create the settings for the server -->
+      <varNormalizeBoolean property="server.tmp.renameServerSettings" value="@{renameServerSettings}" />
+      <if>
+        <equals arg1="${server.tmp.renameServerSettings}" arg2="true" />
+        <then>
+          <fileReplaceAllProperties file="@{appServerSettings}" destFile="${server.tmp.resources}/serverSettings.xml" force="true" />
+        </then>
         <else>
-          <fail>You have to specify a appServerSettings or an appListener</fail>
+          <fileInfo file="@{appServerSettings}" propertyPrefix="server.tmp.settings" />
+          <fileReplaceAllProperties file="@{appServerSettings}" destFile="${server.tmp.resources}/${server.tmp.settings.name}" force="true" />          
         </else>
       </if>
       
-      <!-- create the settings for the server -->
-      <var name="server.tmp.server.file" value="${main.tmpdir}/serverSettings.xml" />  
-      <fileReplaceAllProperties file="${server.tmp.server.sourceFile}" destFile="${server.tmp.server.file}" force="true" />
-    
+      <!-- create the additional classpath items -->
+      <if>
+        <equals arg1="@{classpathId}" arg2="" />
+        <then>
+          <path id="server.tmp.refAddedClasspathId" />
+        </then>
+        <else>
+          <path id="server.tmp.refAddedClasspathId">
+            <fileset refid="@{classpathId}" />
+          </path>
+        </else>
+      </if>
+      <path id="server.tmp.refAntClasspathId">
+        <pathelement path="${java.class.path}"/>
+      </path>
+      
+      <!-- check if a server is on the path -->
+      <findJarFile property="server.tmp.hasServerClass" class="net.meisen.general.server.Server" pathId="server.tmp.refAddedClasspathId" excludeAntClasspath="true" />
+      
+      <!-- check if a logging is on the path -->
+      <findJarFile property="server.tmp.hasLoggerClass" class="org.slf4j.LoggerFactory" pathId="server.tmp.refAddedClasspathId" excludeAntClasspath="true" />
+      
+      <!-- define what we need from the additional libraries -->
+      <var name="server.tmp.addedLibraries" unset="true" />
+      <if>
+        <isset property="server.tmp.hasServerClass" />
+        <then>
+          <pathconvert property="server.tmp.addedLibraries">
+            <path refid="server.tmp.refAddedClasspathId" />
+          </pathconvert>
+        </then>
+      </if>
+      
+      <!-- define what we need from ant -->
+      <var name="server.tmp.antLibraries" unset="true" />
+      <if>
+        <and>
+          <isset property="server.tmp.hasServerClass" />
+          <isset property="server.tmp.hasLoggerClass" />
+        </and>
+        <!-- if we have a server with logging keep nothing -->
+        <then>
+        </then>
+        <!-- if we have a server without logging keep the logging only -->
+        <elseif>
+          <isset property="server.tmp.hasServerClass" />
+          <then>
+            <pathconvert property="server.tmp.antLibraries">
+              <restrict>
+                <path refid="server.tmp.refAntClasspathId" />
+                <rsel:name regex="slf.*" xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors" />
+              </restrict>
+            </pathconvert>
+          </then>
+        </elseif>
+        <!-- if we have just logging, remove it -->
+        <elseif>
+          <isset property="server.tmp.hasLoggerClass" />
+          <then>
+            <pathconvert property="server.tmp.antLibraries">
+              <restrict>
+                <path refid="server.tmp.refAntClasspathId" />
+                <rsel:not xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
+                  <rsel:name regex="slf.*" />
+                </rsel:not>
+              </restrict>
+            </pathconvert>
+          </then>
+        </elseif>
+        <!-- if we don't have a server and no logging -->
+        <else>
+          <pathconvert property="server.tmp.antLibraries">
+            <path refid="server.tmp.refAntClasspathId" />
+          </pathconvert>
+        </else>
+      </if>
+
       <!-- start the server -->
-      <java classname="net.meisen.general.server.Server" fork="true">
+      <java classname="@{serverClass}" fork="true">        
         <classpath>
-          <pathelement path="${main.tmpdir}"/>
-          <pathelement path="${java.class.path}"/>
+          <pathelement path="${server.tmp.resources}" />
+          <pathelement path="${server.tmp.antLibraries}" />
+          <pathelement path="${server.tmp.addedLibraries}" />
         </classpath>
       </java>
+
     </sequential>
   </macrodef>
   
@@ -100,7 +189,7 @@
       <waitfor maxwait="@{timeout}" maxwaitunit="millisecond" checkevery="500" timeoutproperty="server.tmp.server.timeout">
         <socket server="localhost" port="@{port}"/>
       </waitfor>
-
+      
       <!-- make sure the server is available now -->
       <if>
         <isset property="server.tmp.server.timeout" />

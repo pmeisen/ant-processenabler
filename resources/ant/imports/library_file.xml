@@ -392,7 +392,7 @@
           <fileCleanUp dir="${file.tmp.stagingArea}" recreate="false" />
         </then>
         <else>
-          <echo level="warn">You are trying to replace properties in a file which is not a zip or a jar</echo>
+          <echo level="warning">You are trying to replace properties in a file which is not a zip or a jar</echo>
         </else>
       </if>
     </sequential>

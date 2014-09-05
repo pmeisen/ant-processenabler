@@ -218,7 +218,7 @@
         <elseif>
           <equals arg1="@{test}" arg2="" />
           <then>
-            <echo level="warn">No test suite defined, nothing to be tested</echo>
+            <echo level="warning">No test suite defined, nothing to be tested</echo>
           </then>
         </elseif>
         <else>
@@ -292,7 +292,7 @@
       <if>                
         <equals arg1="${test.suite.class}" arg2="" />
         <then>
-          <echo level="warn">No test suite defined, nothing to deploy</echo>
+          <echo level="warning">No test suite defined, nothing to deploy</echo>
         </then>
         <elseif>
           <or>

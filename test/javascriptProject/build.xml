@@ -70,7 +70,7 @@
     <sequential>
     
       <!-- just run the default -->
-      <javascriptCreateDependenciesDir srvdir="${test.js.tmp.envdir}" />
+      <javascriptCreateDependenciesDir scriptsDir="${test.js.tmp.envdir}/${javascript.server.scripts.dir}" />
       
       <!-- make sure the correct amount of dependencies was resolved -->
       <if>
@@ -102,7 +102,7 @@
     <sequential>
     
       <!-- just run the default -->
-      <javascriptCreateTestDir srvdir="${test.js.tmp.envdir}" />
+      <javascriptCreateTestDir testDir="${test.js.tmp.envdir}/${javascript.test.dir}" />
       
       <!-- make sure the file was generated -->
       <if>

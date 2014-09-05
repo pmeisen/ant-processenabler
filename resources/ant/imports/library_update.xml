@@ -289,7 +289,7 @@
         </then>
       </elseif>
       <else>
-        <echo level="warn">Nothing is updated, because there is no distribution defined using the property 'distribute.assembly.to'</echo>
+        <echo level="warning">Nothing is updated, because there is no distribution defined using the property 'distribute.assembly.to'</echo>
       </else>
     </if>
   </target>
@@ -319,7 +319,7 @@
         <updateUpdate srcFile="${update.tmp.download}" destLocations="${distribute.update.to}" execute="${update.executeUpdate}" />
       </then>
       <else>
-        <echo level="warn">Nothing is updated, because there is no distribution defined using the property 'distribute.update.to'</echo>
+        <echo level="warning">Nothing is updated, because there is no distribution defined using the property 'distribute.update.to'</echo>
       </else>
     </if>
   </target>

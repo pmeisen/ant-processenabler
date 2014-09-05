@@ -786,7 +786,7 @@
           <fileset id="@{filesetid}" dir="${main.root}" includes="${misc.tmp.library.files}" />
         </then>
         <else>
-          <echo level="warn">Warning: The @{library}-library was not included and therefore won't be included in the wrap-up</echo>
+          <echo level="warning">Warning: The @{library}-library was not included and therefore won't be included in the wrap-up</echo>
           <fileset id="@{filesetid}" dir="${main.root}">
             <exclude name="**/*" />
           </fileset>
@@ -1022,6 +1022,51 @@
     <sequential>
       <var name="@{property}" unset="true" />
       <property name="@{property}" location="@{value}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="findJarFile">
+    <attribute name="property" />
+    <attribute name="class" />
+    <attribute name="pathId" />
+    
+    <attribute name="excludeAntClasspath" default="false" />
+
+    <sequential>
+      
+      <var name="misc.tmp.jarUrl" unset="true" />
+      <whichresource property="misc.tmp.jarUrl" class="@{class}">
+        <classpath><path refid="@{pathId}" /></classpath>
+      </whichresource>
+      
+      <!-- make sure that the find property is not the ant one -->
+      <varNormalizeBoolean property="misc.tmp.excludeAntClasspath" value="@{excludeAntClasspath}" />
+      <if>
+        <equals arg1="${misc.tmp.excludeAntClasspath}" arg2="true" />
+        <then>
+          <var name="misc.tmp.antJarUrl" unset="true" />
+          <whichresource property="misc.tmp.antJarUrl" class="@{class}" />
+          
+          <if>
+            <equals arg1="${misc.tmp.jarUrl}" arg2="${misc.tmp.antJarUrl}" />
+            <then>
+              <var name="misc.tmp.jarUrl" unset="true" />
+            </then>
+          </if>
+        </then>
+      </if>
+      
+      <!-- get the file -->
+      <var name="@{property}" unset="true" />
+      <if>
+        <isset property="misc.tmp.jarUrl" />
+        <then>
+          <pathconvert property="@{property}">
+            <url url="${misc.tmp.jarUrl}" />
+            <regexpmapper from="jar:file:/(.*)!.*" to="\1" />
+          </pathconvert>
+        </then>
+      </if>
     </sequential>
   </macrodef>
   

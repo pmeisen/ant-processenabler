@@ -1203,7 +1203,7 @@
           </then>
         </elseif>
         <else>
-          <echo level="warn">The parent of the resource '@{resource}' could only be determined partly: ${maven.tmp.registerParents.parent.groupId}:${maven.tmp.registerParents.parent.artifactId}:${maven.tmp.registerParents.parent.version}</echo>
+          <echo level="warning">The parent of the resource '@{resource}' could only be determined partly: ${maven.tmp.registerParents.parent.groupId}:${maven.tmp.registerParents.parent.artifactId}:${maven.tmp.registerParents.parent.version}</echo>
         </else>
       </if>
           

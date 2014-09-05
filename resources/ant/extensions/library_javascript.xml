@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
 <project name="library_javascript" >
-  <property name="javascript.library.version" value="1.0.1" description="The current version of the library" />
+  <property name="javascript.library.version" value="1.0.2" description="The current version of the library" />
   <dirname property="library_javascript.basedir" file="${ant.file.library_javascript}" />
     
   <property name="javascript.library.resfile.serverSettings" location="${library_javascript.basedir}/library_javascript-serverSettings.xml" description="The settings for the server to be used" />
@@ -30,8 +30,11 @@
   <property name="javascript.server.tests.dir" value="tests" description="The folder within the url to look for tests" />
   <property name="javascript.server.testtool.dir" value="testtool" description="The folder within the url to look for the test-tool" />
   <property name="javascript.server.runtest" value="runTests" description="The folder within the url to trigger tests" />
+  <property name="javascript.server.pom" location="pomServer.xml" description="The location of the dependencies used for the server" />
+  <property name="javascript.server.settings" value="${javascript.library.resfile.serverSettings}" description="The location of file used to configure the server" />
   
   <property name="javascript.srv.dir" value="_srv" description="Server directory" />
+  <property name="javascript.serverdep.dir" value="libs" description="Directory on server side which contains additional dependencies" />
   <property name="javascript.scripts.dir" value="scripts" description="Directory on server side which contains all scripts (combines several directories on the file-systems)" />
   <property name="javascript.test.dir" value="test" description="Directory to keep generated information while testing" />
   <property name="javascript.testtool.dir" value="testtool" description="Directory to store stuff for testing" />
@@ -39,6 +42,7 @@
   <property name="javascript.optimizerDir" value="${build.dir}/${javascript.optimizer.dir}" description="The location of optimized files" />
   
   <property name="javascript.srvdir" location="${javascript.srv.dir}" description="Directory for files only needed by the environment" />
+  <property name="javascript.serverdepdir" location="${javascript.srvdir}/${javascript.serverdep.dir}" description="Directory for additional libraries added to the server" />
   <property name="javascript.depdir" location="${javascript.srvdir}/${javascript.scripts.dir}" description="Directory for files only needed by the environment" />
   <property name="javascript.testdir" location="${javascript.srvdir}/${javascript.test.dir}" description="Directory for files only needed by the test-environment" />
   <property name="javascript.testtooldir" location="${javascript.srvdir}/${javascript.testtool.dir}" description="Directory for files of the test-tool" />
@@ -53,6 +57,46 @@
   <property name="build.pack.default.excludes" value="**/*.js" description="Defines whatever has to be excluded from a jar by default" />
   
   <!--
+    This method is used to resolve dependencies of the server, which might be added to load additional server
+    properties
+      
+    @param serverDependencyDir
+      the directory the dependencies of the server can be found in, those are copied there by <i>createDevEnv</i>
+    @param serverPomFile
+      the file defining additional or the dependencies of the server
+      
+    @fails 
+      <ul>
+        <li>if one of the dependencies cannot be resolved</li>
+      </ul>
+            
+    @author Philipp Meisen
+    @since 1.0.2
+  -->
+  <macrodef name="javascriptResolveServerDependencies">
+    <attribute name="serverDependencyDir" default="${javascript.serverdepdir}" />
+    <attribute name="serverPomFile" default="${javascript.server.pom}" />
+    
+    <sequential>
+    
+      <trycatch property="javascript.tmp.error">
+        <try>
+        
+          <!-- cleanUp the directory -->
+          <fileCleanUp dir="@{serverDependencyDir}" recreate="true" />
+          
+          <!-- resolve the dependencies -->
+          <mavenCopyDependencies dir="@{serverDependencyDir}" pomfile="@{serverPomFile}" scope="test" />
+        </try>
+        <catch>
+          <echo level="warning">Unable to reload the server-dependencies: ${javascript.tmp.error}</echo>
+        </catch>
+      </trycatch>
+      
+    </sequential>
+  </macrodef>
+  
+  <!--
     This method is used to start a server which provides the files of the project to a browser. If the environment changes, 
     i.e. the pom-file is modified, the <a href="#target_createDevEnv">createDevEnv</a> should be called. 
     
@@ -60,6 +104,10 @@
       the port of the http-server to be started
     @param controlPort
       the server's control-port, i.e. the port the server is controlled (e.g. shut-down) through
+    @param serverDependencyDir
+      the directory the dependencies of the server can be found in, those are copied there by <i>createDevEnv</i>
+    @param serverSettings
+      the file containing the settings of the server
     @param dependencyDir
       the directory the dependencies can be found in, those are copied there by <i>createDevEnv</i>
     @param resourceDir
@@ -86,13 +134,16 @@
     <attribute name="httpPort" default="${javascript.server.httpport}" />
     <attribute name="controlPort" default="${javascript.server.controlport}" />
     
+    <attribute name="serverDependencyDir" default="${javascript.serverdepdir}" />
+    <attribute name="serverSettings" default="${javascript.server.settings}" />
+  
     <attribute name="dependencyDir" default="${javascript.depdir}" />
     <attribute name="resourceDir" default="${build.resourcedir}" />
     <attribute name="srcDir" default="${build.srcdir}" />
     <attribute name="testDir" default="${javascript.testdir}" />
     <attribute name="testsDir" default="${test.srcdir}" />
     <attribute name="testtoolDir" default="${javascript.testtooldir}" />
-    
+
     <element name="task" />
   
     <sequential>
@@ -103,21 +154,46 @@
       <var name="javascript.tmp.testsDir" value="@{testsDir}" />
       <var name="javascript.tmp.testtoolDir" value="@{testtoolDir}" />
       
+      <!-- define the set of dependencies -->
+      <fileset id="javascript.tmp.addLibrary" dir="@{serverDependencyDir}">
+        <include name="**/*.jar"/>
+      </fileset>
+      
       <parallel>
-        <serverGenericStart port="@{controlPort}" appPort="@{httpPort}" appServerSettings="${javascript.library.resfile.serverSettings}" />
+      
+        <!-- start the server -->
+        <serverGenericStart port="@{controlPort}" appPort="@{httpPort}" classpathId="javascript.tmp.addLibrary"
+                            appServerSettings="@{serverSettings}" />
         
         <sequential>
 
           <!-- wait for the server -->
-          <serverGenericWait port="@{controlPort}" />
+          <serverGenericWait port="@{httpPort}" />
 
           <task />
              
           <!-- shutdown the server -->
-          <serverGenericStop port="@{controlPort}" />
+          <javascriptStopServer controlPort="@{controlPort}" />
         </sequential>
       </parallel>
 
+    </sequential>
+  </macrodef>
+  
+  <!--
+    This method is used to shutdown the started server.
+    
+    @param port
+      the server's control-port, i.e. the port the server is controlled (e.g. shut-down) through
+    
+    @author Philipp Meisen
+    @since 1.0.0
+  -->
+  <macrodef name="javascriptStopServer">
+    <attribute name="controlPort" default="${javascript.server.controlport}" />
+    
+    <sequential>
+      <serverGenericStop port="@{controlPort}" />
     </sequential>
   </macrodef>
     
@@ -125,35 +201,25 @@
     This method is used to create a dependencies' directory on the server, which contains all the resolved dependencies 
     (i.e. equal to the _eclipse directory created when working with a Java-project).
     
-    @param srvdir
+    @param scriptsDir
       the directory in which the dependencies should be placed
-    @param preferSources
-      'true' if sources should be resolved prior to the real artifacts (shouldn't be used when compiling for production),
-      if set to 'false' the real artifact (i.e. the sometimes uglified or optimized one) will be copied
-    @param removeVersions
-      'true' if the version information should be removed from the artifact, this is important e.g. when using the script 
-      within a html file (otherwise referring would be difficult)
-    @param removeClassifiers
-      'true' if the classifier (i.e. sources) should be removed, if set to 'false' it might be necessary to define different
-      html files
       
     @fails 
       <ul>
         <li>if on of the defined dependencies cannot be resolved</li>
-        <li>if the specified <i>srcdir</i> cannot be accessed or created</li>
+        <li>if the specified <i>scriptsDir</i> cannot be accessed or created</li>
       </ul>
             
     @author Philipp Meisen
     @since 1.0.0
   -->
   <macrodef name="javascriptCreateDependenciesDir">
-    <attribute name="srvdir" default="${javascript.srvdir}" />
+    <attribute name="scriptsDir" default="${javascript.depdir}" />
   
     <sequential>
-      <var name="javascript.tmp.scriptsDir" value="@{srvdir}/${javascript.scripts.dir}" />
     
       <!-- cleanUp the directory -->
-      <fileCleanUp dir="${javascript.tmp.scriptsDir}" recreate="true" />
+      <fileCleanUp dir="@{scriptsDir}" recreate="true" />
       
       <!-- create the other structure -->
       <mkdir dir="${build.srcdir}" />
@@ -167,7 +233,7 @@
           <fileset refid="javascript.tmp.deps" />
         </path>
         <sequential>
-          <unzip src="@{javascript.tmp.dependency}" dest="${javascript.tmp.scriptsDir}">
+          <unzip src="@{javascript.tmp.dependency}" dest="@{scriptsDir}">
             <patternset>
               <exclude name="META-INF,META-INF/**/*"/>
             </patternset>
@@ -225,13 +291,12 @@
   </macrodef>
   
   <macrodef name="javascriptCreateTestDir">
-    <attribute name="srvdir" default="${javascript.srvdir}" />
+    <attribute name="testDir" default="${javascript.testdir}" />
   
     <sequential>
-      <varLocation property="javascript.tmp.testdir" value="@{srvdir}/${javascript.test.dir}" />
     
       <!-- cleanUp the directory -->
-      <fileCleanUp dir="${javascript.tmp.testdir}" recreate="true" />
+      <fileCleanUp dir="@{testDir}" recreate="true" />
       
       <!-- create the list of all the dependencies -->
       <mavenResolveDependencies fileset="javascript.tmp.deps" scope="test" />
@@ -240,18 +305,20 @@
           <fileset refid="javascript.tmp.deps" />
         </path>
         <sequential>
-          <unzip src="@{javascript.tmp.dependency}" dest="${javascript.tmp.testdir}"/>
+          <unzip src="@{javascript.tmp.dependency}" dest="@{testDir}"/>
         </sequential>
       </for>
-      <fileset id="javascript.tmp.depFiles" dir="${javascript.tmp.testdir}">
+      <fileset id="javascript.tmp.depFiles" dir="@{testDir}">
         <include name="**/*.js" />
       </fileset>
+      
+      <varLocation property="javascript.tmp.testdir" value="@{testDir}" />
       <createResourceList property="javascript.tmp.depList" resourceCollectionId="javascript.tmp.depFiles" separatore=",">
         <mapper>
           <chainedmapper>
             <globmapper from="${javascript.tmp.testdir}/*" to="'${javascript.server.scripts.dir}/*'" handledirsep="true" />
             <scriptmapper language="javascript">
-              self.addMappedName(source.replace(/\\/g, '/'));
+               self.addMappedName(source.replace(/\\/g, '/'));
             </scriptmapper>
           </chainedmapper>
         </mapper>
@@ -288,11 +355,11 @@
       </createResourceList>
 
       <!-- replace the properties in the file to be generated -->
-      <fileReplaceAllProperties file="${javascript.library.resfile.testJs}" destFile="${javascript.tmp.testdir}/${javascript.test.js}" force="true" />
+      <fileReplaceAllProperties file="${javascript.library.resfile.testJs}" destFile="@{testDir}/${javascript.test.js}" force="true" />
       
       <!-- create another file which identifies this server for this session, not that another server is running somewhere -->
       <generateUUID property="javascript.test.currentId" />
-      <touch file="${javascript.tmp.testdir}/${javascript.test.currentId}"/>
+      <touch file="@{testDir}/${javascript.test.currentId}"/>
     </sequential>
   </macrodef>
   
@@ -314,13 +381,12 @@
     @since 1.0.0
   -->
   <macrodef name="javascriptCreateTestToolDir">
-    <attribute name="srvdir" default="${javascript.srvdir}" />
+    <attribute name="testToolDir" default="${javascript.testtooldir}" />
   
     <sequential>
-      <var name="javascript.tmp.testtooldir" value="@{srvdir}/${javascript.testtool.dir}" />
     
       <!-- cleanUp the directory -->
-      <fileCleanUp dir="${javascript.tmp.testtooldir}" recreate="true" />
+      <fileCleanUp dir="@{testToolDir}" recreate="true" />
       
       <!-- check for the test-tool -->
       <if>
@@ -331,10 +397,10 @@
       </if>
       
       <!-- unzip and replace the properties -->
-      <fileReplaceAllPropertiesInZip file="${javascript.testtool}" dest="${javascript.tmp.testtooldir}" rezip="false" />
+      <fileReplaceAllPropertiesInZip file="${javascript.testtool}" dest="@{testToolDir}" rezip="false" />
     </sequential>
   </macrodef>
-  
+    
   <!--
     This method is used to create a directory for the optimization-tool. The created directory can than be read using the 
     property javascript.tmp.optimizerToolDir.
@@ -481,37 +547,9 @@
       </if>      
     </sequential>
   </macrodef>
-  
-  <macrodef name="javascriptCreateTestToolDir">
-    <attribute name="srvdir" default="${javascript.srvdir}" />
-  
-    <sequential>
-      <var name="javascript.tmp.testtooldir" value="@{srvdir}/${javascript.testtool.dir}" />
-    
-      <!-- cleanUp the directory -->
-      <fileCleanUp dir="${javascript.tmp.testtooldir}" recreate="true" />
-      
-      <!-- check for the test-tool -->
-      <if>
-        <not><available file="${javascript.testtool}" /></not>
-        <then>
-          <fail>Cannot find or access the '${javascript.testtool}' archive which is defined to be used as test-tool</fail>
-        </then>
-      </if>
-      
-      <!-- unzip and replace the properties -->
-      <fileReplaceAllPropertiesInZip file="${javascript.testtool}" dest="${javascript.tmp.testtooldir}" rezip="false" />
-    </sequential>
-  </macrodef>
     
   <macrodef name="javascriptTest">
     <sequential>
-      <!-- 
-        update the test-tool and the generated test information, 
-        both information are just used by the tests
-        -->
-      <javascriptCreateTestToolDir />
-      <javascriptCreateTestDir />
       
       <!--
         now start the test - the server might be running already,
@@ -629,6 +667,22 @@
     </sequential>
   </macrodef>
   
+  <macrodef name="javascriptCreateDevEnv">
+    <sequential>
+    
+      <!-- update dependencies -->
+      <javascriptCreateDependenciesDir />
+      <javascriptCopyIndexHtml />
+      
+      <!-- update the tests -->
+      <javascriptCreateTestToolDir />
+      <javascriptCreateTestDir />
+      
+      <!-- update the server dependencies -->
+      <javascriptResolveServerDependencies />
+    </sequential>
+  </macrodef>
+  
   <!--
     This target starts the development-environment, i.e. a server which can be accessed via http://localhost:10000. 
     The tests can be accessed using http://localhost:10000/runTests.
@@ -636,7 +690,7 @@
     @author Philipp Meisen
     @since 1.0.0
   -->
-  <target name="startDevEnv">
+  <target name="startDevEnv" depends="createDevEnv">
     <javascriptStartServer>
       <task>
         <sleep hours="240" />
@@ -644,12 +698,29 @@
     </javascriptStartServer>
   </target>
   
-  <target name="createDevEnv">
-    <javascriptCreateDependenciesDir />
-    <javascriptCopyIndexHtml />
+  <!--
+    This target stops the development-environment.
+    
+    @author Philipp Meisen
+    @since 1.0.2
+  -->
+  <target name="shutdownDevEnv" depends="stopDevEnv" />
+  
+  <!--
+    This target stops the development-environment.
+    
+    @author Philipp Meisen
+    @since 1.0.2
+  -->
+  <target name="stopDevEnv">
+    <javascriptStopServer />
   </target>
   
-  <target name="test">
+  <target name="createDevEnv">
+    <javascriptCreateDevEnv />
+  </target>
+  
+  <target name="test" depends="createDevEnv">
     <javascriptTest />
   </target>
   

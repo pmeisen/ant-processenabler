@@ -833,20 +833,20 @@
               <contains string="${build.launcher.jvmArgs}" substring="-Xmx" casesensitive="false" />
             </and>
             <then>
-              <echo level="warn">Instead of passing the -XX:MaxPermSize and -Xmx via the jvmArgs use the build.launcher.maxPermSize and build.launcher.xmx properties</echo>
+              <echo level="warning">Instead of passing the -XX:MaxPermSize and -Xmx via the jvmArgs use the build.launcher.maxPermSize and build.launcher.xmx properties</echo>
               <var name="build.tmp.jvmArgs" value="${build.launcher.jvmArgs}" />
             </then>
             <elseif>
               <contains string="${build.launcher.jvmArgs}" substring="-XX:MaxPermSize=" casesensitive="false" />
               <then>
-                <echo level="warn">Instead of passing the -XX:MaxPermSize via the jvmArgs use the build.launcher.maxPermSize property</echo>
+                <echo level="warning">Instead of passing the -XX:MaxPermSize via the jvmArgs use the build.launcher.maxPermSize property</echo>
                 <var name="build.tmp.jvmArgs" value="${build.launcher.jvmArgs} -Xmx${build.launcher.xmx}" />
               </then>
             </elseif>
             <elseif>
               <contains string="${build.launcher.jvmArgs}" substring="-Xmx" casesensitive="false" />
               <then>
-                <echo level="warn">Instead of passing the -Xmx via the jvmArgs use the build.launcher.xmx property</echo>
+                <echo level="warning">Instead of passing the -Xmx via the jvmArgs use the build.launcher.xmx property</echo>
                 <var name="build.tmp.jvmArgs" value="${build.launcher.jvmArgs} -XX:MaxPermSize=${build.launcher.maxPermSize}" />
               </then>
             </elseif>
@@ -905,7 +905,7 @@
     <attribute name="basedir" default="" />
     
     <sequential>
-      <setLogLevel loglevel="warn" />
+      <setLogLevel loglevel="warning" />
           
       <!-- reset the properties of the mapper -->
       <var name="resMapper.location" value="" unset="true"/>
@@ -1089,7 +1089,7 @@
               <var name="resMapper.removeFromFolderStructure" value=".jar/${build.tmp.jarFile}" />
             </then>
             <else>
-              <echo level="warn">The file '${fileInfo.name}' cannot be moved in any jar, because no jar is specified</echo>
+              <echo level="warning">The file '${fileInfo.name}' cannot be moved in any jar, because no jar is specified</echo>
               <var name="resMapper.skip" value="true" />
             </else>
           </if>
@@ -1278,7 +1278,7 @@
                         <resourcecount refid="build.tmp.possibleJars" when="greater" count="1" />
                       </or>
                       <then>
-                        <echo level="warn">Skipping the modification of jar ${resMapper.placeInJar}, because there were at least two possible jars</echo>
+                        <echo level="warning">Skipping the modification of jar ${resMapper.placeInJar}, because there were at least two possible jars</echo>
                       </then>
                       <!-- the jar was modified already -->
                       <elseif>
@@ -1296,7 +1296,7 @@
                       </elseif>
                       <!-- we didn't find any -->
                       <else>
-                        <echo level="warn">The jar ${resMapper.placeInJar} could not be modified, because it could not be found</echo>
+                        <echo level="warning">The jar ${resMapper.placeInJar} could not be modified, because it could not be found</echo>
                       </else>
                     </if>
 
@@ -1611,7 +1611,7 @@
     <!-- deploy the parents -->
     <mavenDeployParents />
 
-    <echo level="warn">Please modify the needed files now! Especially modify the version number in the pom.xml and/or your parent-poms, so that a new generation of this artifact can be developed</echo>
+    <echo level="warning">Please modify the needed files now! Especially modify the version number in the pom.xml and/or your parent-poms, so that a new generation of this artifact can be developed</echo>
   </target>
   
   <target name="fullBuild" depends="removePreBuilds, build" />
