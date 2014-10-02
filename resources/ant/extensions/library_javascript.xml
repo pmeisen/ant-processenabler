@@ -486,12 +486,12 @@
           <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.dependency}]];rootFolder=[[${javascript.tmp.optimizerSourcesDir}]];defaultLocation=[[${javascript.server.scripts.dir}]];defaultUnzip=[[true]];defaultExcludeFiles=[[META-INF,META-INF/**/*]]">
             <fileset refid="javascript.tmp.deps" />
           </fileCallMacroForEach>
-          
+
           <!-- copy the resources -->
           <fileCallMacroForEach macro="buildMoveResource" parameters="resourceType=[[${build.resource.resource}]];rootFolder=[[${javascript.tmp.optimizerSourcesDir}]]">
             <fileset dir="${build.resourcedir}" />
           </fileCallMacroForEach>
-      
+
           <!-- define the application -->
           <transformPackagesToPath property="javascript.tmp.appPath" 
                                    packages="${build.launcher.mainClass}" suffix="" packageSeparatore="/" separatore="," />
