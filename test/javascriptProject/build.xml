@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
 <project name="testModifyProperties">
+  
+  <!-- define the dependency resolver, maven-settings -->
   <property name="maven.artifactory.source.url" value="http://localhost:6666/notavailable" />
   <property name="maven.artifactory.target.url" value="http://localhost:6666/notavailable" />
   <property name="maven.repository.source.local" value="repo" />
   <property name="maven.repository.target.local" value="repo" />
   
+  <!-- define the main-class for the test-project -->
+  <property name="build.launcher.mainClass" value="main" />
+  
+  <!-- add the JavaScript library -->
   <property name="main.import.library.javascript" value="true" />
 
   <!-- use the default settings 
@@ -74,7 +80,7 @@
       
       <!-- make sure the correct amount of dependencies was resolved -->
       <if>
-        <resourcecount when="ne" count="1">
+        <resourcecount when="ne" count="2">
           <fileset dir="${test.js.tmp.envdir}/${javascript.server.scripts.dir}">
             <include name="**/*" />
           </fileset>
@@ -91,6 +97,15 @@
         </resourcecount>
         <then><echo>testGeneratedDependencies was successful!</echo></then>
         <else><fail>The require.js dependency wasn't found.</fail></else>
+      </if>
+      <if>
+        <resourcecount when="eq" count="1">
+          <fileset dir="${test.js.tmp.envdir}/${javascript.server.scripts.dir}">
+            <include name="three.js" />
+          </fileset>
+        </resourcecount>
+        <then><echo>testGeneratedDependencies was successful!</echo></then>
+        <else><fail>The three.js dependency wasn't found.</fail></else>
       </if>
       
       <!-- cleanUp -->
@@ -118,7 +133,7 @@
 
       <!-- the expected dependencies -->
       <var name="test.tmp.regex" value="^.*" />
-      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q depScriptList: ['${javascript.server.scripts.dir}/jquery.js','${javascript.server.scripts.dir}/qunit.js','${javascript.server.scripts.dir}/require.js'],\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q depScriptList: ['${javascript.server.scripts.dir}/jquery.js','${javascript.server.scripts.dir}/qunit.js','${javascript.server.scripts.dir}/require.js','${javascript.server.scripts.dir}/three.js'],\E" />
       <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
       <if>
         <not><matches string="${test.tmp.jsFileContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" /></not>
@@ -161,11 +176,68 @@
       <fileCleanUp dir="${test.js.tmp.envdir}" recreate="false" />
     </sequential>
   </macrodef>
+  
+  <macrodef name="testGeneratedTestToolDirectory">
+    <sequential>
+    
+      <!-- first test use default and disable auto-detection -->
+      <var name="javascript.test.requireconfig.override" value="false" />
+      <javascriptCreateTestToolDir testToolDir="${test.js.tmp.envdir}/${javascript.testtool.dir}" />
+      
+      <var name="test.tmp.indexContent" unset="true" />
+      <loadfile property="test.tmp.indexContent" srcfile="${test.js.tmp.envdir}/${javascript.testtool.dir}/index.html"/>
+      <var name="test.tmp.regex" value="^.*" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Qrequire.config(${javascript.test.requireconfig});\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
+      <if>
+        <not><matches string="${test.tmp.indexContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" /></not>
+        <then><fail>expectedRequireConfig failed - ${test.tmp.indexContent}!</fail></then>
+      </if>
+      
+      <!-- read the content of the application's file -->
+      <var name="javascript.test.requireconfig.override" value="true" />
+      <javascriptCreateTestToolDir testToolDir="${test.js.tmp.envdir}/${javascript.testtool.dir}" />
+      <var name="test.tmp.indexContent" unset="true" />
+      <loadfile property="test.tmp.indexContent" srcfile="${test.js.tmp.envdir}/${javascript.testtool.dir}/index.html"/>
+      <var name="test.tmp.regex" value="^.*" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Qrequire.config({\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q// define the baseUrl defined by the processenabler\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\QbaseUrl: '${javascript.server.scripts.dir}',\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q// add some test-function for the testcase\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\QtestFunction: function(a, b) { return a + (a * b); },\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q// shim three.js it's not AMD conform\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Qshim: { 'three': { exports: 'THREE' }}\E" />     
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Q});\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
+      <if>
+        <not><matches string="${test.tmp.indexContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" /></not>
+        <then><fail>expectedRequireConfig failed - ${test.tmp.indexContent}!</fail></then>
+      </if>
+      
+      <!-- disable override and set the configuration using a property -->
+      <var name="javascript.test.requireconfig.override" value="false" />
+      <var name="javascript.test.requireconfig" value="{ myown: 'sample' }" />
+      <javascriptCreateTestToolDir testToolDir="${test.js.tmp.envdir}/${javascript.testtool.dir}" />
+      <var name="test.tmp.indexContent" unset="true" />
+      <loadfile property="test.tmp.indexContent" srcfile="${test.js.tmp.envdir}/${javascript.testtool.dir}/index.html"/>
+      <var name="test.tmp.regex" value="^.*" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}\s*\Qrequire.config(${javascript.test.requireconfig});\E" />
+      <var name="test.tmp.regex" value="${test.tmp.regex}.*$" />
+      <if>
+        <not><matches string="${test.tmp.indexContent}" pattern="${test.tmp.regex}" multiline="true" singleline="true" /></not>
+        <then><fail>expectedRequireConfig failed - ${test.tmp.indexContent}!</fail></then>
+      </if>
+      
+      <!-- cleanUp -->
+      <fileCleanUp dir="${test.js.tmp.envdir}" recreate="false" />
+    </sequential>
+  </macrodef>
     
   <target name="antTest">
     <testIndexHtmlCreation />
     <testGeneratedDependencies />
     <testGeneratedTests />
+    <testGeneratedTestToolDirectory />
   </target>
   
   <target name="antTestCleanUp">

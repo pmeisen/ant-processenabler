@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
 <project name="library_javascript" >
-  <property name="javascript.library.version" value="1.0.2" description="The current version of the library" />
+  <property name="javascript.library.version" value="1.0.3" description="The current version of the library" />
   <dirname property="library_javascript.basedir" file="${ant.file.library_javascript}" />
     
   <property name="javascript.library.resfile.serverSettings" location="${library_javascript.basedir}/library_javascript-serverSettings.xml" description="The settings for the server to be used" />
@@ -51,6 +51,8 @@
   
   <property name="javascript.test.js" value="generated-testMap.js" description="The name of the file which is created containing definitions for all dependencies" />
   <property name="javascript.test.var" value="antProcessenablerTest" description="The name of the global variable defined in the test script containing test information, i.e. the test scripts" />
+  <property name="javascript.test.requireconfig" value="{ baseUrl: '${javascript.server.scripts.dir}' }" description="The default configuration used for require within a test." />
+  <property name="javascript.test.requireconfig.override" value="true" description="Determines if the ${javascript.test.requireconfig} should be overriden, i.e. by default or application config." />
   
   <property name="javascript.devenv.createIndexHtml" value="true" description="Defines if a sample index.html should be created, in the case that one does not exist so far." />
   
@@ -353,7 +355,7 @@
           </chainedmapper>
         </mapper>
       </createResourceList>
-
+      
       <!-- replace the properties in the file to be generated -->
       <fileReplaceAllProperties file="${javascript.library.resfile.testJs}" destFile="@{testDir}/${javascript.test.js}" force="true" />
       
@@ -365,9 +367,14 @@
   
   <!--
     This method is used to create a directory for the test-tool on the server. This can be compared to junit which
-    is delivered with almost all environments.
+    is delivered with almost all environments.<br/>Since version 1.0.3 the method sets a property called javascript.tmp.test.requireconfig.
+    The content of the property is controlled by the properties <a href="#property_javascript.test.requireconfig.override">javascript.test.requireconfig.override</a> 
+    and <a href="#property_javascript.test.requireconfig">javascript.test.requireconfig</a>. If the override-property is set to 'true',
+    the processenabler will check the main-class (defined by <a href="#property_build.launcher.mainClass">build.launcher.mainClass</a>) for a
+    require-configuration. If one is found the content fo the property javascript.tmp.test.requireconfig will be the defined require-configuration's object.
+    If none is defined, the value of the property will be used (which is also the case if the override-property is set to 'false'.
     
-    @param srvdir
+    @param testToolDir
       the directory in which the test-tool should be created
       
     @fails 
@@ -394,6 +401,75 @@
         <then>
           <fail>Cannot find or access the '${javascript.testtool}' archive which is defined to be used as test-tool</fail>
         </then>
+      </if>
+      
+      <!-- create the correct require.config, which might be needed by the testtool -->
+      <varNormalizeBoolean property="javascript.tmp.test.requireconfig.override" value="${javascript.test.requireconfig.override}" />
+      <var name="javascript.tmp.test.requireconfig" unset="true" />
+      <if>
+        <equals arg1="${javascript.tmp.test.requireconfig.override}" arg2="true" />
+        <then>
+
+          <!-- check if we have a application which might override the configuration -->
+          <if>
+            <and>
+              <isset property="build.launcher.mainClass" />
+              <not><equals arg1="${build.launcher.mainClass}" arg2="" /></not>
+            </and>
+            <then>
+            
+              <!-- get the file of the application -->
+              <transformPackagesToPath property="javascript.tmp.appPath" 
+                                       packages="${build.launcher.mainClass}" suffix=".js" packageSeparatore="/" separatore="," />
+              <var name="javascript.tmp.fullAppPath" value="${build.srcdir}/${javascript.tmp.appPath}" />
+              
+              <!-- load the content of the file -->
+              <var name="javascript.tmp.test.fileContent" unset="true" />
+              <loadfile property="javascript.tmp.test.fileContent" srcfile="${javascript.tmp.fullAppPath}"/>
+              
+              <!-- get the configuration from the content -->
+              <script language="javascript"><![CDATA[
+                var setProperty = project.createTask("var");
+                var content = project.getProperty("javascript.tmp.test.fileContent");
+
+                var regex = "require(?:js)\\.config\\(\\s*(\\{)";
+                var pattern = java.util.regex.Pattern.compile(regex, java.util.regex.Pattern.MULTILINE	| 
+                                                                     java.util.regex.Pattern.DOTALL);
+                var matcher = pattern.matcher(content);
+                var pos = -1;
+                if (matcher.find() && (pos = matcher.start(1)) != -1) {
+                  
+                  // iterate char by char and look for the configuration-object's end
+                  var length = content.length();
+                  var counter = 0;
+                  for (var i = pos; i < length; i++) {
+                    var c = content.substring(i, i + 1);
+                    
+                    if (c.equals("{")) {
+                      counter++;
+                    } else if (c.equals("}")) {
+                      counter --;
+                      if (counter == 0) {
+                        break;
+                      }
+                    }
+                  }
+                  
+                  // set the property
+                  setProperty.setName("javascript.tmp.test.requireconfig");
+                  setProperty.setValue(content.substring(pos, i + 1));
+                  setProperty.execute();
+                }
+              ]]></script>
+            </then>
+          </if>
+        </then>
+      </if>
+      
+      <!-- if not set so far use the property -->
+      <if>
+        <not><isset property="javascript.tmp.test.requireconfig" /></not>
+        <then><var name="javascript.tmp.test.requireconfig" value="${javascript.test.requireconfig}" /></then>
       </if>
       
       <!-- unzip and replace the properties -->

@@ -19,6 +19,12 @@
       <scope>test</scope>
     </dependency>
     
+    <dependency>
+      <groupId>org.threejs</groupId>
+      <artifactId>threejs</artifactId>
+      <version>68</version>
+    </dependency>
+    
     <!-- 
          this is not needed, because it is used by default
          we will add it for testing purposes, because it has
