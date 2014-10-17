@@ -155,6 +155,7 @@
   
   <macrodef name="serverGenericStop">
     <attribute name="port" />
+    <attribute name="message" default="" />
     
     <sequential>
       
@@ -163,14 +164,20 @@
         <then>
           <!-- define variables to be replaced in the settings -->
           <var name="server.tmp.generic.stop.port" value="@{port}" />
-        
+          <var name="server.tmp.generic.stop.message" value="@{message}" />
+          
           <!-- shutdown the server -->
           <script language="javascript"><![CDATA[
             var port = project.getProperty("server.tmp.generic.stop.port");
+            var message = project.getProperty("server.tmp.generic.stop.message");
             var controller = new net.meisen.general.server.control.ServerController("localhost", port);
             
             // send the shutdown signal
-            controller.sendShutdown();
+            if (message == null || "".equals(message.trim())) {
+              controller.sendShutdown();
+            } else {
+              controller.sendMessage(message);
+            }
           ]]></script>
         </then>
       </if>
