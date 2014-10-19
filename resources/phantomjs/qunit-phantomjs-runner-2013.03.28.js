@@ -24,25 +24,45 @@
 		console.error('Usage:\n  phantomjs runner.js [url-of-your-qunit-testsuite] [timeout-in-seconds]');
 		phantom.exit(1);
 	}
+  
+  phantom.onError = function(msg, trace) {
+    var msgStack = ['PHANTOM ERROR: ' + msg];
+    if (trace && trace.length) {
+      msgStack.push('TRACE:');
+      trace.forEach(function(t) {
+        msgStack.push(' -> ' + (t.file || t.sourceURL) + ': ' + t.line + (t.function ? ' (in function ' + t.function +')' : ''));
+      });
+    }
+    console.error(msgStack.join('\n'));
+    phantom.exit(1);
+  };
 
 	url = args[1];
 	page = require('webpage').create();
 	if (args[2] !== undefined) {
 		timeout = parseInt(args[2], 10);
 	}
-
+  
+  page.onResourceError = function(resourceError) {
+    console.log('Unable to load resource (#' + resourceError.id + 'URL:' + resourceError.url + ')');
+    console.log('Error code: ' + resourceError.errorCode + '. Description: ' + resourceError.errorString);
+  
+    phantom.exit(1);
+  }; 
+  
 	// Route `console.log()` calls from within the Page context to the main Phantom context (i.e. current `this`)
 	page.onConsoleMessage = function(msg) {
 		console.log(msg);
 	};
 
 	page.onInitialized = function() {
+    console.log("Initializing page");
 		page.evaluate(addLogging);
 	};
 
 	page.onCallback = function(message) {
-		var result,
-			failed;
+		var result, failed;
+    console.log("Callback on " + message);
 
 		if (message) {
 			if (message.name === 'QUnit.done') {
@@ -53,7 +73,19 @@
 			}
 		}
 	};
-
+  
+  page.onError = function(msg, trace) {
+    var msgStack = ['PHANTOM ERROR: ' + msg];
+    if (trace && trace.length) {
+      msgStack.push('TRACE:');
+      trace.forEach(function(t) {
+        msgStack.push(' -> ' + (t.file || t.sourceURL) + ': ' + t.line + (t.function ? ' (in function ' + t.function +')' : ''));
+      });
+    }
+    console.error(msgStack.join('\n'));
+    phantom.exit(1);
+  };
+  
 	page.open(url, function(status) {
 		if (status !== 'success') {
 			console.error('Unable to access network: ' + status);
@@ -66,7 +98,7 @@
 				console.error('The `QUnit` object is not present on this page.');
 				phantom.exit(1);
 			}
-
+    
 			// Set a timeout on the test running, otherwise tests with async problems will hang forever
 			if (typeof timeout === 'number') {
 				setTimeout(function() {
