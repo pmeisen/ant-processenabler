@@ -44,10 +44,17 @@
 	}
   
   page.onResourceError = function(resourceError) {
-    console.log('Unable to load resource (#' + resourceError.id + 'URL:' + resourceError.url + ')');
+    console.log('Unable to load resource (#' + resourceError.id + ', URL:' + resourceError.url + ')');
     console.log('Error code: ' + resourceError.errorCode + '. Description: ' + resourceError.errorString);
-  
-    phantom.exit(1);
+    
+    // we need to make sure that it's not the generatedmap#
+    var suffix = '/generated-testMap.js';
+    var url = resourceError.url;
+    if (url.indexOf(suffix, url.length - suffix.length) !== -1) {
+      phantom.exit(1);
+    } else {
+      // logging is enough
+    }
   }; 
   
 	// Route `console.log()` calls from within the Page context to the main Phantom context (i.e. current `this`)
