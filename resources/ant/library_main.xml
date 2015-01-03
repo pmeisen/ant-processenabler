@@ -44,7 +44,6 @@
   <!--
     set some properties which are globally of interest and can be used by all libraries
     -->
-  <property name="main.markedProperties.prefix" value="" description="A prefix can be defined which marks a property to be loaded without the prefix, e.g. myPrefix.sample.property=5 should be known by the system with sample.property=5" />
   <property name="main.tmpIndicatorFile" value="created.tmp" description="File which is created in the temporary directory for this ant-call" />
   <property name="main.tmplocation" location="${java.io.tmpdir}/ant-processenabler" description="The temporary folder which contains all session, use 'main.tmpdir'-property for all temporary data of a session" />
   <property name="main.tmpdir" value="" description="The temporary folder which should be used by all libraries when generating temporary content" />
@@ -59,7 +58,8 @@
     -->
   <property name="main.default.vendor" value="" description="The vendor used for compiled/build versions" />
   <property name="main.default.logLevel" value="error" description="The logging level to be used can be error, warn, info, verbose, debug" />
-  
+  <property name="main.default.markedProperties.prefix" value="" description="A prefix can be defined which marks a property to be loaded without the prefix, e.g. myPrefix.sample.property=5 should be known by the system with sample.property=5" />
+    
   <property name="main.init" value="false" description="For internal usage only, please do not modify this property by a file" />
   
   <!--
@@ -124,7 +124,7 @@
           <not><equals arg1="${main.markedProperties.prefix}" arg2="" /></not>
         </and>
         <then>
-          <modifyProperties prefix="${main.markedProperties.prefix}" resultPropertySetId="main.markedProperties.propertySet" 
+          <modifyProperties prefix="${main.markedProperties.prefix}" resultPropertySetId="main.markedProperties.propertySet1" 
                             setPropertiesWithoutPrefix="true" unsetProperties="true" />
         </then>
       </if>
@@ -165,7 +165,7 @@
           <modifyProperties prefix="main.tmp.systemProperty" propertySetId="main.tmp.systemProperties" setPropertiesWithoutPrefix="false" unsetProperties="true" />
         </else>
       </if>
-
+      
       <!-- set a default if none is set so far -->
       <property name="main.config.location" location="${main.root}/ant/" />
       
@@ -181,6 +181,19 @@
       <!-- set some defaults -->
       <property name="main.vendor" value="${main.default.vendor}" />
       <property name="main.logLevel" value="${main.default.logLevel}" />
+      <property name="main.markedProperties.prefix" value="${main.default.markedProperties.prefix}" />
+      
+      <!-- there is a chance to pass properties to the system which are marked via a prefix which has to be removed once more, because new once might have been set -->
+      <if>
+        <and>
+          <isset property="main.markedProperties.prefix" />
+          <not><equals arg1="${main.markedProperties.prefix}" arg2="" /></not>
+        </and>
+        <then>
+          <modifyProperties prefix="${main.markedProperties.prefix}" resultPropertySetId="main.markedProperties.propertySet2" 
+                            setPropertiesWithoutPrefix="true" unsetProperties="true" />
+        </then>
+      </if>
       
       <!-- replace the loaded properties, e.g. if nested properties are used somewhere -->
       <propertyset id="main.tmp.propertiesSet">
@@ -284,9 +297,36 @@
         <not><equals arg1="${main.markedProperties.prefix}" arg2="" /></not>
       </and>
       <then>
-        <echoproperties destfile="${main.config.project.marked}">
-          <propertyset refid="main.markedProperties.propertySet" />
-        </echoproperties>
+        <if>
+          <and>
+            <isreference refid="main.markedProperties.propertySet1" />
+            <isreference refid="main.markedProperties.propertySet2" />
+          </and>
+          <then>
+            <echoproperties destfile="${main.config.project.marked}">
+              <propertyset>
+                <propertyset refid="main.markedProperties.propertySet1" />
+                <propertyset refid="main.markedProperties.propertySet2" />
+              </propertyset>
+            </echoproperties>
+          </then>
+          <elseif>
+            <isreference refid="main.markedProperties.propertySet1" />
+            <then>
+              <echoproperties destfile="${main.config.project.marked}">
+                <propertyset refid="main.markedProperties.propertySet1" />
+              </echoproperties>
+            </then>
+          </elseif>
+          <elseif>
+            <isreference refid="main.markedProperties.propertySet2" />
+            <then>
+              <echoproperties destfile="${main.config.project.marked}">
+                <propertyset refid="main.markedProperties.propertySet2" />
+              </echoproperties>
+            </then>
+          </elseif>
+        </if>
       </then>
     </if>
   </target>
