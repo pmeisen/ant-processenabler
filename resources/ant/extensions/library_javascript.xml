@@ -145,6 +145,8 @@
     <attribute name="testDir" default="${javascript.testdir}" />
     <attribute name="testsDir" default="${test.srcdir}" />
     <attribute name="testtoolDir" default="${javascript.testtooldir}" />
+    
+    <attribute name="timeout" default="5000" />
 
     <element name="task" />
   
@@ -170,7 +172,7 @@
         <sequential>
 
           <!-- wait for the server -->
-          <serverGenericWait port="@{httpPort}" />
+          <serverGenericWait port="@{httpPort}" timeout="@{timeout}" />
 
           <task />
              
