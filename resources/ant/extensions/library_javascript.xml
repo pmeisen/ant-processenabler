@@ -177,7 +177,7 @@
           <task />
              
           <!-- shutdown the server -->
-          <javascriptStopServer controlPort="@{controlPort}" />
+          
         </sequential>
       </parallel>
 
@@ -667,6 +667,7 @@
           <javascriptStartServer>
             <task>
               <javascriptRunTests resultProperty="javascript.tmp.result" outputProperty="javascript.tmp.output" />
+              <javascriptStopServer controlPort="@{controlPort}" />
             </task>
           </javascriptStartServer>
         </else>
@@ -771,7 +772,7 @@
   <target name="startDevEnv" depends="createDevEnv">
     <javascriptStartServer>
       <task>
-        <sleep hours="240" />
+        <!-- nothing to do let the server run -->
       </task>
     </javascriptStartServer>
   </target>
