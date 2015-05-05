@@ -23,6 +23,7 @@
   <property name="javascript.optimizer.app-config" value="${javascript.library.resfile.optimizerAppConfig}" description="The configuration file used to optimize the project" />
   <property name="javascript.optimizer.executable" value="node" description="The executable used to optimize the project" />
   <property name="javascript.optimizer.arguments" value="[[javascript.optimizer.tool]]/r.js -o [[javascript.optimizer.config]]" description="Arguments passed to the executable, the string [[javascript.optimizer.config]] will be replaced by the full location of the created configuration file, the string [[javascript.optimizer.tool]] will be replaced with the location of the optimizer-tool" />
+  <property name="javascript.optimizer.type" value="uglify" description="The type of optimization to be used, only use 'uglify' or 'none'." />
   
   <property name="javascript.server.controlport" value="9000" description="The port to start the control of the server on" />
   <property name="javascript.server.httpport" value="10000" description="The port to start the http server on" />

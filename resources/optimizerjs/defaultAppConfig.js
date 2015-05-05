@@ -11,6 +11,9 @@
   
   // remove the once that are combined within another
   removeCombined: true,
+  
+  // define the optimization to be used
+  optimize: '${javascript.optimizer.type}',
     
   // the modules to be optimized
   modules: [{
