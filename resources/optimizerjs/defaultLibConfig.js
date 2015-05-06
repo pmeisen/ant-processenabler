@@ -7,7 +7,10 @@
   baseUrl: '${javascript.server.scripts.dir}',
   
   // define the optimization to be used
-  optimize: '${javascript.optimizer.type}',
+  optimize: '${javascript.tmp.optimizer.type}',
+  
+  // disable or enable wrapping
+  wrap: ${javascript.tmp.optimizer.wrap},
   
   // the directory to store the results at
   dir: '${javascript.tmp.optimizerResultDir}'

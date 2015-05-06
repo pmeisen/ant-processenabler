@@ -13,6 +13,7 @@
   <property name="javascript.library.resfile.optimizerLibConfig" location="${main.root}/optimizerjs/defaultLibConfig.js" description="Default tool used to optimize the project" />
   <property name="javascript.library.resfile.optimizerAppConfig" location="${main.root}/optimizerjs/defaultAppConfig.js" description="Default tool used to optimize the project" />
   <property name="javascript.library.resfile.phantomJsTestScript" location="${main.root}/phantomjs/qunit-phantomjs-runner-2013.03.28.js" description="Default phantomjs script to test QUnit tests" />
+  <property name="javascript.library.resfile.amdcleanScript" location="${main.root}/npm/amdclean.js" description="Script used to trigger amdclean." />
   
   <property name="javascript.testtool" value="${javascript.library.resfile.testToolZip}" description="The tool to be used for testing, has to be a zip-archive" />
   <property name="javascript.testbrowser.executable" value="phantomjs" description="The platform to execute the tests on" />
@@ -24,6 +25,10 @@
   <property name="javascript.optimizer.executable" value="node" description="The executable used to optimize the project" />
   <property name="javascript.optimizer.arguments" value="[[javascript.optimizer.tool]]/r.js -o [[javascript.optimizer.config]]" description="Arguments passed to the executable, the string [[javascript.optimizer.config]] will be replaced by the full location of the created configuration file, the string [[javascript.optimizer.tool]] will be replaced with the location of the optimizer-tool" />
   <property name="javascript.optimizer.type" value="uglify" description="The type of optimization to be used, only use 'uglify' or 'none'." />
+  <property name="javascript.optimizer.wrap" value="false" description="Defines if the optimized could should be wrapped (true or false; for more options see r.js)." />
+  
+  <property name="javascript.npm.globalModules" value="" description="List of the modules which should be global (prefix is removed, use cleaned names)." />
+  <property name="javascript.npm.dest.dir" value="dist" description="Location to be created to keep npm results." />
   
   <property name="javascript.server.controlport" value="9000" description="The port to start the control of the server on" />
   <property name="javascript.server.httpport" value="10000" description="The port to start the http server on" />
@@ -40,7 +45,7 @@
   <property name="javascript.test.dir" value="test" description="Directory to keep generated information while testing" />
   <property name="javascript.testtool.dir" value="testtool" description="Directory to store stuff for testing" />
   <property name="javascript.optimizer.dir" value="optimizer" description="Directory to store stuff for optimization" />
-  <property name="javascript.optimizerDir" value="${build.dir}/${javascript.optimizer.dir}" description="The location of optimized files" />
+  <property name="javascript.npm.dir" value="npm" description="Directory to store stuff for npm" />
   
   <property name="javascript.srvdir" location="${javascript.srv.dir}" description="Directory for files only needed by the environment" />
   <property name="javascript.serverdepdir" location="${javascript.srvdir}/${javascript.serverdep.dir}" description="Directory for additional libraries added to the server" />
@@ -534,12 +539,17 @@
     @since 1.0.1
   -->
   <macrodef name="javascriptOptimizer">
-    <attribute name="basedir" default="${javascript.optimizerDir}" />
+    <attribute name="basedir" default="${build.dir}/${javascript.optimizer.dir}" />
     <attribute name="mainClass" default="" />
+    <attribute name="type" default="${javascript.optimizer.type}" />
+    <attribute name="wrap" default="${javascript.optimizer.wrap}" />
     
     <sequential>
       <mavenSetPom />
-    
+      
+      <var name="javascript.tmp.optimizer.type" value="@{type}" />
+      <var name="javascript.tmp.optimizer.wrap" value="@{wrap}" />
+      
       <replaceAndSetProperty property="javascript.tmp.basedir" value="@{basedir}" replace="\" replacement="/" />
       <fileCleanUp dir="${javascript.tmp.basedir}" recreate="true" />
 
@@ -735,7 +745,7 @@
           </then>
         </elseif>
       </if>
-    
+
       <javascriptOptimizer mainClass="@{mainClass}" />
       
       <!-- get the name of the build -->
@@ -744,6 +754,60 @@
       <!-- create the file -->
       <fileCleanUp file="${build.appFile}" recreate="false" />
       <zip basedir="${javascript.tmp.optimizerResultDir}" destfile="${build.appFile}" />
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="javascriptSingleFile">
+    <attribute name="basedir" />
+    <attribute name="destdir" />
+    <attribute name="mainClass" default="${build.launcher.mainClass}" />
+    
+    <sequential>
+      <!-- make sure we have a build -->
+      <if>
+        <equals arg1="@{mainClass}" arg2="" />
+        <then>
+          <fail>No main-class (build.launcher.mainClass) specified for single file creation</fail>
+        </then>
+      </if>
+
+      <!-- create the one file, no optimization -->
+      <javascriptOptimizer mainClass="@{mainClass}" type="none" wrap="false" />
+      
+      <!-- get the single file -->
+      <transformPackagesToPath property="javascript.tmp.singleFile" 
+                               packages="@{mainClass}" suffix=".js" packageSeparatore="/" separatore="," />
+      <var name="javascript.tmp.singleFileLoc" value="${javascript.tmp.optimizerResultDir}/${javascript.server.scripts.dir}/${javascript.tmp.singleFile}" />
+      
+      <!-- copy the file to a final location -->
+      <fileCleanUp dir="@{basedir}" recreate="true" />  
+      <copy file="${javascript.tmp.singleFileLoc}" tofile="@{basedir}/${javascript.tmp.singleFile}" />
+      
+      <mavenSetPom />
+      <var name="javascript.npm.singleFile" value="@{destdir}/${maven.pom.name}.js" />
+      <copy file="@{basedir}/${javascript.tmp.singleFile}" tofile="${javascript.npm.singleFile}" />
+      
+      <var name="javascript.npm.amdcleanScript" value="${build.dir}/${javascript.optimizer.dir}/amdclean.js" />
+      <fileReplaceAllProperties file="${javascript.library.resfile.amdcleanScript}" destFile="${javascript.npm.amdcleanScript}" force="true" />
+      
+      <!-- create a file for the optimizer to be executed -->
+      <echo file="${javascript.tmp.basedir}/amdclean.bat" append="false">@echo off
+"${javascript.optimizer.executable}" ${javascript.npm.amdcleanScript}
+      </echo>
+      
+      <!-- run the optimization -->
+      <var name="javascript.tmp.output" unset="true" />
+      <var name="javascript.tmp.result" unset="true" />
+      <exec executable="${javascript.tmp.basedir}/amdclean.bat" failonerror="false" outputproperty="javascript.tmp.output" resultproperty="javascript.tmp.result" />     
+
+      <!-- fail on exception -->
+      <if>
+        <or>
+          <not><equals arg1="${javascript.tmp.result}" arg2="0" /></not>
+          <contains string="${javascript.tmp.output}" substring="error:" casesensitive="false" />
+        </or>
+        <then><fail>${javascript.tmp.output}</fail></then>
+      </if>
     </sequential>
   </macrodef>
   
@@ -806,6 +870,14 @@
   
   <target name="build">
     <javascriptBuild />
+  </target>
+  
+  <target name="npmSingleFile">
+    <javascriptSingleFile basedir="${build.dir}/${javascript.npm.dir}" destdir="${javascript.npm.dest.dir}" />
+  </target>
+  
+  <target name="npmCleanUp">
+    <fileCleanUp dir="${javascript.npm.destdir}" recreate="false" />
   </target>
   
   <target name="javadoc">

@@ -13,7 +13,10 @@
   removeCombined: true,
   
   // define the optimization to be used
-  optimize: '${javascript.optimizer.type}',
+  optimize: '${javascript.tmp.optimizer.type}',
+  
+  // disable or enable wrapping
+  wrap: ${javascript.tmp.optimizer.wrap},
     
   // the modules to be optimized
   modules: [{
